@@ -3,8 +3,10 @@ import { Icon } from '@iconify/react'
 import Button from '../ui/Button'
 import { FeedUserHeader, FeedActionBar } from './FeedCardChrome'
 import { MOCK_FEED_ITEMS } from '../../data/feed'
+import { adaptPlanDetail } from '../../data/feedAdapter'
+import { getFeedDetail } from '../../api/feed'
 
-export default function FeedDetailDrawer({ item, onClose, onSavePlan }) {
+export default function FeedDetailDrawer({ item, items, onClose, onSavePlan }) {
   const [stack, setStack] = useState([])
   const open = !!item
 
@@ -30,9 +32,19 @@ export default function FeedDetailDrawer({ item, onClose, onSavePlan }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, stack])
 
-  function handleViewPlan() {
-    const plan = MOCK_FEED_ITEMS.find((i) => i.id === current.planId)
-    if (plan) setStack((s) => [...s, plan])
+  async function handleViewPlan() {
+    const loaded = (items || MOCK_FEED_ITEMS).find((i) => i.id === current.planId)
+    if (loaded) {
+      setStack((s) => [...s, loaded])
+      return
+    }
+    // 현재 로드된 목록에 없는 경우(다른 페이지 등)의 폴백 — 실 데이터만 해당, planId가 UUID인 경우
+    try {
+      const detail = await getFeedDetail(current.planId)
+      setStack((s) => [...s, adaptPlanDetail(detail)])
+    } catch {
+      // 조회 실패 시 그냥 현재 화면 유지
+    }
   }
 
   return (
@@ -85,7 +97,11 @@ export default function FeedDetailDrawer({ item, onClose, onSavePlan }) {
 function RecordDetail({ item }) {
   return (
     <>
-      <div className="h-[320px] w-full rounded-2xl bg-slate-200" />
+      <div className="relative h-[320px] w-full overflow-hidden rounded-2xl bg-slate-200">
+        {item.imageUrl && (
+          <img src={item.imageUrl} alt={item.title} className="absolute inset-0 h-full w-full object-cover" />
+        )}
+      </div>
       <div className="mt-4">
         <FeedUserHeader item={item} showChip={false} />
         <div className="mt-3 text-[17px] font-bold text-slate-900">{item.title}</div>
@@ -114,7 +130,11 @@ function PlanDetail({ item }) {
                 const isLast = i === day.stops.length - 1
                 return (
                   <div key={i} className="flex gap-3">
-                    <div className="mb-4 h-16 w-16 shrink-0 rounded-xl bg-slate-200" />
+                    <div className="relative mb-4 h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-slate-200">
+                      {stop.imageUrl && (
+                        <img src={stop.imageUrl} alt={stop.title} className="absolute inset-0 h-full w-full object-cover" />
+                      )}
+                    </div>
                     <div className="flex flex-col items-center">
                       <div
                         className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-white ${stop.iconBg || 'bg-brand'}`}

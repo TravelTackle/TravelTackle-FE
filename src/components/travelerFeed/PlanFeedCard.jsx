@@ -105,6 +105,9 @@ export default function PlanFeedCard({ item, onOpen }) {
         {day.places.map((place, i) => (
           <div key={i} className="shrink-0 grow-0 basis-[calc((100%-1.5rem)/4)]">
             <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl bg-slate-200">
+              {place.imageUrl && (
+                <img src={place.imageUrl} alt={place.name} className="absolute inset-0 h-full w-full object-cover" />
+              )}
               <span className="absolute bottom-1.5 left-1.5 right-1.5 truncate text-[13px] font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
                 {place.name}
               </span>

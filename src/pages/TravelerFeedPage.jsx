@@ -13,8 +13,19 @@ import RecordFeedCard from '../components/travelerFeed/RecordFeedCard'
 import FeedDetailDrawer from '../components/travelerFeed/FeedDetailDrawer'
 import RecordUploadModal from '../components/travelerFeed/RecordUploadModal'
 import { FEED_REGIONS, MOCK_FEED_ITEMS, MOCK_GALLERY_ITEMS, MOCK_TOP5_PLANS } from '../data/feed'
+import { getFeed } from '../api/feed'
+import { adaptFeedItem } from '../data/feedAdapter'
 
 export default function TravelerFeedPage() {
+  const [realItems, setRealItems] = useState([])
+
+  // 실 데이터를 목업 앞에 붙여서 표시 — 목업은 항상 맨 아래 유지
+  useEffect(() => {
+    getFeed({ size: 50 })
+      .then((page) => setRealItems(page.content.map(adaptFeedItem)))
+      .catch(() => setRealItems([]))
+  }, [])
+
   const [view, setView] = useState('list')
   const [filter, setFilter] = useState('all')
   const [region, setRegion] = useState(null)
@@ -47,11 +58,12 @@ export default function TravelerFeedPage() {
     return true
   }
 
-  const items = MOCK_FEED_ITEMS.filter(matchesFilters)
+  const allItems = [...realItems, ...MOCK_FEED_ITEMS]
+  const items = allItems.filter(matchesFilters)
   // 갤러리형은 계획→기록→기록→계획 Z자 순서로 보이도록 별도 배치 데이터 사용.
   // grid는 행 높이가 좌우 중 큰 쪽에 맞춰져 짧은 카드 아래 빈 공간이 생기므로,
   // 좌/우 컬럼을 독립된 세로 스택 두 개로 나눠 각자 빈틈없이 붙게 렌더링한다.
-  const galleryItems = MOCK_GALLERY_ITEMS.filter(matchesFilters)
+  const galleryItems = [...realItems, ...MOCK_GALLERY_ITEMS].filter(matchesFilters)
   const galleryLeft = galleryItems.filter((_, i) => i % 2 === 0)
   const galleryRight = galleryItems.filter((_, i) => i % 2 === 1)
 
@@ -117,6 +129,7 @@ export default function TravelerFeedPage() {
 
       <FeedDetailDrawer
         item={drawerItem}
+        items={allItems}
         onClose={() => setDrawerItem(null)}
         onSavePlan={() => showToast('내 여행 계획으로 저장했어요')}
       />
