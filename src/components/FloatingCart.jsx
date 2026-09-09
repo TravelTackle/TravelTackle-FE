@@ -3,32 +3,7 @@ import { Icon } from '@iconify/react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { CART_CHANGED_EVENT, SPOT_DRAG_TYPE, addCartItem, getCartItems, removeCartItem } from '../api/cart'
-import { FALLBACK_AREAS } from '../data/tourSpots'
-
-function areaName(code) {
-  return FALLBACK_AREAS.find((a) => a.code === String(code))?.name ?? ''
-}
-
-// 테마 구분은 TourAPI contentTypeId 기준 (탐색 탭과 동일 체계). 아이콘은 탐색 사이드바(tourSpots THEMES)와 통일.
-// 역사/문화(14)·여행코스(25)·타입 미상은 관광지로, 카페는 맛집과 같은 39라 맛집에 포함.
-const CART_THEMES = [
-  { key: 'activity', label: '액티비티', typeIds: ['28'], icon: 'mdi:run-fast' },
-  { key: 'spot', label: '관광지', typeIds: ['12', '14', '25'], icon: 'mdi:map-marker-outline' },
-  { key: 'shopping', label: '쇼핑', typeIds: ['38'], icon: 'mdi:shopping-outline' },
-  { key: 'food', label: '맛집', typeIds: ['39'], icon: 'mdi:silverware-fork-knife' },
-  { key: 'festival', label: '축제/행사', typeIds: ['15'], icon: 'mdi:party-popper' },
-  { key: 'stay', label: '숙박', typeIds: ['32'], icon: 'mdi:bed' },
-]
-
-const CART_TABS = [{ key: 'all', label: '전체' }, ...CART_THEMES]
-
-function cartTheme(contentTypeId) {
-  return CART_THEMES.find((t) => t.typeIds.includes(String(contentTypeId))) ?? CART_THEMES.find((t) => t.key === 'spot')
-}
-
-function themeKey(contentTypeId) {
-  return cartTheme(contentTypeId).key
-}
+import { CART_TABS, areaName, cartTheme, themeKey } from '../lib/cartThemes'
 
 function isSpotDrag(e) {
   return e.dataTransfer?.types?.includes(SPOT_DRAG_TYPE)

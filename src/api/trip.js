@@ -1,0 +1,78 @@
+import client from './client'
+
+// 여행 계획(Trip Planner) 실 API — 백엔드 TripController(/api/trips) 그대로 매핑.
+// 메모 수정은 백엔드 DTO(AddTripItemRequest/UpdateTripItemRequest)에 필드 자체가 없어 여전히 로컬 전용이고,
+// 지도 탭은 아직 백엔드/프론트 모두 미구현이라 이 모듈에 없다.
+
+// 백엔드는 LocalTime을 "10:00:00"처럼 초 단위까지 내려준다 — 화면·<input type="time">엔 "HH:mm"만
+// 필요하므로 응답을 받는 시점에 여기서 한 번에 잘라둔다.
+function toHHmm(t) {
+  return typeof t === 'string' ? t.slice(0, 5) : t
+}
+
+function normalizeItem(item) {
+  return { ...item, startTime: toHHmm(item.startTime), endTime: toHHmm(item.endTime) }
+}
+
+function normalizeTripDetail(detail) {
+  return { ...detail, days: detail.days.map((day) => ({ ...day, items: day.items.map(normalizeItem) })) }
+}
+
+export function getMyTrips() {
+  return client.get('/trips').then((res) => res.data)
+}
+
+export function getTripDetail(tripId) {
+  return client.get(`/trips/${tripId}`).then((res) => normalizeTripDetail(res.data))
+}
+
+export function createTrip(title, startDate, endDate) {
+  return client.post('/trips', { title, startDate, endDate }).then((res) => res.data)
+}
+
+export function updateTrip(tripId, title, startDate, endDate) {
+  return client.patch(`/trips/${tripId}`, { title, startDate, endDate }).then((res) => res.data)
+}
+
+export function deleteTrip(tripId) {
+  return client.delete(`/trips/${tripId}`)
+}
+
+// index는 서버가 모른다 — addTripItem은 항상 해당 Day 맨 끝에 추가하므로, 드롭 위치가 끝이 아니면
+// 호출부에서 이어서 reorderTripItems를 한 번 더 호출해 최종 위치로 옮긴다.
+export function addTripItem(tripId, dayId, cartItemId, startTime, endTime) {
+  return client
+    .post(`/trips/${tripId}/days/${dayId}/items`, { cartItemId, startTime, endTime })
+    .then((res) => normalizeItem(res.data))
+}
+
+export function updateTripItemTime(tripId, dayId, itemId, startTime, endTime) {
+  return client
+    .patch(`/trips/${tripId}/days/${dayId}/items/${itemId}`, { startTime, endTime })
+    .then((res) => normalizeItem(res.data))
+}
+
+export function deleteTripItem(tripId, dayId, itemId) {
+  return client.delete(`/trips/${tripId}/days/${dayId}/items/${itemId}`)
+}
+
+// itemIds는 해당 Day에 실제로 있는 항목 id 전체(순서만 새로 배열)여야 한다 — 일부만 보내면 서버가 거부한다.
+export function reorderTripItems(tripId, dayId, itemIds) {
+  return client
+    .patch(`/trips/${tripId}/days/${dayId}/items/reorder`, { itemIds })
+    .then((res) => res.data.map(normalizeItem))
+}
+
+export function moveTripItem(tripId, itemId, newDayId, newOrderIndex) {
+  return client
+    .patch(`/trips/${tripId}/items/${itemId}/move`, { newDayId, newOrderIndex })
+    .then((res) => normalizeItem(res.data))
+}
+
+export function publishTrip(tripId) {
+  return client.patch(`/trips/${tripId}/publish`).then((res) => res.data)
+}
+
+export function unpublishTrip(tripId) {
+  return client.patch(`/trips/${tripId}/unpublish`).then((res) => res.data)
+}
