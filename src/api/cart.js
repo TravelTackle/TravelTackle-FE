@@ -6,6 +6,9 @@ export const CART_CHANGED_EVENT = 'cart:changed'
 // 탐색 카드 → 장바구니 드래그 페이로드 타입 (TourCard가 싣고 FloatingCart가 받음)
 export const SPOT_DRAG_TYPE = 'application/x-travel-tackle-spot'
 
+// 장바구니 아이템 → 여행 계획 Day 드래그 페이로드 타입 (TripCartPanel이 싣고 DayColumn이 받음)
+export const CART_ITEM_DRAG_TYPE = 'application/x-travel-tackle-cart-item'
+
 function notifyCartChanged() {
   window.dispatchEvent(new CustomEvent(CART_CHANGED_EVENT))
 }

@@ -11,6 +11,7 @@ import OAuthCallback from './pages/OAuthCallback'
 import WelcomePage from './pages/onboarding/WelcomePage'
 import PreferenceWizard from './pages/onboarding/PreferenceWizard'
 import CompletePage from './pages/onboarding/CompletePage'
+import TripPlannerPage from './pages/TripPlannerPage'
 
 function App() {
   return (
@@ -24,6 +25,14 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/oauth/callback" element={<OAuthCallback />} />
+          <Route
+            path="/trips"
+            element={
+              <ProtectedRoute>
+                <TripPlannerPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/onboarding/welcome"
             element={
