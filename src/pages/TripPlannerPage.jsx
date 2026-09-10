@@ -23,7 +23,7 @@ import {
   reorderTripItems,
   unpublishTrip,
   updateTrip,
-  updateTripItemTime,
+  updateTripItem,
 } from '../api/trip'
 import {
   deleteItem,
@@ -45,9 +45,12 @@ const SIDE_PADDING = 'clamp(1.5rem, calc(50vw - 566px), 9.625rem)'
 // 우측 경계를 넘지 않게 하기 위함.
 const DAY_BOX_MAX_WIDTH = `calc(100vw - 2 * (${SIDE_PADDING}))`
 
+// 마지막으로 보고 있던 계획을 기억해뒀다가 다음 진입 시 그대로 열어준다.
+const LAST_TRIP_ID_KEY = 'tripPlanner:lastActiveTripId'
+
 // 여행 계획 짜기 페이지 — 목록 페이지 없이 이 화면 하나가 편집기 역할을 겸한다.
-// 계획 생성/목록·제목·기간·Day 일정·게시 여부는 실 API(/api/trips)로 저장되고, 화면엔 낙관적으로 즉시 반영한다.
-// 메모 수정은 백엔드에 필드 자체가 없어(Backend Pending) 계속 로컬 전용이고, 지도 탭은 아직 미구현이다.
+// 계획 생성/목록·제목·기간·Day 일정·메모·게시 여부는 실 API(/api/trips)로 저장되고, 화면엔 낙관적으로 즉시 반영한다.
+// 지도 탭은 아직 미구현이다.
 export default function TripPlannerPage() {
   const [tripSummaries, setTripSummaries] = useState([])
   const [loadingTrips, setLoadingTrips] = useState(true)
@@ -64,17 +67,30 @@ export default function TripPlannerPage() {
   const [saveStatus, setSaveStatus] = useState('idle')
   const pendingSaves = useRef(0)
   const saveResetTimer = useRef(null)
+  const dayScrollRef = useRef(null)
+  const dayDragState = useRef({ dragging: false, startX: 0, startScrollLeft: 0, moved: false, justDragged: false })
 
-  // 처음 진입 시 내 계획 목록만 먼저 불러오고, 가장 최근 계획을 활성 계획으로 잡는다.
+  // 처음 진입 시 내 계획 목록만 먼저 불러오고, 마지막으로 보던 계획이 있으면 그걸(없거나 삭제됐으면 가장
+  // 최근 계획을) 활성 계획으로 잡는다.
   useEffect(() => {
     getMyTrips()
       .then((list) => {
         setTripSummaries(list)
-        setActiveTripId(list[0]?.id ?? null)
+        const lastId = localStorage.getItem(LAST_TRIP_ID_KEY)
+        const lastStillExists = list.some((t) => t.id === lastId)
+        setActiveTripId(lastStillExists ? lastId : (list[0]?.id ?? null))
       })
       .catch(() => setTripSummaries([]))
       .finally(() => setLoadingTrips(false))
   }, [])
+
+  // 계획을 전환/생성할 때마다 마지막으로 본 계획을 기억해둔다. 로딩 중(activeTripId=null)엔 아무것도 하지
+  // 않는다 — 여기서 지워버리면, 초기 목록을 아직 못 받아온 사이에 저장해둔 값이 사라져 버린다.
+  useEffect(() => {
+    if (activeTripId) {
+      localStorage.setItem(LAST_TRIP_ID_KEY, activeTripId)
+    }
+  }, [activeTripId])
 
   // 활성 계획이 바뀔 때마다 Day/일정까지 포함된 상세를 새로 받아온다.
   useEffect(() => {
@@ -98,6 +114,15 @@ export default function TripPlannerPage() {
   }, [activeTrip, selectedDayId])
 
   useEffect(() => () => clearTimeout(cartCloseTimer.current), [])
+
+  useEffect(
+    () => () => {
+      window.removeEventListener('mousemove', handleDayScrollMouseMove)
+      window.removeEventListener('mouseup', handleDayScrollMouseUp)
+      document.body.style.cursor = ''
+    },
+    [],
+  )
 
   // 저장이 아직 안 끝난 채로 창을 닫거나 새로고침하면 경고
   useEffect(() => {
@@ -168,6 +193,43 @@ export default function TripPlannerPage() {
   function closeCart() {
     setCartOpen(false)
     cartCloseTimer.current = setTimeout(() => setCartMounted(false), 200)
+  }
+
+  // Day 헤더(날짜 부분)를 잡고 좌우로 끌면 그대로 가로 스크롤되게 한다 — 클릭(Day 선택)과 구분하기 위해
+  // 일정 거리 이상 움직였을 때만 "드래그였다"로 치고, 그 직후의 클릭 이벤트는 캡처 단계에서 막는다.
+  function handleDayScrollMouseDown(e) {
+    if (!e.target.closest('[data-day-drag-handle]')) return
+    const container = dayScrollRef.current
+    if (!container) return
+    dayDragState.current = { dragging: true, startX: e.clientX, startScrollLeft: container.scrollLeft, moved: false, justDragged: false }
+    document.body.style.cursor = 'grabbing'
+    window.addEventListener('mousemove', handleDayScrollMouseMove)
+    window.addEventListener('mouseup', handleDayScrollMouseUp)
+  }
+
+  function handleDayScrollMouseMove(e) {
+    const state = dayDragState.current
+    const container = dayScrollRef.current
+    if (!state.dragging || !container) return
+    const dx = e.clientX - state.startX
+    if (Math.abs(dx) > 4) state.moved = true
+    container.scrollLeft = state.startScrollLeft - dx
+  }
+
+  function handleDayScrollMouseUp() {
+    window.removeEventListener('mousemove', handleDayScrollMouseMove)
+    window.removeEventListener('mouseup', handleDayScrollMouseUp)
+    document.body.style.cursor = ''
+    dayDragState.current.dragging = false
+    dayDragState.current.justDragged = dayDragState.current.moved
+  }
+
+  // 드래그로 끌고 난 직후엔 그 클릭이 버튼의 onSelect(Day 선택)까지 이어지지 않게 캡처 단계에서 끊는다.
+  function handleDayScrollClickCapture(e) {
+    if (dayDragState.current.justDragged) {
+      e.stopPropagation()
+      dayDragState.current.justDragged = false
+    }
   }
 
   async function handleCreate(title, startDate, endDate) {
@@ -283,7 +345,7 @@ export default function TripPlannerPage() {
         await reorderTripItems(tripId, dayId, orderedIds)
         // 서버는 순서(orderIndex)만 바꾸고 시간은 그대로 두므로, 로컬에서 재계산한 시간은 별도로 저장해야 한다.
         await Promise.all(
-          changedTimes.map(({ item }) => updateTripItemTime(tripId, dayId, item.id, item.startTime, item.endTime)),
+          changedTimes.map(({ item }) => updateTripItem(tripId, dayId, item.id, item.startTime, item.endTime, item.memo)),
         )
       },
       { onError: () => setActiveTrip(snapshot) },
@@ -314,7 +376,7 @@ export default function TripPlannerPage() {
       async () => {
         await moveTripItem(tripId, itemId, toDayId, newOrderIndex)
         await Promise.all(
-          changedTimes.map(({ item, dayId }) => updateTripItemTime(tripId, dayId, item.id, item.startTime, item.endTime)),
+          changedTimes.map(({ item, dayId }) => updateTripItem(tripId, dayId, item.id, item.startTime, item.endTime, item.memo)),
         )
       },
       { onError: () => setActiveTrip(snapshot) },
@@ -324,18 +386,25 @@ export default function TripPlannerPage() {
   function handleSaveTime(dayId, itemId, time) {
     const snapshot = activeTrip
     const tripId = activeTrip.id
+    const memo = activeTrip.days.find((d) => d.id === dayId)?.items.find((i) => i.id === itemId)?.memo
     const next = updateItemTime(activeTrip, dayId, itemId, time)
     setActiveTrip(next)
     setSelectedDayId(dayId)
-    runSync(() => updateTripItemTime(tripId, dayId, itemId, time.startTime, time.endTime), {
+    runSync(() => updateTripItem(tripId, dayId, itemId, time.startTime, time.endTime, memo), {
       onError: () => setActiveTrip(snapshot),
     })
   }
 
-  // memo는 백엔드 DTO에 필드가 없어(Backend Pending) 저장 API 없이 로컬에만 반영된다
   function handleSaveMemo(dayId, itemId, memo) {
-    setActiveTrip((t) => updateItemMemo(t, dayId, itemId, memo))
+    const snapshot = activeTrip
+    const tripId = activeTrip.id
+    const item = activeTrip.days.find((d) => d.id === dayId)?.items.find((i) => i.id === itemId)
+    const next = updateItemMemo(activeTrip, dayId, itemId, memo)
+    setActiveTrip(next)
     setSelectedDayId(dayId)
+    runSync(() => updateTripItem(tripId, dayId, itemId, item.startTime, item.endTime, memo), {
+      onError: () => setActiveTrip(snapshot),
+    })
   }
 
   function handleDeleteItem(dayId, itemId) {
@@ -403,6 +472,9 @@ export default function TripPlannerPage() {
                 폭 변화가 순간 스냅되지 않고 부드럽게 이어지게 한다. */}
             {view === 'list' ? (
               <div
+                ref={dayScrollRef}
+                onMouseDown={handleDayScrollMouseDown}
+                onClickCapture={handleDayScrollClickCapture}
                 className="flex min-w-0 flex-1 gap-3 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-6 transition-all duration-300"
                 style={{ maxWidth: DAY_BOX_MAX_WIDTH }}
               >

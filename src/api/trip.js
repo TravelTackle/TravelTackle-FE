@@ -1,7 +1,6 @@
 import client from './client'
 
 // 여행 계획(Trip Planner) 실 API — 백엔드 TripController(/api/trips) 그대로 매핑.
-// 메모 수정은 백엔드 DTO(AddTripItemRequest/UpdateTripItemRequest)에 필드 자체가 없어 여전히 로컬 전용이고,
 // 지도 탭은 아직 백엔드/프론트 모두 미구현이라 이 모듈에 없다.
 
 // 백엔드는 LocalTime을 "10:00:00"처럼 초 단위까지 내려준다 — 화면·<input type="time">엔 "HH:mm"만
@@ -46,9 +45,11 @@ export function addTripItem(tripId, dayId, cartItemId, startTime, endTime) {
     .then((res) => normalizeItem(res.data))
 }
 
-export function updateTripItemTime(tripId, dayId, itemId, startTime, endTime) {
+// 이 엔드포인트는 부분 수정이 아니라 통째로 덮어쓴다 — memo를 안 보내면 서버가 null로 지워버리므로,
+// 시간만 바꾸는 호출이라도 항상 현재 memo 값을 같이 실어 보내야 한다.
+export function updateTripItem(tripId, dayId, itemId, startTime, endTime, memo) {
   return client
-    .patch(`/trips/${tripId}/days/${dayId}/items/${itemId}`, { startTime, endTime })
+    .patch(`/trips/${tripId}/days/${dayId}/items/${itemId}`, { startTime, endTime, memo })
     .then((res) => normalizeItem(res.data))
 }
 

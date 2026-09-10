@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
-import Chip from '../ui/Chip'
 import TimeEditPopup from './TimeEditPopup'
 import { TRIP_ITEM_DRAG_TYPE } from '../../lib/dragTypes'
 
@@ -96,9 +95,6 @@ export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDe
               }}
               className="w-full rounded-md border border-brand/40 px-1.5 py-0.5 text-[12px] text-slate-600 outline-none"
             />
-            <Chip className="shrink-0 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-600">
-              Backend Pending
-            </Chip>
           </div>
         ) : (
           <div

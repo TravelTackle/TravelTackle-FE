@@ -125,6 +125,9 @@ export default function TripHeader({
     onUpdateDates(nextStart, nextEnd)
   }
 
+  // 지금 보고 있는 계획을 맨 위로, 나머지는 trips가 원래 내려온 순서(만든 순) 그대로 둔다.
+  const orderedTrips = [trip, ...trips.filter((t) => t.id !== trip.id)]
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2">
       <div className="flex min-w-0 items-center gap-2.5">
@@ -140,7 +143,7 @@ export default function TripHeader({
 
           {menuOpen && (
             <div className="absolute left-0 top-full z-30 mt-2 w-64 rounded-2xl border border-slate-100 bg-white py-1.5 shadow-popup">
-              {trips.map((t) => (
+              {orderedTrips.map((t) => (
                 <div
                   key={t.id}
                   className={`group flex w-full items-center gap-1 pr-1.5 text-[13px] transition-colors ${

@@ -115,7 +115,6 @@ export function updateItemTime(trip, dayId, itemId, { startTime, endTime }) {
   return next
 }
 
-// 백엔드에 memo 수정 API가 없어(Backend Pending) 로컬 state에만 반영된다
 export function updateItemMemo(trip, dayId, itemId, memo) {
   const next = cloneTrip(trip)
   const day = findDay(next, dayId)
