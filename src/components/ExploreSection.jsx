@@ -177,7 +177,7 @@ export default function ExploreSection({ feed }) {
   useEffect(() => {
     // 로그인 여부가 정해진 뒤에 한 번만 부른다 (비로그인 목록 → 추천 순으로 두 번 부르지 않게)
     if (tab !== 'spot' || authLoading) return undefined
-    const key = personalized ? `personal:${user.id ?? user.email ?? 'me'}` : regionKey(region)
+    const key = personalized ? `personal:${user.userId ?? user.id ?? user.email ?? 'me'}` : regionKey(region)
     if (spotCache.has(key)) {
       setSpots({ ...spotCache.get(key), loading: false, error: false })
       return undefined

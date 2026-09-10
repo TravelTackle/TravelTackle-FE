@@ -382,7 +382,8 @@ export default function AiSummaryFeed({ feed }) {
   }, [])
 
   // 로그인 사용자의 취향 추천 (계획 + 기록). 응답을 기다리는 동안도 "요약 중"으로 둔다. 재방문이면 캐시부터
-  const userKey = user?.id ?? user?.email ?? null
+  // /auth/me는 id가 아니라 userId를 내려주고 email은 비어 있을 수 있다
+  const userKey = user ? (user.userId ?? user.id ?? user.email ?? user.name ?? 'me') : null
   const EMPTY_REC = { trips: [], records: [], hasPrefs: false, loading: false }
   const [rec, setRec] = useState(() => {
     const hit = userKey && recCache.get(userKey)
