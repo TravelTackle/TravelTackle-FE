@@ -17,7 +17,8 @@ export default function useHomeFeed() {
     getFeed({ size: 30, sort: 'popular' })
       .then((page) => {
         if (!ignore) {
-          setState({ items: sortByPopularity((page.content || []).map(adaptFeedItem)), loading: false, error: false })
+          const content = Array.isArray(page?.content) ? page.content : []
+          setState({ items: sortByPopularity(content.map(adaptFeedItem)), loading: false, error: false })
         }
       })
       .catch(() => {

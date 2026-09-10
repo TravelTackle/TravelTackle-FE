@@ -124,7 +124,7 @@ export default function ParticipateSection({ feed }) {
     setRecent({ items: [], loading: true })
     getTripFeedback(plan.id, { page: 0, size: RECENT_FEEDBACK })
       .then((page) => {
-        if (!ignore) setRecent({ items: page.content || [], loading: false })
+        if (!ignore) setRecent({ items: Array.isArray(page?.content) ? page.content : [], loading: false })
       })
       .catch(() => {
         if (!ignore) setRecent({ items: [], loading: false })

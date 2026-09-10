@@ -30,7 +30,7 @@ export default function Navbar() {
   const loadReceived = useCallback(() => {
     setReceived((r) => ({ ...r, loading: true, error: false }))
     getReceivedFeedback()
-      .then((items) => setReceived({ items: items || [], loading: false, error: false }))
+      .then((items) => setReceived({ items: Array.isArray(items) ? items : [], loading: false, error: false }))
       .catch(() => setReceived({ items: [], loading: false, error: true }))
   }, [])
 

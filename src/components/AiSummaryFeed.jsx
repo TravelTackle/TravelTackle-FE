@@ -272,7 +272,7 @@ export default function AiSummaryFeed({ feed }) {
     setRec((r) => ({ ...r, loading: true }))
     Promise.all([getRecommendedTrips(30).catch(() => []), getRecommendedRecords(30).catch(() => [])]).then(
       ([trips, records]) => {
-        if (!ignore) setRec({ trips, records, loading: false })
+        if (!ignore) setRec({ trips: Array.isArray(trips) ? trips : [], records: Array.isArray(records) ? records : [], loading: false })
       },
     )
     return () => {

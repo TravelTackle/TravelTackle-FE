@@ -191,12 +191,12 @@ export default function ExploreSection({ feed }) {
         arrange: 'O', // 제목순 + 대표이미지 있는 콘텐츠만
         size: PAGE_SIZE,
         page: 1,
-      }).then((data) => ({ items: data.items || [], title: null }))
+      }).then((data) => ({ items: Array.isArray(data?.items) ? data.items : [], title: null }))
 
     // 추천 응답이 비거나 실패하면 일반 목록으로 조용히 내려간다
     const request = personalized
       ? getRecommendedSpots()
-          .then((data) => pickRecommended(data.sections))
+          .then((data) => pickRecommended(Array.isArray(data?.sections) ? data.sections : []))
           .then((picked) => (picked ? { items: picked.items.slice(0, PAGE_SIZE), title: picked.title, personal: picked.personal } : fetchList()))
           .catch(fetchList)
       : fetchList()
