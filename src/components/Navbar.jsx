@@ -61,9 +61,12 @@ function DesktopNav({ pathname }) {
     if (trackRef.current) observer?.observe(trackRef.current)
     document.fonts?.ready?.then(measure)
     window.addEventListener('resize', measure)
+    // 감시가 붙기 전에 아이콘이 들어온 경우까지 덮는 시간차 재측정
+    const timers = [120, 400, 1000, 2000].map((ms) => setTimeout(measure, ms))
     return () => {
       observer?.disconnect()
       window.removeEventListener('resize', measure)
+      timers.forEach(clearTimeout)
     }
   }, [target, pathname])
 
