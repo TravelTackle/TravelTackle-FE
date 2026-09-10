@@ -85,7 +85,7 @@ function SummaryCard({ card, matched }) {
 }
 
 // 배너 문구. 요약 중엔 흰 스켈레톤 두 줄이 반짝이고, 끝나면 어절이 차례로 떠오른 뒤 빛이 한 번 훑고 지나간다
-const HEADLINE = [
+const HEADLINE_DEFAULT = [
   { text: '현재' },
   { text: '가장 인기있는', accent: true },
   { text: '여행 계획 및 피드백' },
@@ -94,8 +94,19 @@ const HEADLINE = [
   { text: '요약했어요' },
 ]
 
-function AiHeadline({ summarizing }) {
-  const full = HEADLINE.map((w) => w.text).join(' ')
+// 로그인 + 취향 등록으로 맞춤 추천이 잡혔을 때
+function personalizedHeadline(name) {
+  return [
+    { text: `${name}님에게` },
+    { text: '맞는', accent: true },
+    { text: '여행 계획 및' },
+    { text: '사용자 후기를' },
+    { text: '가져왔어요' },
+  ]
+}
+
+function AiHeadline({ summarizing, words }) {
+  const full = words.map((w) => w.text).join(' ')
   if (summarizing) {
     return (
       <h2 className="min-w-0 flex-1">
@@ -110,7 +121,7 @@ function AiHeadline({ summarizing }) {
   return (
     <h2 className="relative min-w-0 flex-1 overflow-hidden text-white font-bold text-[14px] sm:text-[15px] leading-snug">
       <span className="flex flex-wrap items-baseline gap-x-[0.3em] gap-y-0.5">
-        {HEADLINE.map((w, i) => (
+        {words.map((w, i) => (
           <span
             key={w.text}
             className={`ai-word ${w.accent ? 'ai-glow font-extrabold text-sky-100 underline decoration-sky-300/70 decoration-2 underline-offset-4' : ''} ${
@@ -182,29 +193,40 @@ export default function AiSummaryFeed({ feed }) {
     const id = setTimeout(() => setMinSpinOver(true), MIN_SPIN_MS)
     return () => clearTimeout(id)
   }, [])
-  const summarizing = feed.loading || !minSpinOver
   // 로그인한 사용자의 취향과 맞는 계획/기록 id — 이 카드들을 앞으로 당기고 뱃지를 단다
   const [matchedTrips, setMatchedTrips] = useState(() => new Set())
   const [matchedRecords, setMatchedRecords] = useState(() => new Set())
+  const [recLoading, setRecLoading] = useState(false) // 추천 응답을 기다리는 동안도 "요약 중"으로 둔다
 
   useEffect(() => {
     if (!user) {
       setMatchedTrips(new Set())
       setMatchedRecords(new Set())
+      setRecLoading(false)
       return undefined
     }
     let ignore = false
+    setRecLoading(true)
     Promise.all([getRecommendedTrips(30).catch(() => []), getRecommendedRecords(30).catch(() => [])]).then(
       ([trips, records]) => {
         if (ignore) return
         setMatchedTrips(new Set(trips.map((t) => t.tripId)))
         setMatchedRecords(new Set(records.map((r) => r.tripId)))
+        setRecLoading(false)
       },
     )
     return () => {
       ignore = true
     }
   }, [user])
+
+  // 맞춤 추천이 실제로 하나라도 잡혔을 때만 "당신에게 맞는" 문구를 쓴다 (취향 미등록·매칭 0건이면 기본 문구)
+  const personalized = Boolean(user) && matchedTrips.size + matchedRecords.size > 0
+  const headline = useMemo(
+    () => (personalized ? personalizedHeadline(user.name || '회원') : HEADLINE_DEFAULT),
+    [personalized, user],
+  )
+  const summarizing = feed.loading || recLoading || !minSpinOver
 
   const isMatched = useCallback(
     (card) => (card.kind === 'plan' ? matchedTrips.has(card.tripId) : matchedRecords.has(card.tripId)),
@@ -248,7 +270,7 @@ export default function AiSummaryFeed({ feed }) {
         <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-blue-700 via-blue-600 to-blue-400">
           <span className="absolute left-5 top-0 bg-sky-400 text-white text-[10px] font-bold px-3 py-1.5 rounded-b-lg">모아보기</span>
           <div className="flex items-center justify-between pl-20 pr-5 sm:pr-6 py-5 gap-4">
-            <AiHeadline summarizing={summarizing} />
+            <AiHeadline key={personalized ? 'personal' : 'default'} summarizing={summarizing} words={headline} />
             <AiStatusBadge summarizing={summarizing} />
           </div>
         </div>
