@@ -42,18 +42,34 @@ function DesktopNav({ pathname }) {
 
   const activeIdx = NAV.findIndex((n) => n.to === pathname)
   const target = hover ?? (activeIdx >= 0 ? activeIdx : null)
+  const trackRef = useRef(null)
 
+  // 알약 위치는 항목의 실제 크기로 잰다. 아이콘(Iconify)과 웹폰트가 늦게 로드되면 항목 너비가 뒤늦게 바뀌므로
+  // ResizeObserver로 항목 크기 변화를 지켜보다가 다시 잰다 — 페이지를 옮겼을 때 알약이 어긋나던 원인.
   useLayoutEffect(() => {
-    const el = target != null ? itemRefs.current[target] : null
-    if (!el) {
-      setPill((p) => ({ ...p, visible: false }))
-      return
+    const measure = () => {
+      const el = target != null ? itemRefs.current[target] : null
+      if (!el) {
+        setPill((p) => ({ ...p, visible: false }))
+        return
+      }
+      setPill({ left: el.offsetLeft, width: el.offsetWidth, visible: true })
     }
-    setPill({ left: el.offsetLeft, width: el.offsetWidth, visible: true })
+    measure()
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null
+    itemRefs.current.forEach((el) => el && observer?.observe(el))
+    if (trackRef.current) observer?.observe(trackRef.current)
+    document.fonts?.ready?.then(measure)
+    window.addEventListener('resize', measure)
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', measure)
+    }
   }, [target, pathname])
 
   return (
     <div
+      ref={trackRef}
       className="absolute left-1/2 hidden -translate-x-1/2 md:flex items-center rounded-full bg-slate-900/[0.035] p-1"
       onMouseLeave={() => setHover(null)}
     >
