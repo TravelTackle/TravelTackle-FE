@@ -383,10 +383,17 @@ export default function Navbar() {
               ) : (
                 <Link
                   to="/login"
-                  className="flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full bg-brand px-4 text-[12.5px] font-bold text-white shadow-[0_6px_16px_rgba(37,99,235,0.28)] transition-all hover:-translate-y-px hover:bg-brand-dark hover:shadow-[0_8px_20px_rgba(37,99,235,0.34)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                  className="group relative flex h-9 items-center gap-1.5 overflow-hidden whitespace-nowrap rounded-full bg-gradient-to-b from-brand-mid to-brand pl-3 pr-4 text-[13px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_1px_2px_rgba(15,23,42,0.12)] transition-all duration-200 hover:from-brand hover:to-brand-dark hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                 >
+                  {/* 마우스를 올리면 왼쪽에서 오른쪽으로 한 번 스치는 빛 */}
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-full skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-[300%]"
+                  />
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20">
+                    <Icon icon="solar:user-rounded-bold" width={12} />
+                  </span>
                   로그인
-                  <Icon icon="solar:arrow-right-linear" width={14} />
                 </Link>
               )}
             </>
@@ -482,10 +489,10 @@ export default function Navbar() {
                 <Link
                   to="/login"
                   onClick={() => setMenuOpen(false)}
-                  className="flex h-11 items-center justify-center gap-1.5 rounded-xl bg-brand text-[13.5px] font-bold text-white transition-colors hover:bg-brand-dark"
+                  className="flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-brand-mid to-brand text-[13.5px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28)] transition-colors hover:from-brand hover:to-brand-dark"
                 >
+                  <Icon icon="solar:user-rounded-bold" width={15} />
                   로그인하고 참견 시작하기
-                  <Icon icon="solar:arrow-right-linear" width={15} />
                 </Link>
               )}
             </div>
