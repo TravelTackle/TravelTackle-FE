@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { Link } from 'react-router-dom'
 import Section from './ui/Section'
+import Skeleton from './ui/Skeleton'
+import { useAuth } from '../context/AuthContext'
 
 const STEPS = [
   {
@@ -11,7 +13,7 @@ const STEPS = [
     icon: 'solar:map-linear',
     bg: 'linear-gradient(135deg,#EFF6FF,#DBEAFE)',
     color: '#2563EB',
-    cta: { label: '여행 계획 시작하기', to: '/trips' },
+    cta: { label: '여행 계획 시작하기', to: '/trips', guestLabel: '로그인하고 계획 시작하기', guestTo: '/login' },
   },
   {
     tag: 'STEP 2 · 참견',
@@ -34,6 +36,40 @@ const STEPS = [
 ]
 
 const INTERVAL = 4500
+const MIN_SKELETON_MS = 700 // 로그인 확인이 빨라도 이만큼은 스켈레톤을 보여 배너·카드와 같은 리듬으로 열린다
+
+// 슬라이드 CTA — 상단 바 로그인 버튼과 같은 결(그라디언트 알약 + 아이콘 원 + hover 빛 스침)
+function SlideCta({ to, label, icon }) {
+  return (
+    <Link
+      to={to}
+      className="group relative mt-6 inline-flex w-fit items-center gap-2 overflow-hidden rounded-full bg-gradient-to-b from-brand-mid to-brand py-2 pl-2 pr-5 text-[13px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_2px_6px_rgba(37,99,235,0.25)] transition-all duration-200 hover:-translate-y-px hover:from-brand hover:to-brand-dark hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_8px_18px_rgba(37,99,235,0.3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+    >
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-full skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-[300%]"
+      />
+      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20">
+        <Icon icon={icon} width={13} />
+      </span>
+      {label}
+      <Icon icon="solar:arrow-right-linear" width={14} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+    </Link>
+  )
+}
+
+// 로그인 확인 중 슬라이드 본문 자리
+function SlideSkeleton() {
+  return (
+    <div className="relative flex h-full flex-col justify-center px-14 sm:px-16" role="status" aria-label="불러오는 중">
+      <Skeleton className="mb-4 h-14 w-14 rounded-2xl" />
+      <Skeleton className="h-3 w-20 rounded-full" />
+      <Skeleton className="mt-3 h-6 w-[60%] max-w-[320px]" />
+      <Skeleton className="mt-3 h-3.5 w-[75%] max-w-[420px]" />
+      <Skeleton className="mt-6 h-10 w-44 rounded-full" />
+    </div>
+  )
+}
 
 // 양옆 미리보기 카드 — 눌러서 그 단계로 바로 이동
 function SideCard({ step, onClick, label }) {
@@ -55,18 +91,25 @@ function SideCard({ step, onClick, label }) {
 }
 
 export default function HeroSlider() {
+  const { user, loading: authLoading } = useAuth()
   const [idx, setIdx] = useState(0)
   const [playing, setPlaying] = useState(true)
   const [hovering, setHovering] = useState(false)
+  const [minSkeletonOver, setMinSkeletonOver] = useState(false)
+  useEffect(() => {
+    const id = setTimeout(() => setMinSkeletonOver(true), MIN_SKELETON_MS)
+    return () => clearTimeout(id)
+  }, [])
+  const pending = authLoading || !minSkeletonOver
   const total = STEPS.length
   const go = (distance) => setIdx((current) => (current + distance + total) % total)
 
   // 마우스를 올려 읽는 동안에는 자동 넘김을 멈춘다
   useEffect(() => {
-    if (!playing || hovering) return undefined
+    if (!playing || hovering || pending) return undefined
     const id = setInterval(() => setIdx((current) => (current + 1) % total), INTERVAL)
     return () => clearInterval(id)
-  }, [playing, hovering, total])
+  }, [playing, hovering, pending, total])
 
   const prevIdx = (idx - 1 + total) % total
   const nextIdx = (idx + 1) % total
@@ -109,21 +152,23 @@ export default function HeroSlider() {
                     <Icon icon={step.icon} width={280} color={step.color} />
                   </div>
 
-                  <div className="relative flex h-full flex-col justify-center px-14 sm:px-16">
-                    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/75 shadow-sm">
-                      <Icon icon={step.icon} width={27} color={step.color} />
+                  {pending ? (
+                    <SlideSkeleton />
+                  ) : (
+                    <div className="animate-slide-in relative flex h-full flex-col justify-center px-14 sm:px-16">
+                      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/75 shadow-sm">
+                        <Icon icon={step.icon} width={27} color={step.color} />
+                      </div>
+                      <p className="text-[12px] font-extrabold" style={{ color: step.color }}>{step.tag}</p>
+                      <h2 className="mt-2 text-[23px] font-extrabold text-slate-800 text-balance sm:text-[27px]">{step.title}</h2>
+                      <p className="mt-3 max-w-md text-[14px] leading-relaxed text-slate-600 sm:text-[15px]">{step.desc}</p>
+                      <SlideCta
+                        to={!user && step.cta.guestTo ? step.cta.guestTo : step.cta.to}
+                        label={!user && step.cta.guestLabel ? step.cta.guestLabel : step.cta.label}
+                        icon={step.icon}
+                      />
                     </div>
-                    <p className="text-[12px] font-extrabold" style={{ color: step.color }}>{step.tag}</p>
-                    <h2 className="mt-2 text-[23px] font-extrabold text-slate-800 text-balance sm:text-[27px]">{step.title}</h2>
-                    <p className="mt-3 max-w-md text-[14px] leading-relaxed text-slate-600 sm:text-[15px]">{step.desc}</p>
-                    <Link
-                      to={step.cta.to}
-                      className="mt-6 inline-flex w-fit items-center gap-1.5 rounded-full bg-brand px-5 py-2.5 text-[13px] font-bold text-white shadow-float transition-all hover:bg-brand-dark hover:shadow-float-hover"
-                    >
-                      {step.cta.label}
-                      <Icon icon="solar:arrow-right-linear" width={15} />
-                    </Link>
-                  </div>
+                  )}
                 </div>
               ))}
             </div>
