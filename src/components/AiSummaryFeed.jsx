@@ -143,7 +143,8 @@ function personalHeadline(name) {
   return [
     { text: `${name}님에게` },
     { text: '맞는', accent: true },
-    { text: '여행 계획 및' },
+    { text: '여행 계획' },
+    { text: '·', dot: true },
     { text: '사용자 후기를' },
     { text: '가져왔어요' },
   ]
