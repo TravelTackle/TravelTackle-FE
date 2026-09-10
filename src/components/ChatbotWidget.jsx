@@ -6,6 +6,7 @@ import { sendChatMessage } from '../api/chat'
 import { useLanguage } from '../i18n'
 
 const GREETING = { id: 'greeting', from: 'bot', text: '안녕하세요! 트레블봇이에요 😊 여행 계획 짜는 거 도와드릴까요?' }
+const GREETING_DELAY_MS = 900 // 처음 열면 이만큼 "입력 중"을 보여준 뒤 인사말을 써 내려간다
 
 function createConversationId() {
   return globalThis.crypto?.randomUUID?.() || `chat-${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -19,7 +20,7 @@ function prefersReducedMotion() {
   return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 }
 
-// 봇 답변을 글자 단위로 써 내려간다 — 길어도 2초 안에 끝나도록 한 틱에 여러 글자씩
+// 봇 답변을 글자 단위로 써 내려간다 — 길어도 1.2초 안에 끝나도록 한 틱에 여러 글자씩
 function TypedText({ text, animate, onProgress }) {
   const [shown, setShown] = useState(animate ? 0 : text.length)
   const done = shown >= text.length
@@ -27,14 +28,14 @@ function TypedText({ text, animate, onProgress }) {
   useEffect(() => {
     if (!animate) return undefined
     const total = text.length
-    const step = Math.max(1, Math.ceil(total / 80))
+    const step = Math.max(1, Math.ceil(total / 60))
     const id = setInterval(() => {
       setShown((current) => {
         const next = Math.min(total, current + step)
         if (next >= total) clearInterval(id)
         return next
       })
-    }, 24)
+    }, 20)
     return () => clearInterval(id)
   }, [text, animate])
 
@@ -85,6 +86,8 @@ export default function ChatbotWidget() {
   const [open, setOpen] = useState(false)
   const [openCount, setOpenCount] = useState(0) // 열 때마다 대화가 다시 스르륵 쌓이도록 목록을 새로 마운트
   const [messages, setMessages] = useState([GREETING])
+  const [greeted, setGreeted] = useState(false) // 인사말이 "도착"했는지 — 그 전엔 입력 중 말풍선만 보인다
+  const openCountRef = useRef(0) // 비동기 응답에서 현재 열림 회차를 읽기 위한 거울
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
@@ -101,20 +104,34 @@ export default function ChatbotWidget() {
 
   useEffect(() => {
     scrollToBottom(true)
-  }, [messages, sending, open])
+  }, [messages, sending, open, greeted])
 
-  // 패널이 열리면 입력창에 바로 커서를 둔다
+  // 처음 열렸을 때: 잠깐 입력 중을 보여주고 나서 인사말이 타이핑되며 도착한다
   useEffect(() => {
-    if (open) {
-      const id = setTimeout(() => inputRef.current?.focus(), 250)
+    if (!open || greeted) return undefined
+    const id = setTimeout(() => {
+      // 인사말이 이번 열림에서 도착했다고 표시 — 이 회차에만 타이핑 효과를 낸다
+      setMessages((prev) => prev.map((m, i) => (i === 0 ? { ...m, typed: true, openSeq: openCountRef.current } : m)))
+      setGreeted(true)
+    }, reduceMotion.current ? 0 : GREETING_DELAY_MS)
+    return () => clearTimeout(id)
+  }, [open, greeted])
+
+  // 인사말이 도착해 입력이 가능해지면 입력창에 커서를 둔다
+  useEffect(() => {
+    if (open && greeted) {
+      const id = setTimeout(() => inputRef.current?.focus(), 150)
       return () => clearTimeout(id)
     }
     return undefined
-  }, [open])
+  }, [open, greeted])
 
   function toggleOpen() {
     setOpen((v) => {
-      if (!v) setOpenCount((c) => c + 1)
+      if (!v) {
+        openCountRef.current += 1
+        setOpenCount(openCountRef.current)
+      }
       return !v
     })
   }
@@ -140,7 +157,10 @@ export default function ChatbotWidget() {
         },
         { signal: controller.signal }
       )
-      setMessages((prev) => [...prev, { id: createMessageId(), from: 'bot', text: response.reply, typed: !reduceMotion.current }])
+      setMessages((prev) => [
+        ...prev,
+        { id: createMessageId(), from: 'bot', text: response.reply, typed: !reduceMotion.current, openSeq: openCountRef.current },
+      ])
     } catch (err) {
       // 새 대화로 넘어가며 중단된 요청 — 새 대화 상태를 건드리지 않는다.
       if (controller.signal.aborted) return
@@ -164,6 +184,7 @@ export default function ChatbotWidget() {
     abortRef.current?.abort()
     conversationId.current = createConversationId()
     setMessages([{ ...GREETING, id: `greeting-${Date.now()}` }])
+    setGreeted(false) // 새 대화도 인사말부터 다시 도착한다
     setInput('')
     setError('')
     setSending(false)
@@ -194,7 +215,7 @@ export default function ChatbotWidget() {
                   <span className="chat-ping absolute inset-0 rounded-full bg-emerald-300" />
                   <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-300" />
                 </span>
-                {sending ? '답변 작성 중' : '온라인'}
+                {sending || !greeted ? '답변 작성 중' : '온라인'}
               </div>
             </div>
             <IconBadge
@@ -219,6 +240,11 @@ export default function ChatbotWidget() {
           <div key={openCount} ref={scrollRef} className="flex-1 overflow-y-auto bg-slate-50 px-3 py-3 space-y-2.5">
             {messages.map((m, i) => {
               const isUser = m.from === 'user'
+              const isGreeting = i === 0 && m.from === 'bot'
+              // 인사말이 아직 도착 전이면 그 자리엔 입력 중 말풍선
+              if (isGreeting && !greeted) return <TypingBubble key={`${m.id}-typing`} />
+              // 타이핑 효과는 그 메시지가 도착한 열림 회차에서만 — 닫았다 다시 열면 그냥 보인다
+              const typed = Boolean(m.typed) && m.openSeq === openCount && !reduceMotion.current
               return (
                 <div
                   key={m.id}
@@ -233,7 +259,7 @@ export default function ChatbotWidget() {
                         : 'bg-white border border-slate-100 text-slate-700 rounded-2xl rounded-tl-sm'
                     }`}
                   >
-                    {m.typed ? <TypedText text={m.text} animate onProgress={() => scrollToBottom(false)} /> : m.text}
+                    {typed ? <TypedText text={m.text} animate onProgress={() => scrollToBottom(false)} /> : m.text}
                   </div>
                 </div>
               )
@@ -256,12 +282,12 @@ export default function ChatbotWidget() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={sending ? '답변을 기다리는 중…' : '메시지를 입력하세요...'}
-                disabled={sending}
+                disabled={sending || !greeted}
                 className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-full px-3.5 py-2 text-[12.5px] outline-none transition-all focus:border-brand/50 focus:bg-white focus:ring-4 focus:ring-brand/10 disabled:opacity-60"
               />
               <Button
                 onClick={handleSend}
-                disabled={sending || !input.trim()}
+                disabled={sending || !greeted || !input.trim()}
                 className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40 ${
                   input.trim() && !sending ? 'scale-100 hover:scale-110 active:scale-95' : 'scale-95'
                 }`}
