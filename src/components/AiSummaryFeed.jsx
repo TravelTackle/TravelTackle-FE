@@ -6,6 +6,7 @@ import Skeleton from './ui/Skeleton'
 import { formatDate, formatDuration } from '../lib/homeFormat'
 import { useAuth } from '../context/AuthContext'
 import { getRecommendedRecords, getRecommendedTrips } from '../api/feed'
+import { getPreferences } from '../api/preferences'
 
 const TOP_N = 3
 const MIN_SPIN_MS = 1200
@@ -27,6 +28,7 @@ const GROUPS = {
     popularCaption: '참견이 많이 달린 계획',
     personalCaption: '취향과 겹치는 장소가 많은 계획',
     empty: '아직 올라온 여행 계획이 없어요',
+    fallbackCaption: '취향에 맞는 계획이 아직 없어 인기 계획으로 채웠어요',
   },
   record: {
     key: 'record',
@@ -38,6 +40,7 @@ const GROUPS = {
     popularCaption: '반응이 많았던 후기',
     personalCaption: '취향이 비슷한 여행자의 후기',
     empty: '아직 올라온 후기가 없어요',
+    fallbackCaption: '취향에 맞는 후기가 아직 없어 인기 후기로 채웠어요',
   },
 }
 
@@ -195,8 +198,8 @@ function RankSkeleton() {
   )
 }
 
-function GroupColumn({ group, cards, loading, personal, fallback }) {
-  const caption = personal ? group.personalCaption : group.popularCaption
+function GroupColumn({ group, cards, loading, personal, fallback, caption: captionOverride }) {
+  const caption = captionOverride ?? (personal ? group.personalCaption : group.popularCaption)
   return (
     <div className="rounded-3xl border border-slate-100 bg-white p-3 shadow-card">
       <div className="flex items-center justify-between gap-3 px-3 pb-2 pt-1.5">
@@ -380,34 +383,42 @@ export default function AiSummaryFeed({ feed }) {
 
   // 로그인 사용자의 취향 추천 (계획 + 기록). 응답을 기다리는 동안도 "요약 중"으로 둔다. 재방문이면 캐시부터
   const userKey = user?.id ?? user?.email ?? null
+  const EMPTY_REC = { trips: [], records: [], hasPrefs: false, loading: false }
   const [rec, setRec] = useState(() => {
     const hit = userKey && recCache.get(userKey)
-    return hit ? { ...hit, loading: false } : { trips: [], records: [], loading: false }
+    return hit ? { ...hit, loading: false } : EMPTY_REC
   })
   useEffect(() => {
     if (!userKey) {
-      setRec({ trips: [], records: [], loading: false })
+      setRec(EMPTY_REC)
       return undefined
     }
     let ignore = false
     const hit = recCache.get(userKey)
     if (hit) setRec({ ...hit, loading: false })
     else setRec((r) => ({ ...r, loading: true }))
-    Promise.all([getRecommendedTrips(30).catch(() => []), getRecommendedRecords(30).catch(() => [])]).then(
-      ([trips, records]) => {
-        if (ignore) return
-        const next = { trips: Array.isArray(trips) ? trips : [], records: Array.isArray(records) ? records : [] }
-        recCache.set(userKey, next)
-        setRec({ ...next, loading: false })
-      },
-    )
+    Promise.all([
+      getRecommendedTrips(30).catch(() => []),
+      getRecommendedRecords(30).catch(() => []),
+      // 취향(온보딩) 등록 여부 — 404/401이면 미등록으로 본다
+      getPreferences()
+        .then((p) => Boolean(p && (p.interestTags?.length || p.preferredRegions?.length || p.travelStyle)))
+        .catch(() => false),
+    ]).then(([trips, records, hasPrefs]) => {
+      if (ignore) return
+      const next = { trips: Array.isArray(trips) ? trips : [], records: Array.isArray(records) ? records : [], hasPrefs }
+      recCache.set(userKey, next)
+      setRec({ ...next, loading: false })
+    })
     return () => {
       ignore = true
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userKey])
 
-  // 맞춤 추천이 실제로 하나라도 잡혔을 때만 맞춤 모드를 연다 (비회원·취향 미등록·매칭 0건이면 인기만)
-  const personalized = Boolean(user) && rec.trips.length + rec.records.length > 0
+  // 취향을 등록한 회원이면 맞춤 모드를 연다. 매칭이 0건인 열은 인기 글로 채우고 그 사실을 캡션에 적는다
+  const matches = rec.trips.length + rec.records.length
+  const personalized = Boolean(user) && (matches > 0 || rec.hasPrefs)
   useEffect(() => {
     setMode(personalized ? 'personal' : 'popular')
   }, [personalized])
@@ -433,7 +444,20 @@ export default function AiSummaryFeed({ feed }) {
 
   const summarizing = feed.loading || rec.loading || !minSpinOver
   const headline = showPersonal ? personalHeadline(user?.name || '회원') : HEADLINE_POPULAR
-  const columns = showPersonal ? personal : popular
+  // 열마다: 맞춤 글이 있으면 그것, 없으면 인기 글로 채우고 캡션으로 알린다
+  const columns = Object.fromEntries(
+    ['plan', 'record'].map((key) => {
+      const own = showPersonal && personal[key].length > 0
+      return [
+        key,
+        {
+          cards: own ? personal[key] : popular[key],
+          personal: own,
+          caption: showPersonal && !own ? GROUPS[key].fallbackCaption : undefined,
+        },
+      ]
+    }),
+  )
 
   return (
     <section id="community" className="bg-white">
@@ -454,10 +478,11 @@ export default function AiSummaryFeed({ feed }) {
             <div key={key} className="animate-slide-in" style={{ animationDelay: `${i * 120}ms` }}>
               <GroupColumn
                 group={GROUPS[key]}
-                cards={columns[key]}
+                cards={columns[key].cards}
                 loading={summarizing}
-                personal={showPersonal}
-                fallback={!showPersonal && popular.fallback}
+                personal={columns[key].personal}
+                caption={columns[key].caption}
+                fallback={!columns[key].personal && popular.fallback}
               />
             </div>
           ))}
