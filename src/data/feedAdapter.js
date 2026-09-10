@@ -12,7 +12,9 @@ function toDuration(startDate, endDate) {
 
 function adaptDays(days) {
   return (days || []).map((day) => ({
+    id: day.id,
     day: day.dayNumber,
+    date: day.date,
     stops: day.items.map((item) => ({
       time: formatTime(item.startTime),
       title: item.cachedTitle,
@@ -30,7 +32,7 @@ function adaptDays(days) {
   }))
 }
 
-function adaptPlan({ tripId, ownerName, region, title, startDate, endDate, days }) {
+function adaptPlan({ tripId, ownerName, region, title, startDate, endDate, days, feedbackCount, createdAt }) {
   const adaptedDays = adaptDays(days)
   return {
     id: tripId,
@@ -38,6 +40,10 @@ function adaptPlan({ tripId, ownerName, region, title, startDate, endDate, days 
     user: { nickname: ownerName },
     region,
     title,
+    startDate,
+    endDate,
+    feedbackCount: feedbackCount ?? 0,
+    createdAt,
     duration: toDuration(startDate, endDate),
     placeCount: adaptedDays.reduce((sum, d) => sum + d.places.length, 0),
     days: adaptedDays,
@@ -55,6 +61,8 @@ function adaptRecord(entry) {
     planId: entry.tripId,
     orientation: 'landscape',
     imageUrl: entry.thumbnailUrl,
+    feedbackCount: entry.feedbackCount ?? 0,
+    createdAt: entry.createdAt,
   }
 }
 

@@ -1,135 +1,351 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
+import { Link } from 'react-router-dom'
 import Section from './ui/Section'
-import client from '../api/client'
+import Card from './ui/Card'
+import Chip from './ui/Chip'
+import Skeleton from './ui/Skeleton'
+import { getRecommendedSpots, getTourContents } from '../api/tour'
+import { shortRegion } from '../lib/homeFormat'
+import { useAuth } from '../context/AuthContext'
+
+const PAGE_SIZE = 9
 
 const TABS = [
-  { label: '관광지 탐색', icon: 'solar:map-point-linear' },
-  { label: '계획', icon: 'solar:document-text-linear' },
-  { label: '기록', icon: 'solar:camera-linear' },
-]
-const REGIONS = ['전체', '서울', '부산', '제주', '강릉', '경주', '전주', '여수', '속초', '통영']
-
-// 디자인 기본 데이터 (API 실패 시 폴백)
-const FALLBACK = [
-  { contentId: 'f1', title: '섭지코지', address: '제주 서귀포시', region: '제주', likes: 213 },
-  { contentId: 'f2', title: '황리단길', address: '경북 경주시', region: '경주', likes: 185 },
-  { contentId: 'f3', title: '흰여울문화마을', address: '부산 영도구', region: '부산', likes: 176 },
-  { contentId: 'f4', title: '안목해변', address: '강원 강릉시', region: '강릉', likes: 162 },
-  { contentId: 'f5', title: '전주한옥마을', address: '전북 전주시', region: '전주', likes: 148 },
-  { contentId: 'f6', title: '남산서울타워', address: '서울 용산구', region: '서울', likes: 231 },
-  { contentId: 'f7', title: '해운대해수욕장', address: '부산 해운대구', region: '부산', likes: 267 },
-  { contentId: 'f8', title: '경복궁', address: '서울 종로구', region: '서울', likes: 289 },
-  { contentId: 'f9', title: '전주 은행로', address: '전북 전주시', region: '전주', likes: 121 },
+  { key: 'spot', label: '관광지 탐색', icon: 'solar:map-point-linear', moreTo: '/explore', moreLabel: '관광지 전체보기' },
+  { key: 'plan', label: '계획', icon: 'solar:document-text-linear', moreTo: '/feed', moreLabel: '여행자 피드 전체보기' },
+  { key: 'record', label: '기록', icon: 'solar:camera-linear', moreTo: '/feed', moreLabel: '여행자 피드 전체보기' },
 ]
 
-export default function ExploreSection() {
-  const [tab, setTab] = useState('관광지 탐색')
-  const [region, setRegion] = useState('전체')
-  const [items, setItems] = useState(FALLBACK)
-  const [loading, setLoading] = useState(true)
+// 관광지 탭은 TourAPI 지역/시군구 코드로 조회하고, 계획·기록 탭은 피드의 region 문자열로 거른다
+const REGIONS = [
+  { label: '전체' },
+  { label: '서울', areaCode: '1' },
+  { label: '부산', areaCode: '6' },
+  { label: '제주', areaCode: '39' },
+  { label: '강릉', areaCode: '32', sigunguCode: '1' },
+  { label: '경주', areaCode: '35', sigunguCode: '2' },
+  { label: '전주', areaCode: '37', sigunguCode: '12' },
+  { label: '여수', areaCode: '38', sigunguCode: '13' },
+  { label: '속초', areaCode: '32', sigunguCode: '5' },
+  { label: '통영', areaCode: '36', sigunguCode: '17' },
+]
+
+// 관광지 API 실패 시 폴백 (이미지 없음)
+const FALLBACK_SPOTS = [
+  { contentId: 'f1', title: '섭지코지', address: '제주 서귀포시' },
+  { contentId: 'f2', title: '황리단길', address: '경북 경주시' },
+  { contentId: 'f3', title: '흰여울문화마을', address: '부산 영도구' },
+  { contentId: 'f4', title: '안목해변', address: '강원 강릉시' },
+  { contentId: 'f5', title: '전주한옥마을', address: '전북 전주시' },
+  { contentId: 'f6', title: '남산서울타워', address: '서울 용산구' },
+  { contentId: 'f7', title: '해운대해수욕장', address: '부산 해운대구' },
+  { contentId: 'f8', title: '경복궁', address: '서울 종로구' },
+  { contentId: 'f9', title: '전주 은행로', address: '전북 전주시' },
+]
+
+function regionKey(region) {
+  return `${region.areaCode ?? ''}-${region.sigunguCode ?? ''}`
+}
+
+function RegionChip({ children }) {
+  return (
+    <Chip className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold bg-white/90 text-slate-700 shadow-card">
+      {children}
+    </Chip>
+  )
+}
+
+function SpotCard({ spot }) {
+  return (
+    <Card as={Link} to="/explore" className="block overflow-hidden">
+      <div className="relative">
+        {spot.imageUrl ? (
+          <img src={spot.imageUrl} className="w-full h-[150px] object-cover" alt={spot.title} loading="lazy" />
+        ) : (
+          <div className="w-full h-[150px] bg-gradient-to-br from-slate-100 to-slate-200" />
+        )}
+        {spot.address && <RegionChip>{shortRegion(spot.address)}</RegionChip>}
+      </div>
+      <div className="p-3">
+        <div className="text-[13px] font-bold text-slate-900 truncate">{spot.title}</div>
+        <div className="text-[11px] text-slate-400 mt-0.5 truncate">{spot.address || ' '}</div>
+      </div>
+    </Card>
+  )
+}
+
+function PlanCard({ item }) {
+  const photos = (item.days?.[0]?.places ?? []).filter((p) => p.imageUrl).slice(0, 3)
+  return (
+    <Card as={Link} to="/feed" className="block overflow-hidden">
+      <div className="relative">
+        {photos.length ? (
+          <div className="grid h-[150px] gap-0.5" style={{ gridTemplateColumns: `repeat(${photos.length}, minmax(0, 1fr))` }}>
+            {photos.map((p, i) => (
+              <img key={i} src={p.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover bg-slate-100" />
+            ))}
+          </div>
+        ) : (
+          <div className="w-full h-[150px] bg-gradient-to-br from-blue-50 to-slate-200" />
+        )}
+        {item.region && <RegionChip>{item.region}</RegionChip>}
+      </div>
+      <div className="p-3">
+        <div className="text-[13px] font-bold text-slate-900 truncate">{item.title}</div>
+        <div className="text-[11px] text-slate-400 mt-0.5 truncate">
+          {item.user.nickname} · {item.duration} · 장소 {item.placeCount}곳
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+function RecordCard({ item }) {
+  return (
+    <Card as={Link} to="/feed" className="block overflow-hidden">
+      <div className="relative">
+        {item.imageUrl ? (
+          <img src={item.imageUrl} className="w-full h-[150px] object-cover bg-slate-100" alt="" loading="lazy" />
+        ) : (
+          <div className="w-full h-[150px] bg-gradient-to-br from-emerald-50 to-slate-200" />
+        )}
+        {item.region && <RegionChip>{item.region}</RegionChip>}
+      </div>
+      <div className="p-3">
+        <div className="text-[13px] font-bold text-slate-900 truncate">{item.title}</div>
+        <div className="text-[11px] text-slate-400 mt-0.5 truncate">{item.comment || item.user.nickname}</div>
+      </div>
+    </Card>
+  )
+}
+
+function SkeletonGrid() {
+  return (
+    <div className="mt-5 grid grid-cols-2 md:grid-cols-3 gap-4" role="status" aria-label="불러오는 중">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="rounded-2xl overflow-hidden border border-slate-100 bg-white">
+          <Skeleton className="h-[150px] w-full rounded-none" />
+          <div className="p-3">
+            <Skeleton className="h-3.5 w-2/3" />
+            <Skeleton className="mt-2 h-2.5 w-1/2" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function EmptyState({ icon, title, desc, to, cta }) {
+  return (
+    <div className="mt-5 flex flex-col items-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-6 py-14 text-center">
+      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-300 shadow-card">
+        <Icon icon={icon} width={22} />
+      </span>
+      <p className="mt-3 text-[13.5px] font-bold text-slate-700">{title}</p>
+      <p className="mt-1 text-[12px] text-slate-400">{desc}</p>
+      {to && (
+        <Link to={to} className="mt-4 rounded-full bg-brand px-4 py-2 text-[12px] font-bold text-white transition-colors hover:bg-brand-dark">
+          {cta}
+        </Link>
+      )}
+    </div>
+  )
+}
+
+// 로그인 사용자의 "전체" 탭은 선호도 기반 추천으로 채운다 — 맞춤 추천 섹션이 비면 인기 여행지 섹션으로
+function pickRecommended(sections) {
+  const bySection = Object.fromEntries((sections || []).map((s) => [s.sectionId, s]))
+  const personal = bySection.personal?.items ?? []
+  if (personal.length) return { items: personal, title: bySection.personal.title, personal: true }
+  const fallback = bySection.default
+  return fallback?.items?.length ? { items: fallback.items, title: fallback.title, personal: false } : null
+}
+
+export default function ExploreSection({ feed }) {
+  const { user, loading: authLoading } = useAuth()
+  const [tab, setTab] = useState('spot')
+  const [region, setRegion] = useState(REGIONS[0])
+  const [spots, setSpots] = useState({ items: [], loading: true, error: false, title: null })
+  const cache = useRef({}) // 캐시 키 → { items, title } (탭을 오가도 다시 부르지 않게)
+
+  const activeTab = TABS.find((t) => t.key === tab)
+  const personalized = Boolean(user) && !region.areaCode
 
   useEffect(() => {
+    // 로그인 여부가 정해진 뒤에 한 번만 부른다 (비로그인 목록 → 추천 순으로 두 번 부르지 않게)
+    if (tab !== 'spot' || authLoading) return undefined
+    const key = personalized ? `personal:${user.id ?? user.email ?? 'me'}` : regionKey(region)
+    if (cache.current[key]) {
+      setSpots({ ...cache.current[key], loading: false, error: false })
+      return undefined
+    }
     let ignore = false
-    setLoading(true)
-    client
-      .get('/tour/contents', { params: { contentTypeId: '12', arrange: 'A', size: 9, page: 1 } })
-      .then((res) => {
-        const list = res.data?.content || []
-        if (!ignore && list.length) {
-          setItems(list.map((s) => ({
-            contentId: s.contentId,
-            title: s.title,
-            address: s.address || '',
-            region: s.address ? s.address.split(' ')[0] : '',
-            likes: Number((s.contentId || '').replace(/\D/g, '').slice(-3)) % 300 || 120,
-          })))
-        }
+    setSpots((s) => ({ ...s, loading: true, error: false }))
+
+    const fetchList = () =>
+      getTourContents({
+        contentTypeId: '12',
+        areaCode: region.areaCode,
+        sigunguCode: region.sigunguCode,
+        arrange: 'O', // 제목순 + 대표이미지 있는 콘텐츠만
+        size: PAGE_SIZE,
+        page: 1,
+      }).then((data) => ({ items: data.items || [], title: null }))
+
+    // 추천 응답이 비거나 실패하면 일반 목록으로 조용히 내려간다
+    const request = personalized
+      ? getRecommendedSpots()
+          .then((data) => pickRecommended(data.sections))
+          .then((picked) => (picked ? { items: picked.items.slice(0, PAGE_SIZE), title: picked.title, personal: picked.personal } : fetchList()))
+          .catch(fetchList)
+      : fetchList()
+
+    request
+      .then((result) => {
+        if (ignore) return
+        cache.current[key] = result
+        setSpots({ ...result, loading: false, error: false })
       })
-      .catch(() => { /* 폴백 유지 */ })
-      .finally(() => { if (!ignore) setLoading(false) })
-    return () => { ignore = true }
-  }, [])
+      .catch(() => {
+        if (!ignore) setSpots({ items: [], loading: false, error: true, title: null })
+      })
+    return () => {
+      ignore = true
+    }
+  }, [tab, region, personalized, user, authLoading])
+
+  const feedItems = useMemo(() => {
+    if (tab === 'spot') return []
+    return feed.items
+      .filter((i) => i.type === tab && (region.label === '전체' || (i.region || '').includes(region.label)))
+      .slice(0, PAGE_SIZE)
+  }, [feed.items, tab, region])
+
+  // 관광지 API가 죽었고 전체 지역일 때만 예시 카드로 채운다
+  const spotItems = spots.error && !region.areaCode ? FALLBACK_SPOTS : spots.items
+  const loading = tab === 'spot' ? spots.loading : feed.loading
+
+  function renderBody() {
+    if (loading) return <SkeletonGrid />
+
+    if (tab === 'spot') {
+      if (spotItems.length === 0) {
+        return (
+          <EmptyState
+            icon="solar:map-point-linear"
+            title={`${region.label} 관광지를 아직 찾지 못했어요`}
+            desc="다른 지역을 골라보거나 여행지 탐색에서 더 자세히 찾아보세요."
+            to="/explore"
+            cta="여행지 탐색으로 가기"
+          />
+        )
+      }
+      return (
+        <div key={spots.title ? 'personal' : regionKey(region)} className="animate-slide-in mt-5">
+          {spots.title && (
+            <p className="mb-3 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12.5px] font-bold text-violet-600">
+              <Icon icon="solar:magic-stick-3-bold" width={14} />
+              {spots.personal ? (
+                <>{spots.title} · {user.name || '회원'}님 취향에 맞춰 골랐어요</>
+              ) : (
+                <>
+                  {spots.title}
+                  <span className="font-semibold text-slate-400">
+                    · 취향을 등록하면 맞춤 추천을 받을 수 있어요{' '}
+                    <Link to="/onboarding/preferences" className="text-brand underline underline-offset-2">취향 등록하기</Link>
+                  </span>
+                </>
+              )}
+            </p>
+          )}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {spotItems.map((s) => (
+              <SpotCard key={s.contentId} spot={s} />
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    if (feedItems.length === 0) {
+      const noun = tab === 'plan' ? '여행 계획' : '여행 기록'
+      return (
+        <EmptyState
+          icon={activeTab.icon}
+          title={region.label === '전체' ? `아직 올라온 ${noun}이 없어요` : `${region.label} ${noun}은 아직 없어요`}
+          desc={tab === 'plan' ? '첫 번째로 계획을 공유하고 참견을 받아보세요.' : '다녀온 여행을 기록으로 남겨 다음 여행자에게 이어주세요.'}
+          to={tab === 'plan' ? '/trips' : '/feed'}
+          cta={tab === 'plan' ? '내 여행 계획 만들기' : '여행자 피드 보기'}
+        />
+      )
+    }
+    return (
+      <div key={`${tab}-${region.label}`} className="animate-slide-in mt-5 grid grid-cols-2 md:grid-cols-3 gap-4">
+        {feedItems.map((item) => (tab === 'plan' ? <PlanCard key={item.id} item={item} /> : <RecordCard key={item.id} item={item} />))}
+      </div>
+    )
+  }
 
   return (
     <Section as="section" id="explore" className="py-14 sm:py-16">
-      <h2 className="text-[22px] font-bold text-slate-900">좋은 여행은 <span className="text-brand font-extrabold">좋은 참견</span>에서 시작됩니다.</h2>
+      <h2 className="text-[22px] font-bold text-slate-900 text-balance">
+        좋은 여행은 <span className="text-brand font-extrabold">좋은 참견</span>에서 시작됩니다.
+      </h2>
 
       {/* 주요 콘텐츠 탭 — 전체 너비에 균등 배치 */}
-      <div className="mt-6 grid grid-cols-3 border-b border-slate-100">
+      <div className="mt-6 grid grid-cols-3 border-b border-slate-100" role="tablist" aria-label="탐색 콘텐츠 종류">
         {TABS.map((t) => {
-          const active = tab === t.label
+          const active = tab === t.key
           return (
             <button
-              key={t.label}
-              onClick={() => setTab(t.label)}
-              aria-pressed={active}
-              className="relative flex min-w-0 flex-col items-center gap-1.5 py-4 transition-colors"
+              key={t.key}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setTab(t.key)}
+              className={`relative flex min-w-0 flex-col items-center gap-1.5 py-4 transition-colors ${
+                active ? 'text-brand' : 'text-slate-400 hover:text-slate-600'
+              }`}
             >
-              <Icon icon={t.icon} width={19} color={active ? '#007ADB' : '#C4DAF0'} />
-              <span className={`text-[12.5px] font-bold ${active ? 'text-[#2563EB]' : 'text-[#C4DAF0]'}`}>{t.label}</span>
-              {active && <span className="absolute inset-x-0 -bottom-px h-0.5 bg-[#2563EB]" />}
+              <Icon icon={t.icon} width={19} />
+              <span className="text-[12.5px] font-bold">{t.label}</span>
+              {active && <span className="absolute inset-x-0 -bottom-px h-0.5 bg-brand" />}
             </button>
           )
         })}
       </div>
 
       {/* 지역 칩 + 전체보기 */}
-      <div className="mt-2 flex items-center justify-between gap-3">
-        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {REGIONS.map((r) => (
-            <button
-              key={r}
-              onClick={() => setRegion(r)}
-              className={`shrink-0 px-3.5 py-1.5 rounded-full text-[12.5px] font-bold border transition-all ${
-                region === r ? 'bg-[#2563EB] text-white border-[#2563EB]' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              {r}
-            </button>
-          ))}
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" role="group" aria-label="지역 선택">
+          {REGIONS.map((r) => {
+            const active = region.label === r.label
+            return (
+              <button
+                key={r.label}
+                type="button"
+                onClick={() => setRegion(r)}
+                aria-pressed={active}
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-[12.5px] font-bold border transition-all ${
+                  active ? 'bg-brand text-white border-brand' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                {r.label}
+              </button>
+            )
+          })}
         </div>
-        <button className="shrink-0 flex items-center gap-1.5 bg-white border border-slate-200 rounded-full px-4 py-1.5 text-[13px] font-bold text-slate-500 hover:bg-slate-50 transition-all">
-          전체보기 <Icon icon="solar:magnifer-linear" width={16} />
-        </button>
+        <Link
+          to={activeTab.moreTo}
+          aria-label={activeTab.moreLabel}
+          className="shrink-0 flex items-center gap-1.5 bg-white border border-slate-200 rounded-full px-4 py-1.5 text-[13px] font-bold text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all"
+        >
+          전체보기 <Icon icon="solar:arrow-right-linear" width={15} />
+        </Link>
       </div>
 
-      {/* 관광지 카드 그리드 */}
-      {loading ? (
-        <div className="mt-5 grid grid-cols-2 md:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="rounded-2xl overflow-hidden border border-slate-100 bg-white animate-pulse">
-              <div className="w-full h-[130px] bg-slate-100" />
-              <div className="p-3 space-y-2"><div className="h-3 w-2/3 bg-slate-100 rounded" /><div className="h-2.5 w-1/2 bg-slate-100 rounded" /></div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="mt-5 grid grid-cols-2 md:grid-cols-3 gap-4">
-          {items.map((s) => (
-            <a key={s.contentId} href="#" className="lift block rounded-2xl overflow-hidden border border-slate-100 bg-white">
-              <div className="relative">
-                {s.imageUrl ? (
-                  <img src={s.imageUrl} className="w-full h-[130px] object-cover" alt={s.title} loading="lazy" />
-                ) : (
-                  <div className="w-full h-[130px] bg-gradient-to-br from-slate-100 to-slate-200" />
-                )}
-                {s.region && (
-                  <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/90 text-[#334155]">{s.region}</span>
-                )}
-              </div>
-              <div className="p-3">
-                <div className="text-[13px] font-bold text-slate-900 truncate">{s.title}</div>
-                <div className="text-[11px] text-slate-400 mt-0.5 truncate">{s.address || ' '}</div>
-                <div className="mt-1.5 flex items-center gap-1 text-[#F43F5E]">
-                  <Icon icon="solar:heart-bold" width={12} />
-                  <span className="text-[11px] font-bold">{s.likes}</span>
-                </div>
-              </div>
-            </a>
-          ))}
-        </div>
-      )}
+      {renderBody()}
     </Section>
   )
 }

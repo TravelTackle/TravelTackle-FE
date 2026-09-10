@@ -76,3 +76,8 @@ export function publishTrip(tripId) {
 export function unpublishTrip(tripId) {
   return client.patch(`/trips/${tripId}/unpublish`).then((res) => res.data)
 }
+
+// 다른 사용자의 공개 계획을 내 여행으로 복사해 저장 (로그인 필요)
+export function saveTrip(tripId) {
+  return client.post('/saved-trips', { tripId }).then((res) => res.data)
+}
