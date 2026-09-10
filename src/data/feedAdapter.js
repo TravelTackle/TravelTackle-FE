@@ -32,7 +32,7 @@ function adaptDays(days) {
   }))
 }
 
-function adaptPlan({ tripId, ownerName, region, title, startDate, endDate, days, feedbackCount, likeCount, createdAt }) {
+function adaptPlan({ tripId, ownerName, region, title, startDate, endDate, days, feedbackCount, saveCount, createdAt }) {
   const adaptedDays = adaptDays(days)
   return {
     id: tripId,
@@ -43,7 +43,7 @@ function adaptPlan({ tripId, ownerName, region, title, startDate, endDate, days,
     startDate,
     endDate,
     feedbackCount: feedbackCount ?? 0,
-    likeCount: typeof likeCount === 'number' ? likeCount : null, // 백엔드가 좋아요 수를 내려주면 그대로 노출
+    saveCount: typeof saveCount === 'number' ? saveCount : null, // 내 여행으로 담은(저장) 수 — 좋아요 엔티티가 생기면 likeCount를 따로 받는다
     createdAt,
     duration: toDuration(startDate, endDate),
     placeCount: adaptedDays.reduce((sum, d) => sum + d.places.length, 0),
@@ -63,7 +63,7 @@ function adaptRecord(entry) {
     orientation: 'landscape',
     imageUrl: entry.thumbnailUrl,
     feedbackCount: entry.feedbackCount ?? 0,
-    likeCount: typeof entry.likeCount === 'number' ? entry.likeCount : null,
+    saveCount: typeof entry.saveCount === 'number' ? entry.saveCount : null,
     createdAt: entry.createdAt,
   }
 }
