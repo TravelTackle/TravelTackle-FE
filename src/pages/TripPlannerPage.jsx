@@ -9,6 +9,7 @@ import TripCreateModal from '../components/tripPlanner/TripCreateModal'
 import DayColumn from '../components/tripPlanner/DayColumn'
 import TripCartPanel from '../components/tripPlanner/TripCartPanel'
 import TripCartFloatingButton from '../components/tripPlanner/TripCartFloatingButton'
+import TripMapView from '../components/tripPlanner/TripMapView'
 import EmptyTripState from '../components/tripPlanner/EmptyTripState'
 import SaveStatusIndicator from '../components/tripPlanner/SaveStatusIndicator'
 import {
@@ -427,7 +428,7 @@ export default function TripPlannerPage() {
         // sticky는 자기 "부모"의 박스 높이만큼만 붙어있을 수 있다 — 예전엔 이 헤더가 Section 하나만 감싸고 있어서
         // Section 높이 = 헤더 높이라 붙어있을 여유가 사실상 없었다(그래서 스크롤하면 카트와 어긋나 보였음).
         // Day+카트도 함께 담고 있는 페이지 루트를 부모로 삼도록 Section 밖으로 빼고, 1180px 정렬만 안쪽에서 그대로 재현한다.
-        <div className="sticky top-16 z-10 bg-white pb-5 pt-2.5">
+        <div className="sticky top-16 z-30 bg-white pb-5 pt-2.5">
           <div style={{ paddingLeft: SIDE_PADDING, paddingRight: SIDE_PADDING }}>
             <TripHeader
               trip={activeTrip}
@@ -495,11 +496,20 @@ export default function TripPlannerPage() {
               </div>
             ) : (
               <div
-                className="flex min-h-[720px] min-w-0 flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-200 py-24 text-center"
+                className="flex min-h-[720px] min-w-0 flex-1 gap-3 rounded-2xl border border-slate-200 bg-white p-6 transition-all duration-300"
                 style={{ maxWidth: DAY_BOX_MAX_WIDTH }}
               >
-                <Icon icon="mdi:map-outline" width={34} className="text-slate-300" />
-                <p className="text-[14px] font-semibold text-slate-500">지도 보기는 준비 중이에요.</p>
+                <TripMapView
+                  trip={activeTrip}
+                  selectedDayId={selectedDayId}
+                  onSelectDay={setSelectedDayId}
+                  onAddCartItem={handleAddCartItem}
+                  onReorderItem={handleReorderItem}
+                  onMoveItem={handleMoveItem}
+                  onSaveTime={handleSaveTime}
+                  onSaveMemo={handleSaveMemo}
+                  onDeleteItem={handleDeleteItem}
+                />
               </div>
             )}
 

@@ -48,6 +48,7 @@ export function insertCartItemIntoDay(trip, dayId, cartItem, index, id) {
     cachedTitle: cartItem.title,
     cachedImageUrl: cartItem.imageUrl ?? null,
     contentTypeId: cartItem.contentTypeId ?? null,
+    tourApiContentId: cartItem.contentId ?? null,
     address: areaName(cartItem.areaCode),
     memo: '',
     startTime,

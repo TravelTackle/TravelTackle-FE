@@ -5,7 +5,8 @@ import { TRIP_ITEM_DRAG_TYPE } from '../../lib/dragTypes'
 
 // Day 안에 배치된 관광지 카드. 핸들 아이콘 자체만 draggable이라 순서변경/이동 드래그가 거기서만 시작되고,
 // 카드의 나머지 영역(시간 클릭, 메모 더블클릭, 삭제)은 드래그와 무관하게 그대로 동작한다.
-export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDelete }) {
+// readOnly=true면 지도 탭의 호버 상세카드처럼 보여주기만 하고 편집 UI(핸들/시간팝업/메모편집/삭제)는 다 숨긴다.
+export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDelete, readOnly = false }) {
   const [timePopupOpen, setTimePopupOpen] = useState(false)
   const [editingMemo, setEditingMemo] = useState(false)
   const [memoDraft, setMemoDraft] = useState(item.memo)
@@ -49,27 +50,35 @@ export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDe
       data-item-card
       className="relative flex items-start gap-2.5 rounded-2xl border border-slate-100 bg-white p-3.5 shadow-card"
     >
-      <span
-        draggable
-        onDragStart={handleDragStart}
-        className="mt-0.5 flex h-6 w-6 shrink-0 cursor-grab items-center justify-center text-slate-300 hover:text-slate-500 active:cursor-grabbing"
-        aria-label="순서 변경 핸들"
-      >
-        <Icon icon="mdi:drag" width={18} />
-      </span>
+      {!readOnly && (
+        <span
+          draggable
+          onDragStart={handleDragStart}
+          className="mt-0.5 flex h-6 w-6 shrink-0 cursor-grab items-center justify-center text-slate-300 hover:text-slate-500 active:cursor-grabbing"
+          aria-label="순서 변경 핸들"
+        >
+          <Icon icon="mdi:drag" width={18} />
+        </span>
+      )}
 
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13.5px] font-bold text-slate-900">{item.cachedTitle}</p>
 
         <div className="relative mt-1 inline-block">
-          <button
-            type="button"
-            onClick={() => setTimePopupOpen((v) => !v)}
-            className="rounded-md text-[12px] font-semibold text-slate-500 hover:text-brand"
-          >
-            {item.startTime}~{item.endTime}
-          </button>
-          {timePopupOpen && (
+          {readOnly ? (
+            <span className="text-[12px] font-semibold text-slate-500">
+              {item.startTime}~{item.endTime}
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setTimePopupOpen((v) => !v)}
+              className="rounded-md text-[12px] font-semibold text-slate-500 hover:text-brand"
+            >
+              {item.startTime}~{item.endTime}
+            </button>
+          )}
+          {!readOnly && timePopupOpen && (
             <TimeEditPopup
               startTime={item.startTime}
               endTime={item.endTime}
@@ -97,36 +106,44 @@ export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDe
             />
           </div>
         ) : (
-          <div
-            className="relative mt-1"
-            onMouseEnter={() => memoOverflow && setMemoHover(true)}
-            onMouseLeave={() => setMemoHover(false)}
-          >
-            <p ref={memoRef} onDoubleClick={startMemoEdit} className="line-clamp-2 cursor-text text-[12px] text-slate-400">
-              {item.memo || '더블클릭해서 메모 남기기'}
-            </p>
-            {/* 2줄을 넘는 메모만 호버 시 전체를 보여준다 — 가로폭은 원래 메모 영역을 넘기지 않고(inset-x-0)
-                세로로만 늘어나며, 마우스를 떼면 다시 페이드아웃된다. */}
-            {memoOverflow && (
-              <div
-                className={`absolute inset-x-0 top-0 z-20 rounded-lg border border-slate-100 bg-white p-2 text-[12px] leading-relaxed text-slate-600 shadow-popup transition-opacity duration-150 ${
-                  memoHover ? 'opacity-100' : 'pointer-events-none opacity-0'
-                }`}
+          (item.memo || !readOnly) && (
+            <div
+              className="relative mt-1"
+              onMouseEnter={() => memoOverflow && setMemoHover(true)}
+              onMouseLeave={() => setMemoHover(false)}
+            >
+              <p
+                ref={memoRef}
+                onDoubleClick={readOnly ? undefined : startMemoEdit}
+                className={`line-clamp-2 text-[12px] text-slate-400 ${readOnly ? '' : 'cursor-text'}`}
               >
-                {item.memo}
-              </div>
-            )}
-          </div>
+                {item.memo || '더블클릭해서 메모 남기기'}
+              </p>
+              {/* 2줄을 넘는 메모만 호버 시 전체를 보여준다 — 가로폭은 원래 메모 영역을 넘기지 않고(inset-x-0)
+                  세로로만 늘어나며, 마우스를 떼면 다시 페이드아웃된다. */}
+              {memoOverflow && (
+                <div
+                  className={`absolute inset-x-0 top-0 z-20 rounded-lg border border-slate-100 bg-white p-2 text-[12px] leading-relaxed text-slate-600 shadow-popup transition-opacity duration-150 ${
+                    memoHover ? 'opacity-100' : 'pointer-events-none opacity-0'
+                  }`}
+                >
+                  {item.memo}
+                </div>
+              )}
+            </div>
+          )
         )}
       </div>
 
-      <button
-        onClick={onDelete}
-        aria-label={`${item.cachedTitle} 삭제`}
-        className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-rose-300 shadow-card transition-colors hover:text-rose-500"
-      >
-        <Icon icon="solar:close-circle-bold" width={16} />
-      </button>
+      {!readOnly && (
+        <button
+          onClick={onDelete}
+          aria-label={`${item.cachedTitle} 삭제`}
+          className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-rose-300 shadow-card transition-colors hover:text-rose-500"
+        >
+          <Icon icon="solar:close-circle-bold" width={16} />
+        </button>
+      )}
     </div>
   )
 }
