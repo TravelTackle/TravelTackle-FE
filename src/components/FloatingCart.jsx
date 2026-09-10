@@ -6,6 +6,8 @@ import { CART_CHANGED_EVENT, SPOT_DRAG_TYPE, addCartItem, getCartItems, removeCa
 import { CART_TABS, areaName, cartTheme, themeKey } from '../lib/cartThemes'
 import Skeleton from './ui/Skeleton'
 
+const MIN_SKELETON_MS = 450
+
 function isSpotDrag(e) {
   return e.dataTransfer?.types?.includes(SPOT_DRAG_TYPE)
 }
@@ -26,12 +28,17 @@ export default function FloatingCart() {
   const highlightTimer = useRef(null)
   const dragDepth = useRef(0)
 
+  // 패널을 열 때(withSkeleton)는 최소 MIN_SKELETON_MS 동안 스켈레톤을 보여 준 뒤 목록으로 바꾼다
   const refresh = useCallback((withSkeleton) => {
     if (withSkeleton) setLoading(true)
+    const startedAt = Date.now()
     getCartItems()
-      .then(setItems)
+      .then((list) => setItems(Array.isArray(list) ? list : []))
       .catch(() => setItems([]))
-      .finally(() => setLoading(false))
+      .finally(() => {
+        const wait = withSkeleton ? Math.max(0, MIN_SKELETON_MS - (Date.now() - startedAt)) : 0
+        setTimeout(() => setLoading(false), wait)
+      })
   }, [])
 
   // 버튼 배지 수까지 항상 최신으로: 로그인 시 1회 + 담기/빼기 신호마다 갱신
@@ -201,7 +208,7 @@ export default function FloatingCart() {
                   로그인하기
                 </Link>
               </div>
-            ) : loading && items.length === 0 ? (
+            ) : loading ? (
               <div className="flex flex-col gap-2.5" role="status" aria-label="담은 장소를 불러오는 중">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3">
