@@ -122,6 +122,11 @@ body {
   animation: ai-glow 2.6s ease-in-out 1.2s infinite;
 }
 
+/* 모아보기 배너의 맞춤/인기 스위치 — 흰 썸이 선택 쪽으로 미끄러진다 */
+.mode-thumb {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* 홈 히어로 슬라이드·카드 페이지 전환 — 이미 보이는 위치에서 살짝 올라오며 나타남 */
 @keyframes slide-in {
   from { opacity: 0; transform: translateY(10px); }

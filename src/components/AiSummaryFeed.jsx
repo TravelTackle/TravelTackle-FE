@@ -1,15 +1,16 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { Link } from 'react-router-dom'
 import Section from './ui/Section'
 import Card from './ui/Card'
 import Chip from './ui/Chip'
 import Skeleton from './ui/Skeleton'
-import { formatDate } from '../lib/homeFormat'
+import { formatDate, formatDuration } from '../lib/homeFormat'
 import { useAuth } from '../context/AuthContext'
 import { getRecommendedRecords, getRecommendedTrips } from '../api/feed'
 
 const PAGE_SIZE = 6
+const MIN_SPIN_MS = 1200
 
 // 뱃지 스타일: 여행 계획 / 여행 피드백 / 여행 기록
 const KIND = {
@@ -28,8 +29,8 @@ const FALLBACK = [
   { id: 'f6', kind: 'record', title: '제주 일몰 드라이브, 그 순간의 기록', desc: '서쪽 해안도로를 따라 달리며 만난 노을, 차 안에서 담은 순간들을 기록했어요.', meta: 'wanderlust · 2026.07.01' },
 ]
 
-// 피드 항목 → 카드 한 장. 계획은 첫날 동선을, 기록은 본문을 요약문으로 쓴다.
-function toCard(item) {
+// 인기 모드: 피드 항목 → 카드. 계획은 첫날 동선을, 기록은 본문을 요약문으로 쓴다.
+function feedToCard(item) {
   const meta = [item.user?.nickname, formatDate(item.createdAt)].filter(Boolean).join(' · ')
   if (item.type === 'plan') {
     const firstDay = item.days?.[0]?.places ?? []
@@ -42,6 +43,7 @@ function toCard(item) {
       desc: [`${item.duration} · 장소 ${item.placeCount}곳`, route && `첫날 ${route}`].filter(Boolean).join(' · '),
       meta,
       imageUrl: firstDay.find((p) => p.imageUrl)?.imageUrl ?? null,
+      feedbackCount: item.feedbackCount ?? 0,
     }
   }
   return {
@@ -52,10 +54,38 @@ function toCard(item) {
     desc: item.comment || '',
     meta,
     imageUrl: item.imageUrl ?? null,
+    feedbackCount: item.feedbackCount ?? 0,
   }
 }
 
-function SummaryCard({ card, matched }) {
+// 맞춤 모드: 추천 API 응답 → 카드. matchScore = 내 취향과 겹치는 방문지 수.
+function recTripToCard(t) {
+  return {
+    id: `rec-${t.tripId}`,
+    tripId: t.tripId,
+    kind: 'plan',
+    title: t.title,
+    desc: [formatDuration(t.startDate, t.endDate), `취향과 겹치는 장소 ${t.matchScore}곳`].filter(Boolean).join(' · '),
+    meta: [t.ownerName, formatDate(t.createdAt)].filter(Boolean).join(' · '),
+    imageUrl: t.thumbnailUrl ?? null,
+    matchScore: t.matchScore ?? 0,
+  }
+}
+
+function recRecordToCard(r) {
+  return {
+    id: `rec-${r.recordId}`,
+    tripId: r.tripId,
+    kind: 'record',
+    title: r.tripTitle,
+    desc: r.content || '',
+    meta: [r.ownerName, formatDate(r.createdAt)].filter(Boolean).join(' · '),
+    imageUrl: r.thumbnailUrl ?? null,
+    matchScore: r.matchScore ?? 0,
+  }
+}
+
+function SummaryCard({ card, matched, showCount }) {
   const kind = KIND[card.kind]
   return (
     <Card as={Link} to="/feed" className="flex gap-3 p-4 pt-[18px]">
@@ -67,25 +97,40 @@ function SummaryCard({ card, matched }) {
               <Icon icon="solar:magic-stick-3-bold" width={11} /> 취향 맞춤
             </Chip>
           )}
+          {showCount && card.feedbackCount > 0 && (
+            <Chip className="inline-flex items-center gap-1 bg-rose-50 px-2 py-1 text-[10.5px] font-bold text-rose-500 tabular-nums">
+              <Icon icon="solar:chat-round-dots-bold" width={11} /> 참견 {card.feedbackCount}
+            </Chip>
+          )}
         </div>
         <div className="mt-2 text-[14px] font-bold text-slate-900 leading-snug line-clamp-2">{card.title}</div>
         <p className="mt-1.5 text-[12px] leading-[1.65] text-slate-500 line-clamp-2">{card.desc}</p>
         <div className="mt-2 text-[11.5px] text-slate-400 truncate">{card.meta}</div>
       </div>
       {card.imageUrl && (
-        <img
-          src={card.imageUrl}
-          alt=""
-          loading="lazy"
-          className="h-16 w-16 shrink-0 rounded-xl bg-slate-100 object-cover"
-        />
+        <img src={card.imageUrl} alt="" loading="lazy" className="h-16 w-16 shrink-0 rounded-xl bg-slate-100 object-cover" />
       )}
     </Card>
   )
 }
 
+function SkeletonCard() {
+  return (
+    <div className="flex gap-3 rounded-2xl border border-slate-100 bg-white p-4 pt-[18px]">
+      <div className="min-w-0 flex-1">
+        <Skeleton className="h-5 w-16 rounded-full" />
+        <Skeleton className="mt-2.5 h-4 w-4/5" />
+        <Skeleton className="mt-2.5 h-3 w-full" />
+        <Skeleton className="mt-1.5 h-3 w-2/3" />
+        <Skeleton className="mt-3 h-3 w-1/3" />
+      </div>
+      <Skeleton className="h-16 w-16 shrink-0 rounded-xl" />
+    </div>
+  )
+}
+
 // 배너 문구. 요약 중엔 흰 스켈레톤 두 줄이 반짝이고, 끝나면 어절이 차례로 떠오른 뒤 빛이 한 번 훑고 지나간다
-const HEADLINE_DEFAULT = [
+const HEADLINE_POPULAR = [
   { text: '현재' },
   { text: '가장 인기있는', accent: true },
   { text: '여행 계획 및 피드백' },
@@ -94,8 +139,7 @@ const HEADLINE_DEFAULT = [
   { text: '요약했어요' },
 ]
 
-// 로그인 + 취향 등록으로 맞춤 추천이 잡혔을 때
-function personalizedHeadline(name) {
+function personalHeadline(name) {
   return [
     { text: `${name}님에게` },
     { text: '맞는', accent: true },
@@ -166,53 +210,68 @@ function AiStatusBadge({ summarizing }) {
   )
 }
 
-function SkeletonCard() {
+const MODES = [
+  { key: 'personal', label: '맞춤 추천', icon: 'solar:magic-stick-3-bold' },
+  { key: 'popular', label: '인기', icon: 'solar:fire-bold' },
+]
+
+// 맞춤 / 인기 세그먼트 스위치 — 흰 썸이 선택 쪽으로 미끄러진다. 맞춤 추천이 잡힌 회원에게만 보인다.
+function ModeSwitch({ mode, onChange }) {
+  const index = MODES.findIndex((m) => m.key === mode)
   return (
-    <div className="flex gap-3 rounded-2xl border border-slate-100 bg-white p-4 pt-[18px]">
-      <div className="min-w-0 flex-1">
-        <Skeleton className="h-5 w-16 rounded-full" />
-        <Skeleton className="mt-2.5 h-4 w-4/5" />
-        <Skeleton className="mt-2.5 h-3 w-full" />
-        <Skeleton className="mt-1.5 h-3 w-2/3" />
-        <Skeleton className="mt-3 h-3 w-1/3" />
-      </div>
-      <Skeleton className="h-16 w-16 shrink-0 rounded-xl" />
+    <div role="tablist" aria-label="모아보기 기준" className="relative grid shrink-0 grid-cols-2 rounded-full bg-white/15 p-1 ring-1 ring-white/20">
+      <span
+        aria-hidden="true"
+        className="mode-thumb absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-white shadow-card"
+        style={{ transform: `translateX(${index * 100}%)` }}
+      />
+      {MODES.map((m) => {
+        const active = m.key === mode
+        return (
+          <button
+            key={m.key}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(m.key)}
+            className={`relative z-10 flex items-center justify-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-bold transition-colors duration-300 ${
+              active ? 'text-blue-700' : 'text-white/85 hover:text-white'
+            }`}
+          >
+            <Icon icon={m.icon} width={13} className={active && m.key === 'popular' ? 'text-orange-500' : ''} />
+            {m.label}
+          </button>
+        )
+      })}
     </div>
   )
 }
 
-const MIN_SPIN_MS = 1200
-
 export default function AiSummaryFeed({ feed }) {
   const { user } = useAuth()
   const [page, setPage] = useState(0)
+  const [mode, setMode] = useState('popular')
   const touchStartX = useRef(null)
+
   // 배지는 피드 로딩이 끝나도 최소 MIN_SPIN_MS 동안은 "요약 중"으로 두어 회전이 보이게 한다
   const [minSpinOver, setMinSpinOver] = useState(false)
   useEffect(() => {
     const id = setTimeout(() => setMinSpinOver(true), MIN_SPIN_MS)
     return () => clearTimeout(id)
   }, [])
-  // 로그인한 사용자의 취향과 맞는 계획/기록 id — 이 카드들을 앞으로 당기고 뱃지를 단다
-  const [matchedTrips, setMatchedTrips] = useState(() => new Set())
-  const [matchedRecords, setMatchedRecords] = useState(() => new Set())
-  const [recLoading, setRecLoading] = useState(false) // 추천 응답을 기다리는 동안도 "요약 중"으로 둔다
 
+  // 로그인 사용자의 취향 추천 (계획 + 기록). 응답을 기다리는 동안도 "요약 중"으로 둔다
+  const [rec, setRec] = useState({ trips: [], records: [], loading: false })
   useEffect(() => {
     if (!user) {
-      setMatchedTrips(new Set())
-      setMatchedRecords(new Set())
-      setRecLoading(false)
+      setRec({ trips: [], records: [], loading: false })
       return undefined
     }
     let ignore = false
-    setRecLoading(true)
+    setRec((r) => ({ ...r, loading: true }))
     Promise.all([getRecommendedTrips(30).catch(() => []), getRecommendedRecords(30).catch(() => [])]).then(
       ([trips, records]) => {
-        if (ignore) return
-        setMatchedTrips(new Set(trips.map((t) => t.tripId)))
-        setMatchedRecords(new Set(records.map((r) => r.tripId)))
-        setRecLoading(false)
+        if (!ignore) setRec({ trips, records, loading: false })
       },
     )
     return () => {
@@ -220,29 +279,34 @@ export default function AiSummaryFeed({ feed }) {
     }
   }, [user])
 
-  // 맞춤 추천이 실제로 하나라도 잡혔을 때만 "당신에게 맞는" 문구를 쓴다 (취향 미등록·매칭 0건이면 기본 문구)
-  const personalized = Boolean(user) && matchedTrips.size + matchedRecords.size > 0
-  const headline = useMemo(
-    () => (personalized ? personalizedHeadline(user.name || '회원') : HEADLINE_DEFAULT),
-    [personalized, user],
-  )
-  const summarizing = feed.loading || recLoading || !minSpinOver
+  // 맞춤 추천이 실제로 하나라도 잡혔을 때만 맞춤 모드를 연다 (비회원·취향 미등록·매칭 0건이면 인기만)
+  const personalized = Boolean(user) && rec.trips.length + rec.records.length > 0
+  useEffect(() => {
+    setMode(personalized ? 'personal' : 'popular')
+  }, [personalized])
 
-  const isMatched = useCallback(
-    (card) => (card.kind === 'plan' ? matchedTrips.has(card.tripId) : matchedRecords.has(card.tripId)),
-    [matchedTrips, matchedRecords],
+  const matchedIds = useMemo(
+    () => new Set([...rec.trips.map((t) => t.tripId), ...rec.records.map((r) => r.tripId)]),
+    [rec.trips, rec.records],
   )
 
-  const cards = useMemo(() => {
-    const real = feed.items.map(toCard)
-    if (!real.length) return FALLBACK
-    // 취향 맞춤 카드를 먼저, 나머지는 원래 순서 그대로
-    return [...real.filter(isMatched), ...real.filter((c) => !isMatched(c))]
-  }, [feed.items, isMatched])
+  const personalCards = useMemo(
+    () => [...rec.trips.map(recTripToCard), ...rec.records.map(recRecordToCard)].sort((a, b) => b.matchScore - a.matchScore),
+    [rec.trips, rec.records],
+  )
+  const popularCards = useMemo(() => {
+    const real = feed.items.map(feedToCard)
+    return real.length ? real : FALLBACK
+  }, [feed.items])
 
+  const showPersonal = mode === 'personal' && personalized
+  const cards = showPersonal ? personalCards : popularCards
   const pageCount = Math.max(1, Math.ceil(cards.length / PAGE_SIZE))
 
-  // 데이터가 바뀌어 페이지 수가 줄면 첫 페이지로
+  // 모드가 바뀌거나 페이지 수가 줄면 첫 페이지로
+  useEffect(() => {
+    setPage(0)
+  }, [mode])
   useEffect(() => {
     setPage((p) => (p >= pageCount ? 0 : p))
   }, [pageCount])
@@ -264,25 +328,31 @@ export default function AiSummaryFeed({ feed }) {
     if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1)
   }
 
+  const summarizing = feed.loading || rec.loading || !minSpinOver
+  const headline = showPersonal ? personalHeadline(user?.name || '회원') : HEADLINE_POPULAR
+
   return (
     <section id="community" className="bg-white">
       <Section as="div" className="py-14 sm:py-16">
         <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-blue-700 via-blue-600 to-blue-400">
           <span className="absolute left-5 top-0 bg-sky-400 text-white text-[10px] font-bold px-3 py-1.5 rounded-b-lg">모아보기</span>
-          <div className="flex items-center justify-between pl-20 pr-5 sm:pr-6 py-5 gap-4">
-            <AiHeadline key={personalized ? 'personal' : 'default'} summarizing={summarizing} words={headline} />
-            <AiStatusBadge summarizing={summarizing} />
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3 pl-20 pr-5 sm:pr-6 py-5">
+            <AiHeadline key={showPersonal ? 'personal' : 'popular'} summarizing={summarizing} words={headline} />
+            <div className="ml-auto flex items-center gap-3">
+              {personalized && !summarizing && <ModeSwitch mode={mode} onChange={setMode} />}
+              <AiStatusBadge summarizing={summarizing} />
+            </div>
           </div>
         </div>
 
-        {feed.loading ? (
+        {summarizing ? (
           <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4" role="status" aria-label="여행 이야기를 불러오는 중">
             {Array.from({ length: PAGE_SIZE }).map((_, i) => (
               <SkeletonCard key={i} />
             ))}
           </div>
         ) : (
-          <div className="relative mt-5">
+          <div key={mode} className="animate-slide-in relative mt-5">
             {/* 페이지들을 한 줄로 늘어놓고 트랙을 옆으로 밀어서 넘긴다. 카드 hover 그림자가 잘리지 않게 안쪽 여백을 둔다 */}
             <div className="-mx-2 -my-3 overflow-hidden px-2 py-3" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
               <div
@@ -297,7 +367,12 @@ export default function AiSummaryFeed({ feed }) {
                     inert={i !== page} // 화면 밖 페이지의 링크는 탭 이동에서 건너뛴다
                   >
                     {pageCards.map((card) => (
-                      <SummaryCard key={card.id} card={card} matched={isMatched(card)} />
+                      <SummaryCard
+                        key={card.id}
+                        card={card}
+                        matched={showPersonal || matchedIds.has(card.tripId)}
+                        showCount={!showPersonal}
+                      />
                     ))}
                   </div>
                 ))}
@@ -329,7 +404,7 @@ export default function AiSummaryFeed({ feed }) {
           </div>
         )}
 
-        {pageCount > 1 && !feed.loading && (
+        {pageCount > 1 && !summarizing && (
           <div className="mt-6 flex justify-center gap-2.5">
             {Array.from({ length: pageCount }).map((_, i) => (
               <button

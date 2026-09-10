@@ -34,3 +34,12 @@ export function shortRegion(address) {
   const first = address.split(' ')[0]
   return PROVINCE_SHORT[first] ?? first.replace(/(통합특별시|특별자치도|특별자치시|광역시|특별시|도)$/, '')
 }
+
+// "2026-08-26" ~ "2026-08-28" → "2박 3일"
+export function formatDuration(startDate, endDate) {
+  const a = new Date(startDate)
+  const b = new Date(endDate)
+  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return ''
+  const nights = Math.max(0, Math.round((b - a) / 86_400_000))
+  return `${nights}박 ${nights + 1}일`
+}
