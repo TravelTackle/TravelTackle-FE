@@ -289,6 +289,11 @@ export default function ParticipateSection({ feed }) {
                 <span className="flex items-center gap-1 text-brand text-[11px] font-bold tabular-nums">
                   <Icon icon="solar:chat-round-dots-bold" width={13} /> 참견 {feedbackCount}
                 </span>
+                {typeof plan.saveCount === 'number' && (
+                  <span className="flex items-center gap-1 text-amber-600 text-[11px] font-bold tabular-nums" title="내 여행으로 담은 수">
+                    <Icon icon="solar:bookmark-bold" width={12} /> 저장 {plan.saveCount + (saved ? 1 : 0)}
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={handleSave}

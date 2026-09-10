@@ -152,11 +152,10 @@ function RankRow({ card, rank, index, personal }) {
           </span>
           {typeof card.saveCount === 'number' && (
             <span
-              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-pink-50 px-1.5 py-0.5 font-bold tabular-nums text-pink-500"
-              aria-label={`저장 ${card.saveCount}회`}
+              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 font-bold tabular-nums text-amber-600"
               title="내 여행으로 담은 수"
             >
-              <Icon icon="solar:heart-bold" width={10} /> {card.saveCount}
+              <Icon icon="solar:bookmark-bold" width={10} /> 저장 {card.saveCount}
             </span>
           )}
         </span>

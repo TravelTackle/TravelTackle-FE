@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import TourCard from './TourCard'
+import Skeleton from '../ui/Skeleton'
 
 export default function TourCardGrid({ spots, loading, loadingMore, hasMore, onLoadMore, onOpen, onAddToCart }) {
   const sentinelRef = useRef(null)
@@ -20,13 +21,13 @@ export default function TourCardGrid({ spots, loading, loadingMore, hasMore, onL
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3" role="status" aria-label="관광지를 불러오는 중">
         {Array.from({ length: 9 }).map((_, i) => (
-          <div key={i} className="rounded-2xl overflow-hidden border border-slate-100 bg-white animate-pulse">
-            <div className="h-[150px] bg-slate-100" />
-            <div className="p-3 space-y-2">
-              <div className="h-3 w-2/3 bg-slate-100 rounded" />
-              <div className="h-2.5 w-1/2 bg-slate-100 rounded" />
+          <div key={i} className="rounded-2xl overflow-hidden border border-slate-100 bg-white">
+            <Skeleton className="h-[150px] w-full rounded-none" style={{ animationDelay: `${(i % 3) * 120}ms` }} />
+            <div className="p-3">
+              <Skeleton className="h-3.5 w-2/3" style={{ animationDelay: `${(i % 3) * 120 + 60}ms` }} />
+              <Skeleton className="mt-2 h-2.5 w-1/2" style={{ animationDelay: `${(i % 3) * 120 + 120}ms` }} />
             </div>
           </div>
         ))}

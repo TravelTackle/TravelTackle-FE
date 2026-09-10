@@ -98,6 +98,11 @@ function PlanCard({ item }) {
         <div className="text-[13px] font-bold text-slate-900 truncate">{item.title}</div>
         <div className="text-[11px] text-slate-400 mt-0.5 truncate">
           {item.user.nickname} · {item.duration} · 장소 {item.placeCount}곳
+          {typeof item.saveCount === 'number' && (
+            <span className="ml-1.5 inline-flex items-center gap-0.5 font-semibold text-amber-600">
+              <Icon icon="solar:bookmark-bold" width={10} /> {item.saveCount}
+            </span>
+          )}
         </div>
       </div>
     </Card>
@@ -117,7 +122,14 @@ function RecordCard({ item }) {
       </div>
       <div className="p-3">
         <div className="text-[13px] font-bold text-slate-900 truncate">{item.title}</div>
-        <div className="text-[11px] text-slate-400 mt-0.5 truncate">{item.comment || item.user.nickname}</div>
+        <div className="text-[11px] text-slate-400 mt-0.5 truncate">
+          {item.comment || item.user.nickname}
+          {typeof item.saveCount === 'number' && (
+            <span className="ml-1.5 inline-flex items-center gap-0.5 font-semibold text-amber-600">
+              <Icon icon="solar:bookmark-bold" width={10} /> {item.saveCount}
+            </span>
+          )}
+        </div>
       </div>
     </Card>
   )

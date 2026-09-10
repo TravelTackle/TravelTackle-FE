@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { CART_CHANGED_EVENT, SPOT_DRAG_TYPE, addCartItem, getCartItems, removeCartItem } from '../api/cart'
 import { CART_TABS, areaName, cartTheme, themeKey } from '../lib/cartThemes'
+import Skeleton from './ui/Skeleton'
 
 function isSpotDrag(e) {
   return e.dataTransfer?.types?.includes(SPOT_DRAG_TYPE)
@@ -201,9 +202,17 @@ export default function FloatingCart() {
                 </Link>
               </div>
             ) : loading && items.length === 0 ? (
-              <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col gap-2.5" role="status" aria-label="담은 장소를 불러오는 중">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-[76px] animate-pulse rounded-2xl border border-slate-100 bg-slate-50" />
+                  <div key={i} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3">
+                    <Skeleton className="h-14 w-14 shrink-0 rounded-xl" style={{ animationDelay: `${i * 120}ms` }} />
+                    <div className="min-w-0 flex-1">
+                      <Skeleton className="h-3.5 w-12 rounded" style={{ animationDelay: `${i * 120 + 40}ms` }} />
+                      <Skeleton className="mt-2 h-3.5 w-3/4" style={{ animationDelay: `${i * 120 + 80}ms` }} />
+                      <Skeleton className="mt-1.5 h-2.5 w-1/3" style={{ animationDelay: `${i * 120 + 120}ms` }} />
+                    </div>
+                    <Skeleton className="h-7 w-7 shrink-0 self-end rounded-lg" style={{ animationDelay: `${i * 120 + 160}ms` }} />
+                  </div>
                 ))}
               </div>
             ) : visibleItems.length === 0 ? (
