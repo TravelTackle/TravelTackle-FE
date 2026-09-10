@@ -38,22 +38,25 @@ const STEPS = [
 const INTERVAL = 4500
 const MIN_SKELETON_MS = 700 // 로그인 확인이 빨라도 이만큼은 스켈레톤을 보여 배너·카드와 같은 리듬으로 열린다
 
-// 슬라이드 CTA — 상단 바 로그인 버튼과 같은 결(그라디언트 알약 + 아이콘 원 + hover 빛 스침)
-function SlideCta({ to, label, icon }) {
+// 슬라이드 CTA — 슬라이드 색을 받은 연한 흰 알약. 3초마다 빛이 스치고 링이 퍼져 눌러보라고 손짓한다
+function SlideCta({ to, label, icon, color }) {
   return (
     <Link
       to={to}
-      className="group relative mt-6 inline-flex w-fit items-center gap-2 overflow-hidden rounded-full bg-gradient-to-b from-brand-mid to-brand py-2 pl-2 pr-5 text-[13px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_2px_6px_rgba(37,99,235,0.25)] transition-all duration-200 hover:-translate-y-px hover:from-brand hover:to-brand-dark hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_8px_18px_rgba(37,99,235,0.3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+      style={{ color, '--cta-ring': `${color}55` }}
+      className="group cta-pulse relative mt-6 inline-flex w-fit items-center gap-2.5 overflow-hidden rounded-full border border-white bg-white/85 py-2 pl-2 pr-5 text-[13.5px] font-bold shadow-card backdrop-blur transition-all duration-200 hover:-translate-y-px hover:bg-white hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
     >
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-full skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-[300%]"
+        className="cta-shine pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white to-transparent opacity-80"
       />
-      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20">
-        <Icon icon={icon} width={13} />
+      <span
+        className="flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-110"
+        style={{ background: `${color}1A` }}
+      >
+        <Icon icon={icon} width={15} />
       </span>
       {label}
-      <Icon icon="solar:arrow-right-linear" width={14} className="transition-transform duration-300 group-hover:translate-x-0.5" />
     </Link>
   )
 }
@@ -166,6 +169,7 @@ export default function HeroSlider() {
                         to={!user && step.cta.guestTo ? step.cta.guestTo : step.cta.to}
                         label={!user && step.cta.guestLabel ? step.cta.guestLabel : step.cta.label}
                         icon={step.icon}
+                        color={step.color}
                       />
                     </div>
                   )}

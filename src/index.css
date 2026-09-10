@@ -127,6 +127,22 @@ body {
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* 히어로 CTA — 3초마다 빛이 한 번 스치고 링이 퍼져 눌러보라고 손짓한다 */
+@keyframes cta-shine {
+  0% { transform: translateX(-150%) skewX(-20deg); }
+  30%, 100% { transform: translateX(350%) skewX(-20deg); }
+}
+.cta-shine {
+  animation: cta-shine 3s cubic-bezier(0.4, 0, 0.2, 1) 1.2s infinite;
+}
+@keyframes cta-pulse {
+  0% { box-shadow: 0 0 0 0 var(--cta-ring, rgba(37, 99, 235, 0.35)); }
+  40%, 100% { box-shadow: 0 0 0 14px rgba(37, 99, 235, 0); }
+}
+.cta-pulse {
+  animation: cta-pulse 3s ease-out 1.2s infinite;
+}
+
 /* 홈 히어로 슬라이드·카드 페이지 전환 — 이미 보이는 위치에서 살짝 올라오며 나타남 */
 @keyframes slide-in {
   from { opacity: 0; transform: translateY(10px); }
