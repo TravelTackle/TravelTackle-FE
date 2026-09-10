@@ -69,6 +69,7 @@ function feedToCard(item) {
       meta,
       imageUrl: firstDay.find((p) => p.imageUrl)?.imageUrl ?? null,
       feedbackCount: item.feedbackCount ?? 0,
+      likeCount: item.likeCount,
       to: `/feed?open=${encodeURIComponent(item.id)}&filter=plan`,
     }
   }
@@ -80,6 +81,7 @@ function feedToCard(item) {
     meta,
     imageUrl: item.imageUrl ?? null,
     feedbackCount: item.feedbackCount ?? 0,
+    likeCount: item.likeCount,
     to: `/feed?open=${encodeURIComponent(item.id)}&filter=record`,
   }
 }
@@ -145,6 +147,11 @@ function RankRow({ card, rank, index, personal }) {
           <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 font-bold tabular-nums ${stat.className}`}>
             <Icon icon={stat.icon} width={10} /> {stat.label}
           </span>
+          {typeof card.likeCount === 'number' && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-pink-50 px-1.5 py-0.5 font-bold tabular-nums text-pink-500">
+              <Icon icon="solar:heart-bold" width={10} /> {card.likeCount}
+            </span>
+          )}
         </span>
       </span>
       <Icon
