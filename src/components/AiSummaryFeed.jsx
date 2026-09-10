@@ -12,6 +12,11 @@ import { getRecommendedRecords, getRecommendedTrips } from '../api/feed'
 const PAGE_SIZE = 6
 const MIN_SPIN_MS = 1200
 
+// "요약 중" 연출은 세션에서 처음 홈을 열 때만. 다른 페이지를 다녀오면 바로 결과를 보여준다
+let revealedOnce = false
+// 추천 응답 캐시 (사용자 id → { trips, records })
+const recCache = new Map()
+
 // 뱃지 스타일: 여행 계획 / 여행 피드백 / 여행 기록
 const KIND = {
   plan: { label: '여행 계획', className: 'bg-brand-light text-brand' },
@@ -254,31 +259,44 @@ export default function AiSummaryFeed({ feed }) {
   const [mode, setMode] = useState('popular')
   const touchStartX = useRef(null)
 
-  // 배지는 피드 로딩이 끝나도 최소 MIN_SPIN_MS 동안은 "요약 중"으로 두어 회전이 보이게 한다
-  const [minSpinOver, setMinSpinOver] = useState(false)
+  // 배지는 피드 로딩이 끝나도 최소 MIN_SPIN_MS 동안은 "요약 중"으로 두어 회전이 보이게 한다 — 첫 방문에만
+  const [minSpinOver, setMinSpinOver] = useState(revealedOnce)
   useEffect(() => {
-    const id = setTimeout(() => setMinSpinOver(true), MIN_SPIN_MS)
+    if (revealedOnce) return undefined
+    const id = setTimeout(() => {
+      revealedOnce = true
+      setMinSpinOver(true)
+    }, MIN_SPIN_MS)
     return () => clearTimeout(id)
   }, [])
 
-  // 로그인 사용자의 취향 추천 (계획 + 기록). 응답을 기다리는 동안도 "요약 중"으로 둔다
-  const [rec, setRec] = useState({ trips: [], records: [], loading: false })
+  // 로그인 사용자의 취향 추천 (계획 + 기록). 응답을 기다리는 동안도 "요약 중"으로 둔다. 재방문이면 캐시부터
+  const userKey = user?.id ?? user?.email ?? null
+  const [rec, setRec] = useState(() => {
+    const hit = userKey && recCache.get(userKey)
+    return hit ? { ...hit, loading: false } : { trips: [], records: [], loading: false }
+  })
   useEffect(() => {
-    if (!user) {
+    if (!userKey) {
       setRec({ trips: [], records: [], loading: false })
       return undefined
     }
     let ignore = false
-    setRec((r) => ({ ...r, loading: true }))
+    const hit = recCache.get(userKey)
+    if (hit) setRec({ ...hit, loading: false })
+    else setRec((r) => ({ ...r, loading: true }))
     Promise.all([getRecommendedTrips(30).catch(() => []), getRecommendedRecords(30).catch(() => [])]).then(
       ([trips, records]) => {
-        if (!ignore) setRec({ trips: Array.isArray(trips) ? trips : [], records: Array.isArray(records) ? records : [], loading: false })
+        if (ignore) return
+        const next = { trips: Array.isArray(trips) ? trips : [], records: Array.isArray(records) ? records : [] }
+        recCache.set(userKey, next)
+        setRec({ ...next, loading: false })
       },
     )
     return () => {
       ignore = true
     }
-  }, [user])
+  }, [userKey])
 
   // 맞춤 추천이 실제로 하나라도 잡혔을 때만 맞춤 모드를 연다 (비회원·취향 미등록·매칭 0건이면 인기만)
   const personalized = Boolean(user) && rec.trips.length + rec.records.length > 0

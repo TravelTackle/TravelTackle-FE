@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { Link } from 'react-router-dom'
 import Section from './ui/Section'
@@ -43,6 +43,9 @@ const FALLBACK_SPOTS = [
   { contentId: 'f8', title: '경복궁', address: '서울 종로구' },
   { contentId: 'f9', title: '전주 은행로', address: '전북 전주시' },
 ]
+
+// 캐시 키 → { items, title } — 탭·페이지를 오가도 같은 지역을 다시 부르지 않는다 (세션 유지)
+const spotCache = new Map()
 
 function regionKey(region) {
   return `${region.areaCode ?? ''}-${region.sigunguCode ?? ''}`
@@ -167,7 +170,6 @@ export default function ExploreSection({ feed }) {
   const [tab, setTab] = useState('spot')
   const [region, setRegion] = useState(REGIONS[0])
   const [spots, setSpots] = useState({ items: [], loading: true, error: false, title: null })
-  const cache = useRef({}) // 캐시 키 → { items, title } (탭을 오가도 다시 부르지 않게)
 
   const activeTab = TABS.find((t) => t.key === tab)
   const personalized = Boolean(user) && !region.areaCode
@@ -176,8 +178,8 @@ export default function ExploreSection({ feed }) {
     // 로그인 여부가 정해진 뒤에 한 번만 부른다 (비로그인 목록 → 추천 순으로 두 번 부르지 않게)
     if (tab !== 'spot' || authLoading) return undefined
     const key = personalized ? `personal:${user.id ?? user.email ?? 'me'}` : regionKey(region)
-    if (cache.current[key]) {
-      setSpots({ ...cache.current[key], loading: false, error: false })
+    if (spotCache.has(key)) {
+      setSpots({ ...spotCache.get(key), loading: false, error: false })
       return undefined
     }
     let ignore = false
@@ -204,7 +206,7 @@ export default function ExploreSection({ feed }) {
     request
       .then((result) => {
         if (ignore) return
-        cache.current[key] = result
+        spotCache.set(key, result)
         setSpots({ ...result, loading: false, error: false })
       })
       .catch(() => {

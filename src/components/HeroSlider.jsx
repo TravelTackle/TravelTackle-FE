@@ -36,7 +36,14 @@ const STEPS = [
 ]
 
 const INTERVAL = 4500
+// 무한 루프용 트랙: 앞뒤에 복제 한 장씩
+const TRACK = [
+  { step: STEPS[STEPS.length - 1], clone: true },
+  ...STEPS.map((step) => ({ step, clone: false })),
+  { step: STEPS[0], clone: true },
+]
 const MIN_SKELETON_MS = 700 // 로그인 확인이 빨라도 이만큼은 스켈레톤을 보여 배너·카드와 같은 리듬으로 열린다
+let revealedOnce = false // 세션에서 처음 홈을 열 때만 연출, 다시 돌아오면 바로 보인다
 
 // 슬라이드 CTA — 슬라이드 색을 받은 연한 흰 알약. 3초마다 빛이 스치고 링이 퍼져 눌러보라고 손짓한다
 function SlideCta({ to, label, icon, color }) {
@@ -95,24 +102,58 @@ function SideCard({ step, onClick, label }) {
 
 export default function HeroSlider() {
   const { user, loading: authLoading } = useAuth()
-  const [idx, setIdx] = useState(0)
+  // 트랙은 [3번 복제, 1, 2, 3, 1번 복제] 순. pos는 트랙 위치(1..total이 진짜), idx는 표시용 단계 번호.
+  // 3 → 1로 넘어갈 때도 복제 슬라이드로 앞으로 밀린 뒤, 전환 없이 진짜 1번으로 되돌린다.
+  const [pos, setPos] = useState(1)
+  const [animated, setAnimated] = useState(true)
   const [playing, setPlaying] = useState(true)
   const [hovering, setHovering] = useState(false)
-  const [minSkeletonOver, setMinSkeletonOver] = useState(false)
+  const [minSkeletonOver, setMinSkeletonOver] = useState(revealedOnce)
   useEffect(() => {
-    const id = setTimeout(() => setMinSkeletonOver(true), MIN_SKELETON_MS)
+    if (revealedOnce) return undefined
+    const id = setTimeout(() => {
+      revealedOnce = true
+      setMinSkeletonOver(true)
+    }, MIN_SKELETON_MS)
     return () => clearTimeout(id)
   }, [])
   const pending = authLoading || !minSkeletonOver
   const total = STEPS.length
-  const go = (distance) => setIdx((current) => (current + distance + total) % total)
+  const idx = (pos - 1 + total) % total
+  const go = (distance) => {
+    setAnimated(true)
+    setPos((current) => Math.min(Math.max(current + distance, 0), total + 1))
+  }
+  const jumpTo = (index) => {
+    setAnimated(true)
+    setPos(index + 1)
+  }
+
+  // 복제 슬라이드에 도착하면 같은 그림의 진짜 슬라이드로 소리 없이 되돌린다
+  const handleTrackTransitionEnd = (e) => {
+    if (e.target !== e.currentTarget || e.propertyName !== 'transform') return
+    if (pos === total + 1) {
+      setAnimated(false)
+      setPos(1)
+    } else if (pos === 0) {
+      setAnimated(false)
+      setPos(total)
+    }
+  }
+  // 전환을 껐다가 다음 프레임에 다시 켠다 (되돌리는 순간이 보이지 않게)
+  useEffect(() => {
+    if (animated) return undefined
+    const id = requestAnimationFrame(() => setAnimated(true))
+    return () => cancelAnimationFrame(id)
+  }, [animated])
 
   // 마우스를 올려 읽는 동안에는 자동 넘김을 멈춘다
   useEffect(() => {
     if (!playing || hovering || pending) return undefined
-    const id = setInterval(() => setIdx((current) => (current + 1) % total), INTERVAL)
+    const id = setInterval(() => go(1), INTERVAL)
     return () => clearInterval(id)
-  }, [playing, hovering, pending, total])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, hovering, pending])
 
   const prevIdx = (idx - 1 + total) % total
   const nextIdx = (idx + 1) % total
@@ -130,7 +171,7 @@ export default function HeroSlider() {
           onMouseEnter={() => setHovering(true)}
           onMouseLeave={() => setHovering(false)}
         >
-          <SideCard step={STEPS[prevIdx]} onClick={() => setIdx(prevIdx)} label="이전 단계" />
+          <SideCard step={STEPS[prevIdx]} onClick={() => go(-1)} label="이전 단계" />
 
           <div
             className="relative w-full max-w-[760px] h-[320px] sm:h-[340px] rounded-[22px] border border-slate-100 shadow-[0_18px_45px_rgba(15,23,42,0.09)] overflow-hidden"
@@ -139,16 +180,17 @@ export default function HeroSlider() {
           >
             {/* 슬라이드 세 장을 한 줄로 두고 트랙을 옆으로 밀어서 넘긴다 */}
             <div
-              className="flex h-full transition-transform duration-600 ease-[cubic-bezier(0.16,1,0.3,1)]"
-              style={{ transform: `translateX(-${idx * 100}%)` }}
+              className={`flex h-full ease-[cubic-bezier(0.16,1,0.3,1)] ${animated ? 'transition-transform duration-600' : 'transition-none'}`}
+              style={{ transform: `translateX(-${pos * 100}%)` }}
+              onTransitionEnd={handleTrackTransitionEnd}
             >
-              {STEPS.map((step, i) => (
+              {TRACK.map(({ step, clone }, i) => (
                 <div
-                  key={step.tag}
+                  key={`${step.tag}-${i}`}
                   className="relative h-full w-full shrink-0 overflow-hidden"
                   style={{ background: step.bg }}
-                  aria-hidden={i !== idx}
-                  inert={i !== idx}
+                  aria-hidden={i !== pos || clone}
+                  inert={i !== pos || clone}
                 >
                   {/* 빈 오른쪽을 채우는 단계 아이콘 워터마크 */}
                   <div aria-hidden="true" className="absolute -right-10 -bottom-12 hidden sm:block" style={{ opacity: 0.09 }}>
@@ -207,14 +249,14 @@ export default function HeroSlider() {
             </div>
           </div>
 
-          <SideCard step={STEPS[nextIdx]} onClick={() => setIdx(nextIdx)} label="다음 단계" />
+          <SideCard step={STEPS[nextIdx]} onClick={() => go(1)} label="다음 단계" />
         </div>
 
         <div className="mt-5 flex justify-center gap-1.5">
           {STEPS.map((step, index) => (
             <button
               key={step.tag}
-              onClick={() => setIdx(index)}
+              onClick={() => jumpTo(index)}
               className={`h-1.5 rounded-full transition-all ${index === idx ? 'w-5 bg-brand' : 'w-1.5 bg-slate-300 hover:bg-slate-400'}`}
               aria-label={`${index + 1}단계로 이동`}
               aria-current={index === idx}
