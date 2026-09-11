@@ -26,6 +26,8 @@ export default function TourExplorePage() {
   const [sigungu, setSigungu] = useState(null)
   const [period, setPeriod] = useState(initialPeriod)
   const isFestival = theme?.kind === 'festival'
+  const [searchInput, setSearchInput] = useState('')
+  const [searchKeyword, setSearchKeyword] = useState('')
   const [spots, setSpots] = useState([])
   const [page, setPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
@@ -49,7 +51,7 @@ export default function TourExplorePage() {
         })
       : getTourContents({
           contentTypeId: theme?.contentTypeId,
-          keyword: theme?.keyword,
+          keyword: searchKeyword || theme?.keyword,
           areaCode: region?.code,
           sigunguCode: sigungu?.code,
           page: pageNum,
@@ -66,7 +68,7 @@ export default function TourExplorePage() {
         if (!append) setSpots([])
       })
       .finally(() => setBusy(false))
-  }, [theme, region, sigungu, isFestival, period.start, period.end])
+  }, [theme, region, sigungu, searchKeyword, isFestival, period.start, period.end])
 
   // 프리셋을 고르면 날짜를 여기서 계산하고, 직접 고른 날짜는 그대로 받는다
   function handlePeriodChange(next) {
@@ -76,6 +78,12 @@ export default function TourExplorePage() {
   useEffect(() => {
     fetchPage(1, { append: false })
   }, [fetchPage])
+
+  // 입력을 멈춘 뒤에만 검색 — 외부 TourAPI를 거치는 호출이라 타이핑마다 바로 쏘지 않는다.
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchKeyword(searchInput.trim()), 400)
+    return () => clearTimeout(timer)
+  }, [searchInput])
 
   function handleLoadMore() {
     if (loadingMore) return
@@ -119,6 +127,13 @@ export default function TourExplorePage() {
           theme={theme}
           region={region}
           sigungu={sigungu}
+          searchValue={searchInput}
+          onSearchChange={setSearchInput}
+          onSearchSubmit={() => setSearchKeyword(searchInput.trim())}
+          onSearchClear={() => {
+            setSearchInput('')
+            setSearchKeyword('')
+          }}
           onSelectAll={() => {
             setTheme(null)
             setRegion(null)

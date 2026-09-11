@@ -105,8 +105,9 @@ export default function DayColumn({
     >
       <button
         type="button"
+        data-day-drag-handle
         onClick={onSelect}
-        className={`rounded-xl px-3 py-2 text-left transition-colors ${selected ? 'bg-brand-light' : 'hover:bg-slate-50'}`}
+        className={`cursor-grab select-none rounded-xl px-3 py-2 text-left transition-colors active:cursor-grabbing ${selected ? 'bg-brand-light' : 'hover:bg-slate-50'}`}
       >
         <p className={`text-[11px] font-bold ${selected ? 'text-brand' : 'text-slate-400'}`}>Day {day.dayNumber}</p>
         <p className={`text-[20px] font-extrabold ${selected ? 'text-brand' : 'text-slate-600'}`}>
