@@ -23,6 +23,10 @@ export default function FloatingCart() {
   const [dragOver, setDragOver] = useState(false)
   const [justAddedId, setJustAddedId] = useState(null)
   const [tab, setTab] = useState('all')
+  const [query, setQuery] = useState('')
+  const tabsRef = useRef(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
   const [notice, setNotice] = useState('')
   const noticeTimer = useRef(null)
   const highlightTimer = useRef(null)
@@ -82,6 +86,58 @@ export default function FloatingCart() {
     },
     [],
   )
+
+  // 칩 줄 넘기기 — 나의 여행 사이드바(TripCartPanel)와 같은 동작
+  function scrollTabs(direction) {
+    const el = tabsRef.current
+    if (!el) return
+    const overlap = 40
+    const maxScroll = el.scrollWidth - el.clientWidth
+    const remaining = direction > 0 ? maxScroll - el.scrollLeft : el.scrollLeft
+    const target =
+      remaining <= el.clientWidth
+        ? direction > 0
+          ? maxScroll
+          : 0
+        : el.scrollLeft + direction * (el.clientWidth - overlap)
+    el.scrollTo({ left: target, behavior: 'smooth' })
+  }
+
+  const updateScrollButtons = useCallback(() => {
+    const el = tabsRef.current
+    if (!el) return
+    setCanScrollLeft(el.scrollLeft > 4)
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
+  }, [])
+
+  useEffect(() => {
+    updateScrollButtons()
+    const el = tabsRef.current
+    if (!el) return undefined
+    let timer
+    function onScroll() {
+      clearTimeout(timer)
+      timer = setTimeout(updateScrollButtons, 150)
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', updateScrollButtons)
+    return () => {
+      clearTimeout(timer)
+      el.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', updateScrollButtons)
+    }
+  }, [updateScrollButtons, open, user])
+
+  useEffect(() => {
+    const el = tabsRef.current
+    if (!el) return
+    const maxScroll = el.scrollWidth - el.clientWidth
+    if (canScrollRight === false && el.scrollLeft < maxScroll - 1) {
+      el.scrollTo({ left: maxScroll, behavior: 'instant' })
+    } else if (canScrollLeft === false && el.scrollLeft > 1) {
+      el.scrollTo({ left: 0, behavior: 'instant' })
+    }
+  }, [canScrollLeft, canScrollRight])
 
   function showNotice(message) {
     setNotice(message)
@@ -153,13 +209,10 @@ export default function FloatingCart() {
     onDrop: handleDrop,
   }
 
-  const visibleItems = tab === 'all' ? items : items.filter((i) => themeKey(i.contentTypeId) === tab)
-  // 테마별 담은 개수 — 칩에 숫자로 보여주고, 하나도 없는 테마 칩은 접어 둔다
-  const countByTab = CART_TABS.reduce((acc, t) => {
-    acc[t.key] = t.key === 'all' ? items.length : items.filter((i) => themeKey(i.contentTypeId) === t.key).length
-    return acc
-  }, {})
-  const visibleTabs = CART_TABS.filter((t) => t.key === 'all' || countByTab[t.key] > 0 || t.key === tab)
+  const q = query.trim().toLowerCase()
+  const visibleItems = items
+    .filter((i) => tab === 'all' || themeKey(i.contentTypeId) === tab)
+    .filter((i) => !q || i.title?.toLowerCase().includes(q) || areaName(i.areaCode).toLowerCase().includes(q))
 
   return (
     // 루트는 pointer-events-none — 닫힌 패널의 투명 영역이 클릭을 가로채지 않게
@@ -184,61 +237,91 @@ export default function FloatingCart() {
 
         <div
           {...dropZoneProps}
-          className="relative flex h-[min(620px,calc(100vh-200px))] w-[340px] flex-col overflow-hidden rounded-[28px] bg-white shadow-popup ring-1 ring-black/5"
+          className="relative flex h-[min(620px,calc(100vh-200px))] w-[340px] flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-popup"
         >
-          {/* 헤더 */}
-          <div className="flex shrink-0 items-center gap-2.5 border-b border-slate-100 px-4 pb-3 pt-4">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-light text-brand">
-              <Icon icon="solar:cart-large-2-bold" width={18} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <h2 className="text-[14px] font-extrabold leading-tight text-slate-900">여행 장바구니</h2>
-                {user && items.length > 0 && (
-                  <span className="rounded-full bg-brand px-1.5 py-px text-[10.5px] font-bold tabular-nums text-white">{items.length}</span>
-                )}
-              </div>
-              <p className="mt-0.5 truncate text-[11.5px] text-slate-400">
-                {user ? '담은 장소를 끌어서 일정에 넣을 수 있어요' : '마음에 드는 장소를 모아 두는 곳'}
-              </p>
+          {/* 헤더 · 검색 · 칩 — 나의 여행 사이드바(TripCartPanel)와 같은 디자인 */}
+          <div className="flex items-center justify-between px-4 pt-4">
+            <h2 className="text-[14px] font-bold text-slate-800">여행 장바구니</h2>
+            <div className="flex items-center gap-2">
+              {user && <span className="rounded-full bg-brand-light px-2 py-0.5 text-[11px] font-bold text-brand">{items.length}개</span>}
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="장바구니 닫기"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark"
+              >
+                <Icon icon="solar:close-circle-bold" width={18} />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
-              aria-label="장바구니 닫기"
-            >
-              <Icon icon="solar:close-circle-linear" width={18} />
-            </button>
           </div>
 
-          {/* 테마 칩 — 담긴 개수와 함께, 가로로 넘김 */}
-          {/* 테마 칩 — 칩이 많아지면 옆으로 잘리지 않게 줄바꿈 */}
-          {user && items.length > 0 && (
-            <div className="flex shrink-0 flex-wrap gap-1.5 border-b border-slate-100 px-3 py-2.5" role="tablist" aria-label="테마별 보기">
-              {visibleTabs.map((t) => {
-                const active = tab === t.key
-                return (
-                  <button
-                    key={t.key}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => setTab(t.key)}
-                    className={`flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1.5 text-[12px] font-bold transition-all ${
-                      active ? 'border-brand bg-brand text-white shadow-[0_4px_12px_rgba(37,99,235,0.25)]' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-800'
-                    }`}
-                  >
-                    {t.icon && <Icon icon={t.icon} width={12} />}
-                    {t.label}
-                    <span className={`tabular-nums ${active ? 'text-white/80' : 'text-slate-400'}`}>{countByTab[t.key]}</span>
-                  </button>
-                )
-              })}
-            </div>
+          {user && (
+            <>
+              <div className="px-4 pt-3">
+                <div className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5">
+                  <Icon icon="solar:magnifer-linear" width={14} className="text-slate-300" />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="여행지 이름 또는 지역"
+                    className="h-full w-full text-[12.5px] text-slate-700 outline-none placeholder:text-slate-300"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => scrollTabs(-1)}
+                  aria-label="이전 필터"
+                  tabIndex={canScrollLeft ? 0 : -1}
+                  className={`flex h-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-white text-brand shadow-card transition-all duration-300 hover:border-brand hover:bg-brand-light ${
+                    canScrollLeft ? 'mr-1 w-6 border-slate-200 opacity-100' : 'w-0 border-transparent opacity-0'
+                  }`}
+                >
+                  <Icon icon="mdi:chevron-left" width={16} className="shrink-0" />
+                </button>
+                <div
+                  ref={tabsRef}
+                  className="scrollbar-hide flex flex-1 gap-1.5 overflow-x-auto"
+                  style={{
+                    maskImage: `linear-gradient(to right, ${canScrollLeft ? 'transparent, black 12px' : 'black'}, ${
+                      canScrollRight ? 'black calc(100% - 12px), transparent' : 'black'
+                    })`,
+                    WebkitMaskImage: `linear-gradient(to right, ${canScrollLeft ? 'transparent, black 12px' : 'black'}, ${
+                      canScrollRight ? 'black calc(100% - 12px), transparent' : 'black'
+                    })`,
+                  }}
+                >
+                  {CART_TABS.map((t) => (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => setTab(t.key)}
+                      className={`shrink-0 rounded-full border px-2.5 py-1 text-[11.5px] font-bold transition-colors ${
+                        tab === t.key ? 'border-brand bg-brand text-white' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => scrollTabs(1)}
+                  aria-label="다음 필터"
+                  tabIndex={canScrollRight ? 0 : -1}
+                  className={`flex h-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-white text-brand shadow-card transition-all duration-300 hover:border-brand hover:bg-brand-light ${
+                    canScrollRight ? 'ml-1 w-6 border-slate-200 opacity-100' : 'w-0 border-transparent opacity-0'
+                  }`}
+                >
+                  <Icon icon="mdi:chevron-right" width={16} className="shrink-0" />
+                </button>
+              </div>
+            </>
           )}
 
-          <div className="flex-1 overflow-y-auto p-3">
+          <div className="flex-1 overflow-y-auto px-4 pb-4">
             {!user ? (
               <div className="flex h-full flex-col items-center justify-center px-4 text-center">
                 <span className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-50 text-slate-300">
@@ -279,7 +362,7 @@ export default function FloatingCart() {
                     : `담아둔 ${CART_TABS.find((t) => t.key === tab)?.label} 장소가 없어요`}
                 </p>
                 <p className="mt-1 text-[12px] leading-relaxed text-slate-400">
-                  {items.length === 0 ? '여행지 탐색에서 카드를 끌어다 놓거나 담기를 눌러보세요.' : '다른 테마를 골라보세요.'}
+                  {items.length === 0 ? '여행지 탐색에서 카드를 끌어다 놓거나 담기를 눌러보세요.' : q ? '검색어를 바꿔보세요.' : '다른 테마를 골라보세요.'}
                 </p>
                 {items.length === 0 && (
                   <Link
@@ -292,48 +375,39 @@ export default function FloatingCart() {
                 )}
               </div>
             ) : (
-              <ul className="flex flex-col gap-2">
-                {visibleItems.map((item, i) => {
-                  const theme = cartTheme(item.contentTypeId)
-                  return (
-                    <li
-                      key={item.id}
-                      draggable
-                      onDragStart={(e) => e.dataTransfer.setData('application/json', JSON.stringify(item))}
-                      className={`group animate-slide-in flex cursor-grab items-center gap-3 rounded-2xl border p-2.5 transition-all duration-300 hover:-translate-y-px hover:shadow-card-hover active:cursor-grabbing ${
-                        item.contentId === justAddedId ? 'border-brand/40 bg-brand-light' : 'border-slate-100 bg-white shadow-card'
-                      }`}
-                      style={{ animationDelay: `${Math.min(i, 6) * 50}ms` }}
-                    >
-                      <span className="hidden shrink-0 text-slate-300 group-hover:text-slate-400 sm:block" aria-hidden="true">
-                        <Icon icon="solar:menu-dots-bold" width={16} className="rotate-90" />
+              <ul className="flex flex-col gap-2.5">
+                {visibleItems.map((item) => (
+                  <li
+                    key={item.id}
+                    draggable
+                    onDragStart={(e) => e.dataTransfer.setData('application/json', JSON.stringify(item))}
+                    className={`flex cursor-grab items-center gap-3 rounded-xl border p-2.5 shadow-card transition-colors duration-700 active:cursor-grabbing ${
+                      item.contentId === justAddedId ? 'border-brand/40 bg-brand-light' : 'border-slate-100 bg-white'
+                    }`}
+                  >
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt="" className="h-12 w-12 shrink-0 rounded-lg bg-slate-100 object-cover" />
+                    ) : (
+                      <div className="h-12 w-12 shrink-0 rounded-lg bg-slate-100" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <span className="inline-flex items-center gap-1 rounded border border-slate-200 px-1.5 py-px text-[10px] font-semibold text-slate-400">
+                        <Icon icon={cartTheme(item.contentTypeId).icon} width={10} />
+                        {cartTheme(item.contentTypeId).label}
                       </span>
-                      {item.imageUrl ? (
-                        <img src={item.imageUrl} alt="" className="h-14 w-14 shrink-0 rounded-xl bg-slate-100 object-cover" />
-                      ) : (
-                        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-300">
-                          <Icon icon={theme.icon} width={20} />
-                        </span>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-slate-500">
-                          <span className={`h-1.5 w-1.5 rounded-full ${theme.badgeBg}`} aria-hidden="true" />
-                          {theme.label}
-                        </span>
-                        <p className="mt-0.5 truncate text-[13px] font-bold text-slate-800">{item.title}</p>
-                        <p className="mt-0.5 truncate text-[11px] text-slate-400">{areaName(item.areaCode)}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemove(item)}
-                        aria-label={`${item.title} 빼기`}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-300 transition-colors hover:bg-rose-50 hover:text-rose-500"
-                      >
-                        <Icon icon="solar:trash-bin-minimalistic-linear" width={15} />
-                      </button>
-                    </li>
-                  )
-                })}
+                      <p className="mt-0.5 truncate text-[12.5px] font-bold text-slate-800">{item.title}</p>
+                      <p className="text-[11px] text-slate-400">{areaName(item.areaCode)}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(item)}
+                      aria-label={`${item.title} 빼기`}
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-100"
+                    >
+                      <Icon icon="solar:trash-bin-minimalistic-linear" width={13} />
+                    </button>
+                  </li>
+                ))}
               </ul>
             )}
           </div>
