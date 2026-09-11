@@ -57,6 +57,8 @@ export default function TripPlannerPage() {
   const [loadingTrips, setLoadingTrips] = useState(true)
   const [activeTripId, setActiveTripId] = useState(null)
   const [activeTrip, setActiveTrip] = useState(null)
+  const [detailError, setDetailError] = useState(false)
+  const [detailReloadKey, setDetailReloadKey] = useState(0)
   const [selectedDayId, setSelectedDayId] = useState(null)
   const [cartOpen, setCartOpen] = useState(true)
   const [cartMounted, setCartMounted] = useState(true)
@@ -94,19 +96,26 @@ export default function TripPlannerPage() {
   }, [activeTripId])
 
   // 활성 계획이 바뀔 때마다 Day/일정까지 포함된 상세를 새로 받아온다.
+  // 실패하면(네트워크 오류 등) 무한 로딩으로 멈추는 대신 에러 상태를 보여주고 재시도할 수 있게 한다.
   useEffect(() => {
     if (!activeTripId) {
       setActiveTrip(null)
+      setDetailError(false)
       return
     }
     let cancelled = false
-    getTripDetail(activeTripId).then((detail) => {
-      if (!cancelled) setActiveTrip(detail)
-    })
+    setDetailError(false)
+    getTripDetail(activeTripId)
+      .then((detail) => {
+        if (!cancelled) setActiveTrip(detail)
+      })
+      .catch(() => {
+        if (!cancelled) setDetailError(true)
+      })
     return () => {
       cancelled = true
     }
-  }, [activeTripId])
+  }, [activeTripId, detailReloadKey])
 
   useEffect(() => {
     if (activeTrip && !activeTrip.days.some((d) => d.id === selectedDayId)) {
@@ -418,7 +427,7 @@ export default function TripPlannerPage() {
   }
 
   const showEmpty = !loadingTrips && tripSummaries.length === 0
-  const showDetailLoading = activeTripId && !activeTrip
+  const showDetailLoading = activeTripId && !activeTrip && !detailError
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-slate-900">
@@ -444,6 +453,20 @@ export default function TripPlannerPage() {
             />
           </div>
         </div>
+      ) : detailError ? (
+        <Section as="main" className="flex flex-col gap-5 pb-5">
+          <div className="flex flex-col items-center gap-3 py-24 text-center">
+            <Icon icon="solar:danger-triangle-bold" width={26} className="text-rose-300" />
+            <p className="text-[13px] text-slate-400">계획을 불러오지 못했어요.</p>
+            <button
+              type="button"
+              onClick={() => setDetailReloadKey((k) => k + 1)}
+              className="rounded-full bg-brand-light px-4 py-1.5 text-[12.5px] font-bold text-brand hover:bg-brand-light/70"
+            >
+              다시 시도
+            </button>
+          </div>
+        </Section>
       ) : (
         !showDetailLoading && (
           <Section as="main" className="flex flex-col gap-5 pb-5">

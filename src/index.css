@@ -16,6 +16,10 @@
   --shadow-popup: 0 30px 70px rgba(15, 23, 42, 0.28);
   --shadow-float: 0 12px 30px rgba(37, 99, 235, 0.4);
   --shadow-float-hover: 0 18px 40px rgba(37, 99, 235, 0.5);
+
+  /* 작은 아이콘 버튼(계획 전환, 지도 Day 화살표/리셋 등) 공용 그림자 */
+  --shadow-icon-btn: 1.5px 1.5px 5px rgba(15, 23, 42, 0.2);
+  --shadow-icon-btn-hover: 1.5px 1.5px 7px rgba(15, 23, 42, 0.32);
 }
 
 * {

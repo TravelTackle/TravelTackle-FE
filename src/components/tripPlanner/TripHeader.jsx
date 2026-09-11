@@ -134,7 +134,7 @@ export default function TripHeader({
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen((v) => !v)}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-[1.5px_1.5px_5px_rgba(15,23,42,0.28)] hover:shadow-[1.5px_1.5px_7px_rgba(15,23,42,0.34)]"
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-icon-btn hover:shadow-icon-btn-hover"
             aria-label="계획 전환"
             aria-expanded={menuOpen}
           >
