@@ -39,12 +39,12 @@ const INTERVAL = 4500
 // 제목 — 키워드 셋은 각 단계에 묶인다 (step: 슬라이드 인덱스)
 const HEADLINE = [
   { text: '계획', step: 0 },
-  { text: '하고,' },
+  { text: '하고,', suffix: true }, // 키워드에 붙는 어미 — 한 단어로 읽히게 간격을 당긴다
   { text: '참견', step: 1 },
-  { text: '받고,' },
+  { text: '받고,', suffix: true },
   { text: '여행을' },
   { text: '완성', step: 2 },
-  { text: '하세요' },
+  { text: '하세요', suffix: true },
 ]
 // 무한 루프용 트랙: 앞뒤에 복제 한 장씩
 const TRACK = [
@@ -186,7 +186,12 @@ export default function HeroSlider() {
           >
             {HEADLINE.map((part, i) =>
               part.step == null ? (
-                <span key={i} className="ai-word" style={{ animationDelay: `${i * 80}ms` }} aria-hidden="true">
+                <span
+                  key={i}
+                  className={`ai-word ${part.suffix ? '-ml-[0.16em]' : ''}`}
+                  style={{ animationDelay: `${i * 80}ms` }}
+                  aria-hidden="true"
+                >
                   {part.text}
                 </span>
               ) : (
