@@ -113,7 +113,8 @@ export default function TourExplorePage() {
     <div className="bg-white text-slate-900">
       <Navbar />
 
-      <Section as="main" className="flex flex-col gap-6 py-8 md:flex-row">
+      {/* 사이드바 왼쪽 끝은 탑바 로고, 카드 오른쪽 끝은 프로필 알약과 같은 선에 오도록 탑바 컨테이너(1200px, px-4 sm:px-6)와 폭을 맞춘다 */}
+      <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-col gap-6 py-8 md:flex-row">
         <ExploreSidebar
           theme={theme}
           region={region}
