@@ -6,7 +6,8 @@ export const THEMES = [
   { label: '쇼핑', icon: 'mdi:shopping-outline', contentTypeId: '38' },
   { label: '맛집', icon: 'mdi:silverware-fork-knife', contentTypeId: '39' },
   { label: '카페', icon: 'mdi:coffee-outline', contentTypeId: '39', keyword: '카페' },
-  { label: '축제 / 행사', icon: 'mdi:party-popper', contentTypeId: '15' },
+  // kind: 'festival' — 일반 콘텐츠 목록 대신 기간 조회 API(/tour/festivals)로 동작하는 테마
+  { label: '축제 / 행사', icon: 'mdi:party-popper', contentTypeId: '15', kind: 'festival' },
   { label: '숙박', icon: 'mdi:bed', contentTypeId: '32' },
 ]
 
@@ -44,4 +45,14 @@ export function sortAreasByPopularity(areas) {
     const rankB = AREA_POPULARITY_ORDER.indexOf(b.code)
     return (rankA === -1 ? AREA_POPULARITY_ORDER.length : rankA) - (rankB === -1 ? AREA_POPULARITY_ORDER.length : rankB)
   })
+}
+
+// TourAPI 지역코드(areaCode) → 법정동 시/도 코드(lDongRegnCd). 축제 API는 후자만 받는다.
+const AREA_TO_LDONG = {
+  1: '11', 2: '28', 3: '30', 4: '27', 5: '29', 6: '26', 7: '31', 8: '36',
+  31: '41', 32: '51', 33: '43', 34: '44', 35: '47', 36: '48', 37: '52', 38: '46', 39: '50',
+}
+
+export function toLDongRegnCd(areaCode) {
+  return areaCode ? AREA_TO_LDONG[String(areaCode)] : undefined
 }

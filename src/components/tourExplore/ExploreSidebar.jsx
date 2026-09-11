@@ -79,7 +79,7 @@ function SigunguPicker({ region, sigungu, onSelectSigungu }) {
         ref={triggerRef}
         onMouseDown={(e) => e.preventDefault()}
         onClick={toggleOpen}
-        className="flex w-full items-center justify-between gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] text-slate-600 hover:border-brand/40 transition-colors"
+        className="flex w-full items-center justify-between gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11.5px] text-slate-600 hover:border-brand/40 transition-colors"
       >
         <span className="truncate">{sigungu?.name || `${region.name} 전체`}</span>
         <Icon icon="solar:alt-arrow-down-linear" width={11} className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -148,7 +148,7 @@ export default function ExploreSidebar({
   const visibleAreas = showMoreRegions ? areas : areas.slice(0, REGIONS_VISIBLE_COUNT)
 
   return (
-    <aside className="w-full shrink-0 md:w-[200px]">
+    <aside className="w-full shrink-0 md:w-[164px]">
       <div className="sticky top-24 flex max-h-[calc(100vh-7rem)] flex-col">
         <div
           className={`mb-3 flex h-9 shrink-0 items-center gap-1.5 rounded-lg border bg-white px-2.5 shadow-card transition-colors ${
@@ -186,15 +186,15 @@ export default function ExploreSidebar({
         <button
           onMouseDown={(e) => e.preventDefault()}
           onClick={onSelectAll}
-          className={`flex w-full shrink-0 items-center gap-2 rounded-[10px] px-3.5 py-2.5 text-[13px] font-bold transition-colors ${
+          className={`flex w-full shrink-0 items-center gap-2 rounded-[10px] px-3 py-2 text-[12.5px] font-bold transition-colors ${
             isAll ? 'bg-brand text-white' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
           }`}
         >
-          <Icon icon="mdi:view-grid" width={16} />
+          <Icon icon="mdi:view-grid" width={15} />
           전체보기
         </button>
 
-        <div className="mt-6 shrink-0">
+        <div className="mt-5 shrink-0">
           <button
             type="button"
             onMouseDown={(e) => e.preventDefault()}
@@ -211,17 +211,17 @@ export default function ExploreSidebar({
               몰라도(항목 개수가 바뀌어도) 부드럽게 접고 펼칠 수 있다. */}
           <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${themeOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
             <div className="overflow-hidden">
-              <div className="mt-2 space-y-0.5">
+              <div className="mt-1.5 space-y-0.5">
                 {THEMES.map((t) => (
                   <button
                     key={t.label}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => onSelectTheme(t)}
-                    className={`flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-[13px] transition-colors ${
+                    className={`flex w-full items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-[12.5px] transition-colors ${
                       theme?.label === t.label ? SELECTED_ROW : IDLE_ROW
                     }`}
                   >
-                    <Icon icon={t.icon} width={17} />
+                    <Icon icon={t.icon} width={15} />
                     {t.label}
                   </button>
                 ))}
@@ -230,7 +230,7 @@ export default function ExploreSidebar({
           </div>
         </div>
 
-        <div className={`mt-6 flex min-h-0 flex-col ${regionOpen ? 'min-h-0' : 'shrink-0'}`}>
+        <div className={`mt-5 flex min-h-0 flex-col ${regionOpen ? 'min-h-0' : 'shrink-0'}`}>
           <button
             type="button"
             onMouseDown={(e) => e.preventDefault()}
@@ -251,19 +251,20 @@ export default function ExploreSidebar({
             }`}
           >
             <div className="min-h-0 overflow-hidden">
-              <div className="mt-2 min-h-0 space-y-0.5 overflow-y-auto pr-1 pb-2">
+              <div className="mt-1.5 min-h-0 space-y-0.5 overflow-y-auto pr-1 pb-2">
                 {visibleAreas.map((a) => (
                   <div key={a.code}>
                     <button
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => onSelectRegion(a)}
-                      className={`w-full rounded-[10px] px-3 py-2 text-left text-[13px] transition-colors ${
+                      className={`w-full rounded-[10px] px-2.5 py-1.5 text-left text-[12.5px] transition-colors ${
                         region?.code === a.code ? SELECTED_ROW : IDLE_ROW
                       }`}
                     >
                       {a.name}
                     </button>
-                    {region?.code === a.code && (
+                    {/* 축제 API는 시/도 단위까지만 받으므로 축제 테마에선 시군구 선택을 감춘다 */}
+                    {region?.code === a.code && theme?.kind !== 'festival' && (
                       <SigunguPicker region={region} sigungu={sigungu} onSelectSigungu={onSelectSigungu} />
                     )}
                   </div>
@@ -272,7 +273,7 @@ export default function ExploreSidebar({
                   <button
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => setShowMoreRegions((v) => !v)}
-                    className="flex w-full items-center gap-1 rounded-[10px] px-3 py-2 text-[12.5px] font-semibold text-slate-400 hover:text-slate-600 transition-colors"
+                    className="flex w-full items-center gap-1 rounded-[10px] px-2.5 py-1.5 text-[12px] font-semibold text-slate-400 hover:text-slate-600 transition-colors"
                   >
                     {showMoreRegions ? '접기' : '더보기'}
                     <Icon

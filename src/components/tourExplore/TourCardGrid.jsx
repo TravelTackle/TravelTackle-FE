@@ -1,8 +1,11 @@
 import { useEffect, useRef } from 'react'
 import TourCard from './TourCard'
 import Skeleton from '../ui/Skeleton'
+import FestivalCard, { FestivalCardSkeleton } from './FestivalCard'
 
-export default function TourCardGrid({ spots, loading, loadingMore, hasMore, onLoadMore, onOpen, onAddToCart }) {
+// variant='festival'이면 기간 조회 결과용 카드(상태 배지·날짜)와 그 골격의 스켈레톤을 쓴다
+export default function TourCardGrid({ spots, loading, loadingMore, hasMore, onLoadMore, onOpen, onAddToCart, variant = 'spot', emptyMessage, emptyAction }) {
+  const festival = variant === 'festival'
   const sentinelRef = useRef(null)
 
   useEffect(() => {
@@ -21,8 +24,10 @@ export default function TourCardGrid({ spots, loading, loadingMore, hasMore, onL
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3" role="status" aria-label="관광지를 불러오는 중">
-        {Array.from({ length: 9 }).map((_, i) => (
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3" role="status" aria-label={festival ? '축제·행사를 불러오는 중' : '관광지를 불러오는 중'}>
+        {Array.from({ length: festival ? 6 : 9 }).map((_, i) => festival ? (
+          <FestivalCardSkeleton key={i} index={i} />
+        ) : (
           <div key={i} className="rounded-2xl overflow-hidden border border-slate-100 bg-white">
             <Skeleton className="h-[150px] w-full rounded-none" style={{ animationDelay: `${(i % 3) * 120}ms` }} />
             <div className="p-3">
@@ -36,13 +41,20 @@ export default function TourCardGrid({ spots, loading, loadingMore, hasMore, onL
   }
 
   if (spots.length === 0) {
-    return <div className="py-20 text-center text-[13px] text-slate-400">해당하는 관광지가 없어요.</div>
+    return (
+      <div className="flex flex-col items-center gap-3 py-20 text-center text-[13px] text-slate-400">
+        <span>{emptyMessage || '해당하는 관광지가 없어요.'}</span>
+        {emptyAction}
+      </div>
+    )
   }
 
   return (
     <div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-        {spots.map((spot) => (
+        {spots.map((spot, i) => festival ? (
+          <FestivalCard key={spot.contentId} festival={spot} index={i} onOpen={onOpen} onAddToCart={onAddToCart} />
+        ) : (
           <TourCard key={spot.contentId} spot={spot} onOpen={onOpen} onAddToCart={onAddToCart} />
         ))}
       </div>
