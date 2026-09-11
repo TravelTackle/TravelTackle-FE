@@ -7,16 +7,25 @@ import Section from '../components/ui/Section'
 import ExploreSidebar from '../components/tourExplore/ExploreSidebar'
 import TourCardGrid from '../components/tourExplore/TourCardGrid'
 import TourDetailDrawer from '../components/tourExplore/TourDetailDrawer'
+import FestivalPeriodBar from '../components/tourExplore/FestivalPeriodBar'
 import { useAuth } from '../context/AuthContext'
-import { getTourContents } from '../api/tour'
+import { getTourContents, getTourFestivals } from '../api/tour'
 import { addCartItem } from '../api/cart'
-import { PAGE_SIZE } from '../data/tourSpots'
+import { PAGE_SIZE, toLDongRegnCd } from '../data/tourSpots'
+import { DEFAULT_PRESET, presetRange } from '../lib/festivalPeriod'
+
+// 축제·행사 테마의 기간 상태 — 프리셋 키와 그로부터 계산된 start/end("YYYY-MM-DD", end는 null 가능)
+function initialPeriod() {
+  return { preset: DEFAULT_PRESET, ...presetRange(DEFAULT_PRESET) }
+}
 
 export default function TourExplorePage() {
   const { user } = useAuth()
   const [theme, setTheme] = useState(null)
   const [region, setRegion] = useState(null)
   const [sigungu, setSigungu] = useState(null)
+  const [period, setPeriod] = useState(initialPeriod)
+  const isFestival = theme?.kind === 'festival'
   const [spots, setSpots] = useState([])
   const [page, setPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
@@ -29,15 +38,25 @@ export default function TourExplorePage() {
   const fetchPage = useCallback((pageNum, { append }) => {
     const setBusy = append ? setLoadingMore : setLoading
     setBusy(true)
-    return getTourContents({
-      contentTypeId: theme?.contentTypeId,
-      keyword: theme?.keyword,
-      areaCode: region?.code,
-      sigunguCode: sigungu?.code,
-      page: pageNum,
-      size: PAGE_SIZE,
-      arrange: 'O', // 제목순 + 대표이미지 있는 콘텐츠만 (이미지 없는 관광지 제외)
-    })
+    // 축제·행사는 기간 조회 API로 — 시군구는 받지 않고 시/도는 법정동 코드로 바꿔 보낸다
+    const request = isFestival
+      ? getTourFestivals({
+          startDate: period.start,
+          endDate: period.end || undefined,
+          lDongRegnCd: toLDongRegnCd(region?.code),
+          page: pageNum,
+          size: PAGE_SIZE,
+        })
+      : getTourContents({
+          contentTypeId: theme?.contentTypeId,
+          keyword: theme?.keyword,
+          areaCode: region?.code,
+          sigunguCode: sigungu?.code,
+          page: pageNum,
+          size: PAGE_SIZE,
+          arrange: 'O', // 제목순 + 대표이미지 있는 콘텐츠만 (이미지 없는 관광지 제외)
+        })
+    return request
       .then((data) => {
         setSpots((prev) => (append ? [...prev, ...(data.items || [])] : data.items || []))
         setTotalCount(data.totalCount || 0)
@@ -47,7 +66,12 @@ export default function TourExplorePage() {
         if (!append) setSpots([])
       })
       .finally(() => setBusy(false))
-  }, [theme, region, sigungu])
+  }, [theme, region, sigungu, isFestival, period.start, period.end])
+
+  // 프리셋을 고르면 날짜를 여기서 계산하고, 직접 고른 날짜는 그대로 받는다
+  function handlePeriodChange(next) {
+    setPeriod(next.preset === 'custom' ? next : { preset: next.preset, ...presetRange(next.preset) })
+  }
 
   useEffect(() => {
     fetchPage(1, { append: false })
@@ -99,7 +123,11 @@ export default function TourExplorePage() {
             setRegion(null)
             setSigungu(null)
           }}
-          onSelectTheme={(t) => setTheme((v) => (v?.label === t.label ? null : t))}
+          onSelectTheme={(t) => {
+            setTheme((v) => (v?.label === t.label ? null : t))
+            // 축제 테마는 시군구 필터를 지원하지 않으므로 넘어갈 때 비워둔다
+            if (t.kind === 'festival') setSigungu(null)
+          }}
           onSelectRegion={(r) => {
             setRegion((v) => (v?.code === r.code ? null : r))
             setSigungu(null)
@@ -108,6 +136,15 @@ export default function TourExplorePage() {
         />
 
         <div className="min-w-0 flex-1">
+          {isFestival && (
+            <FestivalPeriodBar
+              period={period}
+              onChange={handlePeriodChange}
+              regionName={region?.name}
+              loading={loading}
+              totalCount={totalCount}
+            />
+          )}
           <TourCardGrid
             spots={spots}
             loading={loading}
@@ -116,6 +153,19 @@ export default function TourExplorePage() {
             onLoadMore={handleLoadMore}
             onOpen={(spot) => setSelectedContentId(spot.contentId)}
             onAddToCart={handleAddToCart}
+            variant={isFestival ? 'festival' : 'spot'}
+            emptyMessage={isFestival ? '이 기간에 열리는 축제·행사가 없어요.' : undefined}
+            emptyAction={
+              isFestival && period.preset !== 'upcoming' ? (
+                <button
+                  type="button"
+                  onClick={() => handlePeriodChange({ preset: 'upcoming' })}
+                  className="rounded-full bg-brand-light px-4 py-2 text-[12.5px] font-bold text-brand-dark transition-colors hover:bg-brand hover:text-white"
+                >
+                  예정된 행사 전체 보기
+                </button>
+              ) : null
+            }
           />
         </div>
       </Section>

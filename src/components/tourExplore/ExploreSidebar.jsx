@@ -179,7 +179,8 @@ export default function ExploreSidebar({ theme, region, sigungu, onSelectTheme, 
                 >
                   {a.name}
                 </button>
-                {region?.code === a.code && (
+                {/* 축제 API는 시/도 단위까지만 받으므로 축제 테마에선 시군구 선택을 감춘다 */}
+                {region?.code === a.code && theme?.kind !== 'festival' && (
                   <SigunguPicker region={region} sigungu={sigungu} onSelectSigungu={onSelectSigungu} />
                 )}
               </div>

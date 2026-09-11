@@ -16,3 +16,9 @@ export function getTourAreas(areaCode) {
 export function getRecommendedSpots() {
   return client.get('/tour/recommended').then((res) => res.data)
 }
+
+// 기간별 축제·행사 — startDate(필수)~endDate와 겹치는 행사를 돌려준다(진행 중 포함).
+// lDongRegnCd는 TourAPI 법정동 시/도 코드(서울=11 …) — data/tourSpots.js의 toLDongRegnCd로 변환해서 넘긴다.
+export function getTourFestivals(params) {
+  return client.get('/tour/festivals', { params }).then((res) => res.data)
+}
