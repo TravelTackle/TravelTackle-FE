@@ -4,6 +4,9 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { CART_CHANGED_EVENT, SPOT_DRAG_TYPE, addCartItem, getCartItems, removeCartItem } from '../api/cart'
 import { CART_TABS, areaName, cartTheme, themeKey } from '../lib/cartThemes'
+import Skeleton from './ui/Skeleton'
+
+const MIN_SKELETON_MS = 450
 
 function isSpotDrag(e) {
   return e.dataTransfer?.types?.includes(SPOT_DRAG_TYPE)
@@ -20,17 +23,26 @@ export default function FloatingCart() {
   const [dragOver, setDragOver] = useState(false)
   const [justAddedId, setJustAddedId] = useState(null)
   const [tab, setTab] = useState('all')
+  const [query, setQuery] = useState('')
+  const tabsRef = useRef(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
   const [notice, setNotice] = useState('')
   const noticeTimer = useRef(null)
   const highlightTimer = useRef(null)
   const dragDepth = useRef(0)
 
+  // 패널을 열 때(withSkeleton)는 최소 MIN_SKELETON_MS 동안 스켈레톤을 보여 준 뒤 목록으로 바꾼다
   const refresh = useCallback((withSkeleton) => {
     if (withSkeleton) setLoading(true)
+    const startedAt = Date.now()
     getCartItems()
-      .then(setItems)
+      .then((list) => setItems(Array.isArray(list) ? list : []))
       .catch(() => setItems([]))
-      .finally(() => setLoading(false))
+      .finally(() => {
+        const wait = withSkeleton ? Math.max(0, MIN_SKELETON_MS - (Date.now() - startedAt)) : 0
+        setTimeout(() => setLoading(false), wait)
+      })
   }, [])
 
   // 버튼 배지 수까지 항상 최신으로: 로그인 시 1회 + 담기/빼기 신호마다 갱신
@@ -74,6 +86,58 @@ export default function FloatingCart() {
     },
     [],
   )
+
+  // 칩 줄 넘기기 — 나의 여행 사이드바(TripCartPanel)와 같은 동작
+  function scrollTabs(direction) {
+    const el = tabsRef.current
+    if (!el) return
+    const overlap = 40
+    const maxScroll = el.scrollWidth - el.clientWidth
+    const remaining = direction > 0 ? maxScroll - el.scrollLeft : el.scrollLeft
+    const target =
+      remaining <= el.clientWidth
+        ? direction > 0
+          ? maxScroll
+          : 0
+        : el.scrollLeft + direction * (el.clientWidth - overlap)
+    el.scrollTo({ left: target, behavior: 'smooth' })
+  }
+
+  const updateScrollButtons = useCallback(() => {
+    const el = tabsRef.current
+    if (!el) return
+    setCanScrollLeft(el.scrollLeft > 4)
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
+  }, [])
+
+  useEffect(() => {
+    updateScrollButtons()
+    const el = tabsRef.current
+    if (!el) return undefined
+    let timer
+    function onScroll() {
+      clearTimeout(timer)
+      timer = setTimeout(updateScrollButtons, 150)
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', updateScrollButtons)
+    return () => {
+      clearTimeout(timer)
+      el.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', updateScrollButtons)
+    }
+  }, [updateScrollButtons, open, user])
+
+  useEffect(() => {
+    const el = tabsRef.current
+    if (!el) return
+    const maxScroll = el.scrollWidth - el.clientWidth
+    if (canScrollRight === false && el.scrollLeft < maxScroll - 1) {
+      el.scrollTo({ left: maxScroll, behavior: 'instant' })
+    } else if (canScrollLeft === false && el.scrollLeft > 1) {
+      el.scrollTo({ left: 0, behavior: 'instant' })
+    }
+  }, [canScrollLeft, canScrollRight])
 
   function showNotice(message) {
     setNotice(message)
@@ -145,7 +209,10 @@ export default function FloatingCart() {
     onDrop: handleDrop,
   }
 
-  const visibleItems = tab === 'all' ? items : items.filter((i) => themeKey(i.contentTypeId) === tab)
+  const q = query.trim().toLowerCase()
+  const visibleItems = items
+    .filter((i) => tab === 'all' || themeKey(i.contentTypeId) === tab)
+    .filter((i) => !q || i.title?.toLowerCase().includes(q) || areaName(i.areaCode).toLowerCase().includes(q))
 
   return (
     // 루트는 pointer-events-none — 닫힌 패널의 투명 영역이 클릭을 가로채지 않게
@@ -161,60 +228,151 @@ export default function FloatingCart() {
       </div>
 
       <div
-        className={`relative mb-3 origin-bottom-right transition-all duration-200 ${
-          open ? 'pointer-events-auto scale-100 opacity-100' : 'pointer-events-none scale-90 opacity-0'
+        className={`relative mb-3 origin-bottom-right transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          open ? 'pointer-events-auto translate-y-0 scale-100 opacity-100' : 'pointer-events-none translate-y-3 scale-90 opacity-0'
         }`}
       >
+        {/* 떠 있는 느낌을 주는 부드러운 접지 그림자 */}
+        <div className="absolute -bottom-4 left-8 right-8 -z-10 h-9 rounded-full bg-slate-900/25 blur-2xl" />
+
         <div
           {...dropZoneProps}
-          className="relative flex h-[min(620px,calc(100vh-200px))] w-[340px] flex-col overflow-hidden rounded-[24px] bg-white shadow-popup ring-1 ring-black/5"
+          className="relative flex h-[min(620px,calc(100vh-200px))] w-[340px] flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-popup"
         >
+          {/* 헤더 · 검색 · 칩 — 나의 여행 사이드바(TripCartPanel)와 같은 디자인 */}
+          <div className="flex items-center justify-between px-4 pt-4">
+            <h2 className="text-[14px] font-bold text-slate-800">여행 장바구니</h2>
+            <div className="flex items-center gap-2">
+              {user && <span className="rounded-full bg-brand-light px-2 py-0.5 text-[11px] font-bold text-brand">{items.length}개</span>}
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="장바구니 닫기"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark"
+              >
+                <Icon icon="solar:close-circle-bold" width={18} />
+              </button>
+            </div>
+          </div>
+
           {user && (
-            <div className="flex shrink-0 flex-wrap gap-1.5 border-b border-slate-100 px-3 py-2.5">
-              {CART_TABS.map((t) => (
+            <>
+              <div className="px-4 pt-3">
+                <div className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5">
+                  <Icon icon="solar:magnifer-linear" width={14} className="text-slate-300" />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="여행지 이름 또는 지역"
+                    className="h-full w-full text-[12.5px] text-slate-700 outline-none placeholder:text-slate-300"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center px-4 py-3">
                 <button
-                  key={t.key}
-                  onClick={() => setTab(t.key)}
-                  className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-bold transition-all ${
-                    tab === t.key
-                      ? 'border-brand bg-brand text-white'
-                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                  type="button"
+                  onClick={() => scrollTabs(-1)}
+                  aria-label="이전 필터"
+                  tabIndex={canScrollLeft ? 0 : -1}
+                  className={`flex h-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-white text-brand shadow-card transition-all duration-300 hover:border-brand hover:bg-brand-light ${
+                    canScrollLeft ? 'mr-1 w-6 border-slate-200 opacity-100' : 'w-0 border-transparent opacity-0'
                   }`}
                 >
-                  {t.label}
+                  <Icon icon="mdi:chevron-left" width={16} className="shrink-0" />
                 </button>
-              ))}
-            </div>
+                <div
+                  ref={tabsRef}
+                  className="scrollbar-hide flex flex-1 gap-1.5 overflow-x-auto"
+                  style={{
+                    maskImage: `linear-gradient(to right, ${canScrollLeft ? 'transparent, black 12px' : 'black'}, ${
+                      canScrollRight ? 'black calc(100% - 12px), transparent' : 'black'
+                    })`,
+                    WebkitMaskImage: `linear-gradient(to right, ${canScrollLeft ? 'transparent, black 12px' : 'black'}, ${
+                      canScrollRight ? 'black calc(100% - 12px), transparent' : 'black'
+                    })`,
+                  }}
+                >
+                  {CART_TABS.map((t) => (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => setTab(t.key)}
+                      className={`shrink-0 rounded-full border px-2.5 py-1 text-[11.5px] font-bold transition-colors ${
+                        tab === t.key ? 'border-brand bg-brand text-white' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => scrollTabs(1)}
+                  aria-label="다음 필터"
+                  tabIndex={canScrollRight ? 0 : -1}
+                  className={`flex h-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-white text-brand shadow-card transition-all duration-300 hover:border-brand hover:bg-brand-light ${
+                    canScrollRight ? 'ml-1 w-6 border-slate-200 opacity-100' : 'w-0 border-transparent opacity-0'
+                  }`}
+                >
+                  <Icon icon="mdi:chevron-right" width={16} className="shrink-0" />
+                </button>
+              </div>
+            </>
           )}
 
-          <div className="flex-1 overflow-y-auto p-3">
+          <div className="flex-1 overflow-y-auto px-4 pb-4">
             {!user ? (
-              <div className="flex h-full flex-col items-center justify-center text-center">
-                <Icon icon="solar:cart-large-2-linear" width={30} className="mx-auto text-slate-300" />
-                <p className="mt-3 text-[13px] font-semibold text-slate-600">로그인하면 장소를 담을 수 있어요</p>
+              <div className="flex h-full flex-col items-center justify-center px-4 text-center">
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-50 text-slate-300">
+                  <Icon icon="solar:cart-large-2-linear" width={26} />
+                </span>
+                <p className="mt-4 text-[13.5px] font-bold text-slate-700">로그인하면 장소를 담을 수 있어요</p>
+                <p className="mt-1 text-[12px] text-slate-400">담아 둔 장소로 바로 여행 계획을 만들어요.</p>
                 <Link
                   to="/login"
                   onClick={() => setOpen(false)}
-                  className="mt-4 inline-block rounded-xl bg-brand px-4 py-2 text-[12.5px] font-bold text-white transition-colors hover:bg-brand-dark"
+                  className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-[12.5px] font-bold text-white transition-colors hover:bg-brand-dark"
                 >
-                  로그인하기
+                  <Icon icon="solar:user-rounded-bold" width={13} /> 로그인하기
                 </Link>
               </div>
-            ) : loading && items.length === 0 ? (
-              <div className="flex flex-col gap-2.5">
+            ) : loading ? (
+              <div className="flex flex-col gap-2.5" role="status" aria-label="담은 장소를 불러오는 중">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-[76px] animate-pulse rounded-2xl border border-slate-100 bg-slate-50" />
+                  <div key={i} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3">
+                    <Skeleton className="h-14 w-14 shrink-0 rounded-xl" style={{ animationDelay: `${i * 120}ms` }} />
+                    <div className="min-w-0 flex-1">
+                      <Skeleton className="h-3.5 w-12 rounded" style={{ animationDelay: `${i * 120 + 40}ms` }} />
+                      <Skeleton className="mt-2 h-3.5 w-3/4" style={{ animationDelay: `${i * 120 + 80}ms` }} />
+                      <Skeleton className="mt-1.5 h-2.5 w-1/3" style={{ animationDelay: `${i * 120 + 120}ms` }} />
+                    </div>
+                    <Skeleton className="h-7 w-7 shrink-0 rounded-lg" style={{ animationDelay: `${i * 120 + 160}ms` }} />
+                  </div>
                 ))}
               </div>
             ) : visibleItems.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center text-center">
-                <Icon icon="solar:map-point-linear" width={30} className="mx-auto text-slate-300" />
-                <p className="mt-3 text-[13px] font-semibold text-slate-600">
+              <div className="flex h-full flex-col items-center justify-center px-4 text-center">
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-light text-brand">
+                  <Icon icon="solar:map-point-linear" width={26} />
+                </span>
+                <p className="mt-4 text-[13.5px] font-bold text-slate-700">
                   {items.length === 0
                     ? '아직 담은 장소가 없어요'
                     : `담아둔 ${CART_TABS.find((t) => t.key === tab)?.label} 장소가 없어요`}
                 </p>
-                <p className="mt-1 text-[11.5px] text-slate-400">여행지 탐색에서 마음에 드는 곳을 담아보세요.</p>
+                <p className="mt-1 text-[12px] leading-relaxed text-slate-400">
+                  {items.length === 0 ? '여행지 탐색에서 카드를 끌어다 놓거나 담기를 눌러보세요.' : q ? '검색어를 바꿔보세요.' : '다른 테마를 골라보세요.'}
+                </p>
+                {items.length === 0 && (
+                  <Link
+                    to="/explore"
+                    onClick={() => setOpen(false)}
+                    className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-[12.5px] font-bold text-slate-700 transition-all hover:border-brand hover:text-brand"
+                  >
+                    <Icon icon="solar:compass-linear" width={14} /> 여행지 탐색하기
+                  </Link>
+                )}
               </div>
             ) : (
               <ul className="flex flex-col gap-2.5">
@@ -223,29 +381,30 @@ export default function FloatingCart() {
                     key={item.id}
                     draggable
                     onDragStart={(e) => e.dataTransfer.setData('application/json', JSON.stringify(item))}
-                    className={`flex cursor-grab items-center gap-3 rounded-2xl border p-3 shadow-card transition-colors duration-700 active:cursor-grabbing ${
+                    className={`flex cursor-grab items-center gap-3 rounded-xl border p-2.5 shadow-card transition-colors duration-700 active:cursor-grabbing ${
                       item.contentId === justAddedId ? 'border-brand/40 bg-brand-light' : 'border-slate-100 bg-white'
                     }`}
                   >
                     {item.imageUrl ? (
-                      <img src={item.imageUrl} alt="" className="h-14 w-14 shrink-0 rounded-xl bg-slate-100 object-cover" />
+                      <img src={item.imageUrl} alt="" className="h-12 w-12 shrink-0 rounded-lg bg-slate-100 object-cover" />
                     ) : (
-                      <div className="h-14 w-14 shrink-0 rounded-xl bg-slate-100" />
+                      <div className="h-12 w-12 shrink-0 rounded-lg bg-slate-100" />
                     )}
                     <div className="min-w-0 flex-1">
                       <span className="inline-flex items-center gap-1 rounded border border-slate-200 px-1.5 py-px text-[10px] font-semibold text-slate-400">
                         <Icon icon={cartTheme(item.contentTypeId).icon} width={10} />
                         {cartTheme(item.contentTypeId).label}
                       </span>
-                      <p className="mt-1 truncate text-[13px] font-bold text-slate-800">{item.title}</p>
-                      <p className="mt-0.5 text-[11px] text-slate-400">{areaName(item.areaCode)}</p>
+                      <p className="mt-0.5 truncate text-[12.5px] font-bold text-slate-800">{item.title}</p>
+                      <p className="text-[11px] text-slate-400">{areaName(item.areaCode)}</p>
                     </div>
                     <button
+                      type="button"
                       onClick={() => handleRemove(item)}
                       aria-label={`${item.title} 빼기`}
-                      className="flex h-7 w-7 shrink-0 items-center justify-center self-end rounded-lg bg-rose-50 text-rose-500 transition-colors hover:bg-rose-100 hover:text-rose-600"
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-100"
                     >
-                      <Icon icon="solar:trash-bin-minimalistic-linear" width={15} />
+                      <Icon icon="solar:trash-bin-minimalistic-linear" width={13} />
                     </button>
                   </li>
                 ))}
@@ -253,9 +412,27 @@ export default function FloatingCart() {
             )}
           </div>
 
+          {/* 푸터 — 담은 장소로 바로 계획 만들기 */}
+          {user && items.length > 0 && !loading && (
+            <div className="shrink-0 border-t border-slate-100 bg-white p-3">
+              <Link
+                to="/trips"
+                onClick={() => setOpen(false)}
+                className="group relative flex h-11 items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-b from-brand-mid to-brand text-[13.5px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_6px_16px_rgba(37,99,235,0.28)] transition-all hover:from-brand hover:to-brand-dark"
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-full skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-[300%]"
+                />
+                <Icon icon="solar:calendar-add-bold" width={16} />
+                담은 장소 {items.length}곳으로 계획 만들기
+              </Link>
+            </div>
+          )}
+
           {dragActive && (
             <div
-              className={`pointer-events-none absolute inset-1.5 z-10 flex items-center justify-center rounded-[20px] border-2 border-dashed transition-colors ${
+              className={`pointer-events-none absolute inset-1.5 z-10 flex items-center justify-center rounded-[24px] border-2 border-dashed transition-colors ${
                 dragOver ? 'border-brand bg-brand-light/85' : 'border-brand/40 bg-white/75'
               }`}
             >
@@ -287,8 +464,11 @@ export default function FloatingCart() {
               : 'animate-float'
         }`}
         aria-label={open ? '장바구니 닫기' : '장바구니 열기'}
+        aria-expanded={open}
       >
-        <Icon icon={open ? 'solar:close-circle-bold' : 'solar:cart-large-2-bold'} width={24} />
+        <span className={`flex transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${open ? 'rotate-90' : 'rotate-0'}`}>
+          <Icon icon={open ? 'solar:close-circle-bold' : 'solar:cart-large-2-bold'} width={24} />
+        </span>
         {user && items.length > 0 && (
           <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">
             {items.length > 99 ? '99+' : items.length}

@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Icon } from '@iconify/react'
+import { Link } from 'react-router-dom'
 import Section from './ui/Section'
+import Skeleton from './ui/Skeleton'
+import { useAuth } from '../context/AuthContext'
 
 const STEPS = [
   {
@@ -10,6 +13,7 @@ const STEPS = [
     icon: 'solar:map-linear',
     bg: 'linear-gradient(135deg,#EFF6FF,#DBEAFE)',
     color: '#2563EB',
+    cta: { label: '여행 계획 시작하기', to: '/trips', guestLabel: '로그인하고 계획 시작하기', guestTo: '/login' },
   },
   {
     tag: 'STEP 2 · 참견',
@@ -18,6 +22,7 @@ const STEPS = [
     icon: 'solar:chat-round-dots-linear',
     bg: 'linear-gradient(135deg,#EEF2FF,#E0E7FF)',
     color: '#4F46E5',
+    cta: { label: '여행자 피드 보기', to: '/feed' },
   },
   {
     tag: 'STEP 3 · 완성',
@@ -26,77 +31,297 @@ const STEPS = [
     icon: 'solar:check-circle-linear',
     bg: 'linear-gradient(135deg,#ECFDF5,#D1FAE5)',
     color: '#0F766E',
+    cta: { label: '여행지 탐색하기', to: '/explore' },
   },
 ]
 
-export default function HeroSlider() {
-  const [idx, setIdx] = useState(0)
-  const [playing, setPlaying] = useState(true)
-  const timer = useRef(null)
-  const total = STEPS.length
-  const go = (distance) => setIdx((current) => (current + distance + total) % total)
+const INTERVAL = 4500
+// 제목 — 키워드 셋은 각 단계에 묶인다 (step: 슬라이드 인덱스)
+const HEADLINE = [
+  { text: '계획', step: 0 },
+  { text: '하고,', suffix: true }, // 키워드에 붙는 어미 — 한 단어로 읽히게 간격을 당긴다
+  { text: '참견', step: 1 },
+  { text: '받고,', suffix: true },
+  { text: '여행을' },
+  { text: '완성', step: 2 },
+  { text: '하세요', suffix: true },
+]
+// 무한 루프용 트랙: 앞뒤에 복제 한 장씩
+const TRACK = [
+  { step: STEPS[STEPS.length - 1], clone: true },
+  ...STEPS.map((step) => ({ step, clone: false })),
+  { step: STEPS[0], clone: true },
+]
+const MIN_SKELETON_MS = 700 // 로그인 확인이 빨라도 이만큼은 스켈레톤을 보여 배너·카드와 같은 리듬으로 열린다
+let revealedOnce = false // 세션에서 처음 홈을 열 때만 연출, 다시 돌아오면 바로 보인다
 
-  useEffect(() => {
-    if (!playing) return undefined
-    timer.current = setInterval(() => setIdx((current) => (current + 1) % total), 4500)
-    return () => clearInterval(timer.current)
-  }, [playing, total])
+// 슬라이드 CTA — 슬라이드 색을 받은 연한 흰 알약. 3초마다 빛이 스치고 링이 퍼져 눌러보라고 손짓한다
+function SlideCta({ to, label, icon, color }) {
+  return (
+    <Link
+      to={to}
+      style={{ color, '--cta-ring': `${color}55` }}
+      className="group cta-pulse relative mt-6 inline-flex w-fit items-center gap-2.5 overflow-hidden rounded-full border border-white bg-white/85 py-2 pl-2 pr-5 text-[13.5px] font-bold shadow-card backdrop-blur transition-all duration-200 hover:-translate-y-px hover:bg-white hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+    >
+      <span
+        aria-hidden="true"
+        className="cta-shine pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white to-transparent opacity-80"
+      />
+      <span
+        className="flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-110"
+        style={{ background: `${color}1A` }}
+      >
+        <Icon icon={icon} width={15} />
+      </span>
+      {label}
+    </Link>
+  )
+}
 
-  const previous = STEPS[(idx - 1 + total) % total]
-  const current = STEPS[idx]
-  const next = STEPS[(idx + 1) % total]
+// 로그인 확인 중 슬라이드 본문 자리
+function SlideSkeleton() {
+  return (
+    <div className="relative flex h-full flex-col justify-center px-14 sm:px-16" role="status" aria-label="불러오는 중">
+      <Skeleton className="mb-4 h-14 w-14 rounded-2xl" />
+      <Skeleton className="h-3 w-20 rounded-full" />
+      <Skeleton className="mt-3 h-6 w-[60%] max-w-[320px]" />
+      <Skeleton className="mt-3 h-3.5 w-[75%] max-w-[420px]" />
+      <Skeleton className="mt-6 h-10 w-44 rounded-full" />
+    </div>
+  )
+}
 
-  const SideCard = ({ step }) => (
-    <div className="hidden lg:flex w-[190px] xl:w-[220px] h-[360px] shrink-0 rounded-2xl border border-slate-100 bg-slate-50/80 flex-col items-center justify-center px-6 text-center opacity-70">
-      <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center mb-3 shadow-sm">
+// 양옆 미리보기 카드 — 눌러서 그 단계로 바로 이동
+function SideCard({ step, onClick, label }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`${label}: ${step.title}`}
+      style={{ background: step.bg }}
+      className="hidden lg:flex w-[190px] xl:w-[220px] h-[240px] shrink-0 flex-col items-center justify-center rounded-2xl border border-slate-100 px-6 text-center opacity-60 transition-all duration-300 hover:opacity-100 hover:-translate-y-0.5 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+    >
+      <div className="w-11 h-11 rounded-xl bg-white/80 flex items-center justify-center mb-3 shadow-sm">
         <Icon icon={step.icon} width={21} color={step.color} />
       </div>
       <p className="text-[11px] font-extrabold" style={{ color: step.color }}>{step.tag}</p>
-      <p className="mt-2 text-[14px] leading-snug font-bold text-slate-500">{step.title}</p>
-    </div>
+      <p className="mt-2 text-[14px] leading-snug font-bold text-slate-600">{step.title}</p>
+    </button>
   )
+}
+
+export default function HeroSlider() {
+  const { user, loading: authLoading } = useAuth()
+  // 트랙은 [3번 복제, 1, 2, 3, 1번 복제] 순. pos는 트랙 위치(1..total이 진짜), idx는 표시용 단계 번호.
+  // 3 → 1로 넘어갈 때도 복제 슬라이드로 앞으로 밀린 뒤, 전환 없이 진짜 1번으로 되돌린다.
+  const [pos, setPos] = useState(1)
+  const [animated, setAnimated] = useState(true)
+  const [playing, setPlaying] = useState(true)
+  const [hovering, setHovering] = useState(false)
+  const [minSkeletonOver, setMinSkeletonOver] = useState(revealedOnce)
+  useEffect(() => {
+    if (revealedOnce) return undefined
+    const id = setTimeout(() => {
+      revealedOnce = true
+      setMinSkeletonOver(true)
+    }, MIN_SKELETON_MS)
+    return () => clearTimeout(id)
+  }, [])
+  const pending = authLoading || !minSkeletonOver
+  const total = STEPS.length
+  const idx = (pos - 1 + total) % total
+  const go = (distance) => {
+    setAnimated(true)
+    setPos((current) => Math.min(Math.max(current + distance, 0), total + 1))
+  }
+  const jumpTo = (index) => {
+    setAnimated(true)
+    setPos(index + 1)
+  }
+
+  // 복제 슬라이드에 도착하면 같은 그림의 진짜 슬라이드로 소리 없이 되돌린다
+  const handleTrackTransitionEnd = (e) => {
+    if (e.target !== e.currentTarget || e.propertyName !== 'transform') return
+    if (pos === total + 1) {
+      setAnimated(false)
+      setPos(1)
+    } else if (pos === 0) {
+      setAnimated(false)
+      setPos(total)
+    }
+  }
+  // 전환을 껐다가 다음 프레임에 다시 켠다 (되돌리는 순간이 보이지 않게)
+  useEffect(() => {
+    if (animated) return undefined
+    const id = requestAnimationFrame(() => setAnimated(true))
+    return () => cancelAnimationFrame(id)
+  }, [animated])
+
+  // 마우스를 올려 읽는 동안에는 자동 넘김을 멈춘다
+  useEffect(() => {
+    if (!playing || hovering || pending) return undefined
+    const id = setInterval(() => go(1), INTERVAL)
+    return () => clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, hovering, pending])
+
+  const prevIdx = (idx - 1 + total) % total
+  const nextIdx = (idx + 1) % total
+  const current = STEPS[idx]
 
   return (
     <section className="bg-white">
-      <Section as="div" className="pt-8 pb-10">
-        <h1 className="text-center text-[26px] sm:text-[30px] font-extrabold tracking-tight text-slate-900">
-          <span className="text-brand">계획</span>하고, <span className="text-brand">참견</span>받고, 여행을 <span className="text-brand">완성</span>하세요
-        </h1>
+      <Section as="div" className="pt-8 pb-10 sm:pt-10 sm:pb-12">
+        {pending ? (
+          // 첫 로딩 — 제목 자리를 어절 단위 스켈레톤으로 잡아 둔다
+          <div className="flex flex-wrap items-center justify-center gap-2" role="status" aria-label="불러오는 중">
+            {[76, 60, 76, 60, 64, 92, 72].map((w, i) => (
+              <Skeleton key={i} className="h-8 rounded-full" style={{ width: w, animationDelay: `${i * 70}ms` }} />
+            ))}
+          </div>
+        ) : (
+          <h1
+            className="flex flex-wrap items-baseline justify-center gap-x-[0.22em] gap-y-1 text-center text-[27px] sm:text-[32px] font-extrabold tracking-[-0.02em] text-slate-900"
+            aria-label="계획하고, 참견받고, 여행을 완성하세요"
+          >
+            {HEADLINE.map((part, i) =>
+              part.step == null ? (
+                <span
+                  key={i}
+                  className={`ai-word ${part.suffix ? '-ml-[0.16em]' : ''}`}
+                  style={{ animationDelay: `${i * 80}ms` }}
+                  aria-hidden="true"
+                >
+                  {part.text}
+                </span>
+              ) : (
+                // 키워드는 현재 슬라이드와 함께 켜지고, 누르면 그 단계로 이동한다
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => jumpTo(part.step)}
+                  aria-label={`${part.step + 1}단계 ${STEPS[part.step].title}로 이동`}
+                  aria-current={idx === part.step ? 'step' : undefined}
+                  className={`ai-word group relative isolate rounded-xl px-1.5 transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+                    idx === part.step ? 'text-white' : 'text-brand hover:text-brand-dark'
+                  }`}
+                  style={{ animationDelay: `${i * 80}ms` }}
+                >
+                  {/* 채움은 크기가 아니라 투명도로 오가서, 넘어가는 순간 흰 글자가 흰 배경에 묻히지 않는다 */}
+                  <span
+                    aria-hidden="true"
+                    className={`absolute inset-0 -z-10 rounded-xl bg-gradient-to-br from-brand-mid to-brand transition-all duration-300 ease-out ${
+                      idx === part.step ? 'scale-100 opacity-100 shadow-[0_8px_20px_rgba(37,99,235,0.3)]' : 'scale-90 opacity-0'
+                    }`}
+                  />
+                  <span
+                    aria-hidden="true"
+                    className={`absolute inset-0 -z-20 rounded-xl bg-brand-light transition-opacity duration-200 ${
+                      idx === part.step ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
+                    }`}
+                  />
+                  {part.text}
+                </button>
+              ),
+            )}
+          </h1>
+        )}
 
-        <div className="mt-6 flex items-stretch justify-center gap-4 xl:gap-5">
-          <SideCard step={previous} />
+        <div
+          className="mt-6 flex items-center justify-center gap-4 xl:gap-5"
+          onMouseEnter={() => setHovering(true)}
+          onMouseLeave={() => setHovering(false)}
+        >
+          <SideCard step={STEPS[prevIdx]} onClick={() => go(-1)} label="이전 단계" />
 
-          <div className="relative w-full max-w-[760px] h-[360px] rounded-[22px] border border-slate-100 shadow-[0_18px_45px_rgba(15,23,42,0.09)] overflow-hidden">
-            <button onClick={() => go(-1)} className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/85 hover:bg-white flex items-center justify-center shadow-sm transition-colors" aria-label="이전">
-              <Icon icon="solar:alt-arrow-left-linear" width={19} className="text-slate-400" />
-            </button>
-            <button onClick={() => go(1)} className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/85 hover:bg-white flex items-center justify-center shadow-sm transition-colors" aria-label="다음">
-              <Icon icon="solar:alt-arrow-right-linear" width={19} className="text-slate-400" />
-            </button>
+          <div
+            className="relative w-full max-w-[760px] h-[320px] sm:h-[340px] rounded-[22px] border border-slate-100 shadow-[0_18px_45px_rgba(15,23,42,0.09)] overflow-hidden"
+            aria-roledescription="carousel"
+            aria-label="트레블 참견 이용 단계"
+          >
+            {/* 슬라이드 세 장을 한 줄로 두고 트랙을 옆으로 밀어서 넘긴다 */}
+            <div
+              className={`flex h-full ease-[cubic-bezier(0.16,1,0.3,1)] ${animated ? 'transition-transform duration-600' : 'transition-none'}`}
+              style={{ transform: `translateX(-${pos * 100}%)` }}
+              onTransitionEnd={handleTrackTransitionEnd}
+            >
+              {TRACK.map(({ step, clone }, i) => (
+                <div
+                  key={`${step.tag}-${i}`}
+                  className="relative h-full w-full shrink-0 overflow-hidden"
+                  style={{ background: step.bg }}
+                  aria-hidden={i !== pos || clone}
+                  inert={i !== pos || clone}
+                >
+                  {/* 빈 오른쪽을 채우는 단계 아이콘 워터마크 */}
+                  <div aria-hidden="true" className="absolute -right-10 -bottom-12 hidden sm:block" style={{ opacity: 0.09 }}>
+                    <Icon icon={step.icon} width={280} color={step.color} />
+                  </div>
 
-            <div className="h-full flex flex-col justify-center px-14 sm:px-16" style={{ background: current.bg }}>
-              <div className="w-14 h-14 rounded-2xl bg-white/75 flex items-center justify-center mb-4 shadow-sm">
-                <Icon icon={current.icon} width={27} color={current.color} />
-              </div>
-              <p className="text-[12px] font-extrabold" style={{ color: current.color }}>{current.tag}</p>
-              <h2 className="mt-2 text-[23px] sm:text-[27px] font-extrabold text-slate-800">{current.title}</h2>
-              <p className="mt-3 text-[14px] sm:text-[15px] leading-relaxed text-slate-600 max-w-md">{current.desc}</p>
+                  {pending ? (
+                    <SlideSkeleton />
+                  ) : (
+                    <div className="animate-slide-in relative flex h-full flex-col justify-center px-14 sm:px-16">
+                      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/75 shadow-sm">
+                        <Icon icon={step.icon} width={27} color={step.color} />
+                      </div>
+                      <p className="text-[12px] font-extrabold" style={{ color: step.color }}>{step.tag}</p>
+                      <h2 className="mt-2 text-[23px] font-extrabold text-slate-800 text-balance sm:text-[27px]">{step.title}</h2>
+                      <p className="mt-3 max-w-md text-[14px] leading-relaxed text-slate-600 sm:text-[15px]">{step.desc}</p>
+                      <SlideCta
+                        to={!user && step.cta.guestTo ? step.cta.guestTo : step.cta.to}
+                        label={!user && step.cta.guestLabel ? step.cta.guestLabel : step.cta.label}
+                        icon={step.icon}
+                        color={step.color}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
 
+            <button
+              onClick={() => go(-1)}
+              className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/85 hover:bg-white flex items-center justify-center shadow-sm transition-colors"
+              aria-label="이전 단계"
+            >
+              <Icon icon="solar:alt-arrow-left-linear" width={19} className="text-slate-500" />
+            </button>
+            <button
+              onClick={() => go(1)}
+              className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/85 hover:bg-white flex items-center justify-center shadow-sm transition-colors"
+              aria-label="다음 단계"
+            >
+              <Icon icon="solar:alt-arrow-right-linear" width={19} className="text-slate-500" />
+            </button>
+
+            <p className="sr-only" aria-live="polite">{`${idx + 1}단계: ${current.title}`}</p>
+
             <div className="absolute bottom-5 right-6 flex items-center gap-2">
-              <span className="text-[11px] font-bold text-slate-500">{idx + 1} / {total}</span>
-              <button onClick={() => setPlaying((value) => !value)} className="w-6 h-6 rounded-full bg-white/70 hover:bg-white flex items-center justify-center transition-colors" aria-label={playing ? '일시정지' : '재생'}>
+              <span className="text-[11px] font-bold text-slate-500 tabular-nums">{idx + 1} / {total}</span>
+              <button
+                onClick={() => setPlaying((value) => !value)}
+                className="w-6 h-6 rounded-full bg-white/70 hover:bg-white flex items-center justify-center transition-colors"
+                aria-label={playing ? '자동 넘김 일시정지' : '자동 넘김 재생'}
+                aria-pressed={!playing}
+              >
                 <Icon icon={playing ? 'solar:pause-bold' : 'solar:play-bold'} width={9} className="text-slate-700" />
               </button>
             </div>
           </div>
 
-          <SideCard step={next} />
+          <SideCard step={STEPS[nextIdx]} onClick={() => go(1)} label="다음 단계" />
         </div>
 
         <div className="mt-5 flex justify-center gap-1.5">
           {STEPS.map((step, index) => (
-            <button key={step.tag} onClick={() => setIdx(index)} className={`h-1.5 rounded-full transition-all ${index === idx ? 'w-5 bg-brand' : 'w-1.5 bg-slate-300'}`} aria-label={`스텝 ${index + 1}`} />
+            <button
+              key={step.tag}
+              onClick={() => jumpTo(index)}
+              className={`h-1.5 rounded-full transition-all ${index === idx ? 'w-5 bg-brand' : 'w-1.5 bg-slate-300 hover:bg-slate-400'}`}
+              aria-label={`${index + 1}단계로 이동`}
+              aria-current={index === idx}
+            />
           ))}
         </div>
       </Section>
