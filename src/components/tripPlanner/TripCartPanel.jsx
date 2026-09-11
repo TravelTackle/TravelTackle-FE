@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { CART_CHANGED_EVENT, CART_ITEM_DRAG_TYPE, getCartItems, removeCartItem } from '../../api/cart'
 import { CART_TABS, areaName, cartTheme, themeKey } from '../../lib/cartThemes'
@@ -10,6 +10,68 @@ export default function TripCartPanel({ onToggle }) {
   const [items, setItems] = useState([])
   const [tab, setTab] = useState('all')
   const [query, setQuery] = useState('')
+  const tabsRef = useRef(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
+  // 보이는 폭만큼 넘기되 한 칩 정도는 겹치게 남겨서 이어지는 느낌을 준다.
+  // 단, 남은 거리가 한 화면 폭 이내면(마지막 조금 남은 상태) 애매하게 덜 넘어가지 않도록 바로 끝으로 스냅한다.
+  function scrollTabs(direction) {
+    const el = tabsRef.current
+    if (!el) return
+    const overlap = 40
+    const maxScroll = el.scrollWidth - el.clientWidth
+    const remaining = direction > 0 ? maxScroll - el.scrollLeft : el.scrollLeft
+    const target =
+      remaining <= el.clientWidth
+        ? direction > 0
+          ? maxScroll
+          : 0
+        : el.scrollLeft + direction * (el.clientWidth - overlap)
+    el.scrollTo({ left: target, behavior: 'smooth' })
+  }
+
+  const updateScrollButtons = useCallback(() => {
+    const el = tabsRef.current
+    if (!el) return
+    setCanScrollLeft(el.scrollLeft > 4)
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
+  }, [])
+
+  // 스크롤 도중(특히 smooth scrollTo 애니메이션 중)에 버튼이 마운트/언마운트되면 필터 목록의 flex-1 폭이
+  // 바뀌어 진행 중이던 스크롤 목표 지점이 밀린다 — 그래서 스크롤이 완전히 멈춘 뒤(마지막 스크롤 이벤트로부터
+  // 150ms 뒤)에만 버튼 표시 여부를 갱신한다.
+  useEffect(() => {
+    updateScrollButtons()
+    const el = tabsRef.current
+    if (!el) return
+    let timer
+    function onScroll() {
+      clearTimeout(timer)
+      timer = setTimeout(updateScrollButtons, 150)
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', updateScrollButtons)
+    return () => {
+      clearTimeout(timer)
+      el.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', updateScrollButtons)
+    }
+  }, [updateScrollButtons])
+
+  // 버튼이 나타나거나 사라지면(위 이펙트가 그 반영을 렌더링한 뒤) 스크롤 가능 폭 자체가 바뀐다 —
+  // "끝까지 온 줄 알았는데 버튼 하나만큼 덜 스크롤된" 상태가 되지 않도록, 그 직후 실제 끝으로 조용히(즉시) 보정한다.
+  useEffect(() => {
+    const el = tabsRef.current
+    if (!el) return
+    const maxScroll = el.scrollWidth - el.clientWidth
+    if (canScrollRight === false && el.scrollLeft < maxScroll - 1) {
+      el.scrollTo({ left: maxScroll, behavior: 'instant' })
+    } else if (canScrollLeft === false && el.scrollLeft > 1) {
+      el.scrollTo({ left: 0, behavior: 'instant' })
+    }
+  }, [canScrollLeft, canScrollRight])
+
   const refresh = useCallback(() => {
     getCartItems().then(setItems).catch(() => setItems([]))
   }, [])
@@ -30,11 +92,6 @@ export default function TripCartPanel({ onToggle }) {
   }
 
   const q = query.trim().toLowerCase()
-  const countByTab = CART_TABS.reduce((acc, t) => {
-    acc[t.key] = t.key === 'all' ? items.length : items.filter((i) => themeKey(i.contentTypeId) === t.key).length
-    return acc
-  }, {})
-  const visibleTabs = CART_TABS.filter((t) => t.key === 'all' || countByTab[t.key] > 0 || t.key === tab)
   const visibleItems = items
     .filter((i) => tab === 'all' || themeKey(i.contentTypeId) === tab)
     .filter((i) => !q || i.title?.toLowerCase().includes(q) || areaName(i.areaCode).toLowerCase().includes(q))
@@ -68,27 +125,53 @@ export default function TripCartPanel({ onToggle }) {
         </div>
       </div>
 
-      {/* 테마 칩 — 담긴 개수와 함께, 많아지면 줄바꿈 (FloatingCart와 동일) */}
-      <div className="flex flex-wrap gap-1.5 px-4 py-3" role="tablist" aria-label="테마별 보기">
-        {visibleTabs.map((t) => {
-          const active = tab === t.key
-          return (
+      <div className="flex items-center px-4 py-3">
+        <button
+          type="button"
+          onClick={() => scrollTabs(-1)}
+          aria-label="이전 필터"
+          tabIndex={canScrollLeft ? 0 : -1}
+          className={`flex h-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-white text-brand shadow-card transition-all duration-300 hover:border-brand hover:bg-brand-light ${
+            canScrollLeft ? 'mr-1 w-6 border-slate-200 opacity-100' : 'w-0 border-transparent opacity-0'
+          }`}
+        >
+          <Icon icon="mdi:chevron-left" width={16} className="shrink-0" />
+        </button>
+        <div
+          ref={tabsRef}
+          className="scrollbar-hide flex flex-1 gap-1.5 overflow-x-auto"
+          style={{
+            maskImage: `linear-gradient(to right, ${canScrollLeft ? 'transparent, black 12px' : 'black'}, ${
+              canScrollRight ? 'black calc(100% - 12px), transparent' : 'black'
+            })`,
+            WebkitMaskImage: `linear-gradient(to right, ${canScrollLeft ? 'transparent, black 12px' : 'black'}, ${
+              canScrollRight ? 'black calc(100% - 12px), transparent' : 'black'
+            })`,
+          }}
+        >
+          {CART_TABS.map((t) => (
             <button
               key={t.key}
-              type="button"
-              role="tab"
-              aria-selected={active}
               onClick={() => setTab(t.key)}
-              className={`flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1.5 text-[12px] font-bold transition-all ${
-                active ? 'border-brand bg-brand text-white shadow-[0_4px_12px_rgba(37,99,235,0.25)]' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-800'
+              className={`shrink-0 rounded-full border px-2.5 py-1 text-[11.5px] font-bold transition-colors ${
+                tab === t.key ? 'border-brand bg-brand text-white' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
               }`}
             >
-              {t.icon && <Icon icon={t.icon} width={12} />}
               {t.label}
-              <span className={`tabular-nums ${active ? 'text-white/80' : 'text-slate-400'}`}>{countByTab[t.key]}</span>
             </button>
-          )
-        })}
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => scrollTabs(1)}
+          aria-label="다음 필터"
+          tabIndex={canScrollRight ? 0 : -1}
+          className={`flex h-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-white text-brand shadow-card transition-all duration-300 hover:border-brand hover:bg-brand-light ${
+            canScrollRight ? 'ml-1 w-6 border-slate-200 opacity-100' : 'w-0 border-transparent opacity-0'
+          }`}
+        >
+          <Icon icon="mdi:chevron-right" width={16} className="shrink-0" />
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-4">
@@ -99,7 +182,7 @@ export default function TripCartPanel({ onToggle }) {
           </div>
         ) : (
           <ul className="flex flex-col gap-2.5">
-            {visibleItems.map((item, i) => (
+            {visibleItems.map((item) => (
               <li
                 key={item.id}
                 draggable
@@ -109,34 +192,27 @@ export default function TripCartPanel({ onToggle }) {
                   const rect = e.currentTarget.getBoundingClientRect()
                   e.dataTransfer.setDragImage(e.currentTarget, e.clientX - rect.left, e.clientY - rect.top)
                 }}
-                className="group animate-slide-in flex cursor-grab items-center gap-2.5 rounded-2xl border border-slate-100 bg-white p-2.5 shadow-card transition-all duration-300 hover:-translate-y-px hover:shadow-card-hover active:cursor-grabbing"
-                style={{ animationDelay: `${Math.min(i, 6) * 50}ms` }}
+                className="flex cursor-grab items-center gap-3 rounded-xl border border-slate-100 p-2.5 shadow-card active:cursor-grabbing"
               >
-                <span className="shrink-0 text-slate-300 group-hover:text-slate-400" aria-hidden="true">
-                  <Icon icon="solar:menu-dots-bold" width={16} className="rotate-90" />
-                </span>
                 {item.imageUrl ? (
-                  <img src={item.imageUrl} alt="" className="h-12 w-12 shrink-0 rounded-xl bg-slate-100 object-cover" />
+                  <img src={item.imageUrl} alt="" className="h-12 w-12 shrink-0 rounded-lg bg-slate-100 object-cover" />
                 ) : (
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-300">
-                    <Icon icon={cartTheme(item.contentTypeId).icon} width={18} />
-                  </span>
+                  <div className="h-12 w-12 shrink-0 rounded-lg bg-slate-100" />
                 )}
                 <div className="min-w-0 flex-1">
-                  <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-slate-500">
-                    <span className={`h-1.5 w-1.5 rounded-full ${cartTheme(item.contentTypeId).badgeBg}`} aria-hidden="true" />
+                  <span className="inline-flex items-center gap-1 rounded border border-slate-200 px-1.5 py-px text-[10px] font-semibold text-slate-400">
+                    <Icon icon={cartTheme(item.contentTypeId).icon} width={10} />
                     {cartTheme(item.contentTypeId).label}
                   </span>
                   <p className="mt-0.5 truncate text-[12.5px] font-bold text-slate-800">{item.title}</p>
-                  <p className="truncate text-[11px] text-slate-400">{areaName(item.areaCode)}</p>
+                  <p className="text-[11px] text-slate-400">{areaName(item.areaCode)}</p>
                 </div>
                 <button
-                  type="button"
                   onClick={() => handleRemove(item)}
                   aria-label={`${item.title} 빼기`}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-300 transition-colors hover:bg-rose-50 hover:text-rose-500"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-100"
                 >
-                  <Icon icon="solar:trash-bin-minimalistic-linear" width={14} />
+                  <Icon icon="solar:trash-bin-minimalistic-linear" width={13} />
                 </button>
               </li>
             ))}
