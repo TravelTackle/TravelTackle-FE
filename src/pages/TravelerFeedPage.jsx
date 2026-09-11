@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Icon } from '@iconify/react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import ChatbotWidget from '../components/ChatbotWidget'
@@ -16,15 +17,42 @@ import { FEED_REGIONS, MOCK_FEED_ITEMS, MOCK_GALLERY_ITEMS, MOCK_TOP5_PLANS } fr
 import { getFeed } from '../api/feed'
 import { adaptFeedItem } from '../data/feedAdapter'
 
+const SORT_OPTIONS = [
+  { value: 'relevance', label: '관련도순' },
+  { value: 'latest', label: '최신순' },
+  { value: 'oldest', label: '오래된순' },
+]
+
 export default function TravelerFeedPage() {
   const [realItems, setRealItems] = useState([])
+  const [searchInput, setSearchInput] = useState('')
+  const [searchKeyword, setSearchKeyword] = useState('')
+  const [searchFocused, setSearchFocused] = useState(false)
+  const [sortOption, setSortOption] = useState('relevance')
+  const [sortMenuOpen, setSortMenuOpen] = useState(false)
+  const sortMenuRef = useRef(null)
 
-  // 실 데이터를 목업 앞에 붙여서 표시 — 목업은 항상 맨 아래 유지
   useEffect(() => {
-    getFeed({ size: 50 })
+    function onClickOutside(e) {
+      if (sortMenuRef.current && !sortMenuRef.current.contains(e.target)) setSortMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [])
+
+  // 실 데이터를 목업 앞에 붙여서 표시 — 목업은 항상 맨 아래 유지. sort는 사용자가 고른 값을 그대로 보내고,
+  // relevance인데 keyword가 없으면 서버가 알아서 latest로 대체해준다.
+  useEffect(() => {
+    getFeed({ size: 50, keyword: searchKeyword || undefined, sort: sortOption })
       .then((page) => setRealItems(page.content.map(adaptFeedItem)))
       .catch(() => setRealItems([]))
-  }, [])
+  }, [searchKeyword, sortOption])
+
+  // 입력을 멈춘 뒤에만 검색
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchKeyword(searchInput.trim()), 400)
+    return () => clearTimeout(timer)
+  }, [searchInput])
 
   const [view, setView] = useState('list')
   const [filter, setFilter] = useState('all')
@@ -58,12 +86,20 @@ export default function TravelerFeedPage() {
     return true
   }
 
-  const allItems = [...realItems, ...MOCK_FEED_ITEMS]
+  // 실 데이터는 이미 서버가 keyword로 걸러서 준 결과라 그대로 믿고, 목업은 항상 섞여 나오니
+  // 검색 중엔 목업 쪽만 클라이언트에서 같은 keyword로 한 번 더 걸러서 엉뚱한 목업이 안 섞이게 한다.
+  const q = searchKeyword.trim().toLowerCase()
+  function matchesMockKeyword(item) {
+    if (!q) return true
+    return item.title?.toLowerCase().includes(q) || item.comment?.toLowerCase().includes(q)
+  }
+
+  const allItems = [...realItems, ...MOCK_FEED_ITEMS.filter(matchesMockKeyword)]
   const items = allItems.filter(matchesFilters)
   // 갤러리형은 계획→기록→기록→계획 Z자 순서로 보이도록 별도 배치 데이터 사용.
   // grid는 행 높이가 좌우 중 큰 쪽에 맞춰져 짧은 카드 아래 빈 공간이 생기므로,
   // 좌/우 컬럼을 독립된 세로 스택 두 개로 나눠 각자 빈틈없이 붙게 렌더링한다.
-  const galleryItems = [...realItems, ...MOCK_GALLERY_ITEMS].filter(matchesFilters)
+  const galleryItems = [...realItems, ...MOCK_GALLERY_ITEMS.filter(matchesMockKeyword)].filter(matchesFilters)
   const galleryLeft = galleryItems.filter((_, i) => i % 2 === 0)
   const galleryRight = galleryItems.filter((_, i) => i % 2 === 1)
 
@@ -98,6 +134,42 @@ export default function TravelerFeedPage() {
         {view === 'list' ? (
           <div className="flex flex-col gap-6 md:flex-row md:justify-center">
             <div className="order-2 flex min-w-0 flex-1 flex-col gap-5 md:order-1 md:max-w-[520px]">
+              {/* 검색 중일 때만 노출 — 외곽선 없이 텍스트+작은 화살표만, 드롭다운은 기본 브라우저 UI 대신 커스텀 패널 */}
+              {searchKeyword && (
+                <div className="relative -mb-2" ref={sortMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() => setSortMenuOpen((v) => !v)}
+                    className="flex items-center gap-1 text-[12px] font-semibold text-slate-500 hover:text-slate-700"
+                  >
+                    {SORT_OPTIONS.find((o) => o.value === sortOption)?.label}
+                    <Icon
+                      icon="solar:alt-arrow-down-linear"
+                      width={10}
+                      className={`transition-transform ${sortMenuOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  {sortMenuOpen && (
+                    <div className="absolute left-0 top-full z-30 mt-1.5 w-28 rounded-xl border border-slate-100 bg-white py-1 shadow-popup">
+                      {SORT_OPTIONS.map((o) => (
+                        <button
+                          key={o.value}
+                          type="button"
+                          onClick={() => {
+                            setSortOption(o.value)
+                            setSortMenuOpen(false)
+                          }}
+                          className={`block w-full px-3 py-1.5 text-left text-[12px] transition-colors ${
+                            sortOption === o.value ? 'bg-brand-light font-bold text-brand' : 'text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               {items.length === 0 ? (
                 <div className="py-20 text-center text-[13px] text-slate-400">해당하는 피드가 없어요.</div>
               ) : (
@@ -105,6 +177,42 @@ export default function TravelerFeedPage() {
               )}
             </div>
             <aside className="order-1 flex w-full shrink-0 flex-col gap-4 md:order-2 md:sticky md:top-[134px] md:w-[260px] md:self-start">
+              <div
+                className={`flex h-9 items-center gap-1.5 rounded-lg border bg-white px-2.5 shadow-card transition-colors ${
+                  searchFocused ? 'border-brand/40' : 'border-slate-200'
+                }`}
+              >
+                <Icon icon="solar:magnifer-linear" width={14} className="shrink-0 text-slate-300" />
+                <input
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      setSearchKeyword(searchInput.trim())
+                    }
+                  }}
+                  placeholder="여행 계획, 기록 검색"
+                  className="h-full w-full text-[12px] text-slate-700 outline-none placeholder:text-slate-300"
+                />
+                {searchInput && (
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setSearchInput('')
+                      setSearchKeyword('')
+                    }}
+                    aria-label="검색어 지우기"
+                    className="shrink-0 text-slate-300 hover:text-slate-500"
+                  >
+                    <Icon icon="mdi:close-circle" width={15} />
+                  </button>
+                )}
+              </div>
+
               <Card className="p-4">
                 <RegionChipRow regions={FEED_REGIONS} active={region} onSelect={setRegion} layout="grid" title="인기 지역" />
               </Card>
