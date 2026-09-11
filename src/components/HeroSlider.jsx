@@ -36,6 +36,16 @@ const STEPS = [
 ]
 
 const INTERVAL = 4500
+// 제목 — 키워드 셋은 각 단계에 묶인다 (step: 슬라이드 인덱스)
+const HEADLINE = [
+  { text: '계획', step: 0 },
+  { text: '하고,' },
+  { text: '참견', step: 1 },
+  { text: '받고,' },
+  { text: '여행을' },
+  { text: '완성', step: 2 },
+  { text: '하세요' },
+]
 // 무한 루프용 트랙: 앞뒤에 복제 한 장씩
 const TRACK = [
   { step: STEPS[STEPS.length - 1], clone: true },
@@ -162,9 +172,55 @@ export default function HeroSlider() {
   return (
     <section className="bg-white">
       <Section as="div" className="pt-8 pb-10 sm:pt-10 sm:pb-12">
-        <h1 className="text-center text-[26px] sm:text-[30px] font-extrabold tracking-tight text-slate-900 text-balance">
-          <span className="text-brand">계획</span>하고, <span className="text-brand">참견</span>받고, 여행을 <span className="text-brand">완성</span>하세요
-        </h1>
+        {pending ? (
+          // 첫 로딩 — 제목 자리를 어절 단위 스켈레톤으로 잡아 둔다
+          <div className="flex flex-wrap items-center justify-center gap-2" role="status" aria-label="불러오는 중">
+            {[76, 60, 76, 60, 64, 92, 72].map((w, i) => (
+              <Skeleton key={i} className="h-8 rounded-full" style={{ width: w, animationDelay: `${i * 70}ms` }} />
+            ))}
+          </div>
+        ) : (
+          <h1
+            className="flex flex-wrap items-baseline justify-center gap-x-[0.22em] gap-y-1 text-center text-[27px] sm:text-[32px] font-extrabold tracking-[-0.02em] text-slate-900"
+            aria-label="계획하고, 참견받고, 여행을 완성하세요"
+          >
+            {HEADLINE.map((part, i) =>
+              part.step == null ? (
+                <span key={i} className="ai-word" style={{ animationDelay: `${i * 80}ms` }} aria-hidden="true">
+                  {part.text}
+                </span>
+              ) : (
+                // 키워드는 현재 슬라이드와 함께 켜지고, 누르면 그 단계로 이동한다
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => jumpTo(part.step)}
+                  aria-label={`${part.step + 1}단계 ${STEPS[part.step].title}로 이동`}
+                  aria-current={idx === part.step ? 'step' : undefined}
+                  className={`ai-word group relative isolate rounded-xl px-1.5 transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+                    idx === part.step ? 'text-white' : 'text-brand hover:text-brand-dark'
+                  }`}
+                  style={{ animationDelay: `${i * 80}ms` }}
+                >
+                  {/* 채움은 크기가 아니라 투명도로 오가서, 넘어가는 순간 흰 글자가 흰 배경에 묻히지 않는다 */}
+                  <span
+                    aria-hidden="true"
+                    className={`absolute inset-0 -z-10 rounded-xl bg-gradient-to-br from-brand-mid to-brand transition-all duration-300 ease-out ${
+                      idx === part.step ? 'scale-100 opacity-100 shadow-[0_8px_20px_rgba(37,99,235,0.3)]' : 'scale-90 opacity-0'
+                    }`}
+                  />
+                  <span
+                    aria-hidden="true"
+                    className={`absolute inset-0 -z-20 rounded-xl bg-brand-light transition-opacity duration-200 ${
+                      idx === part.step ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
+                    }`}
+                  />
+                  {part.text}
+                </button>
+              ),
+            )}
+          </h1>
+        )}
 
         <div
           className="mt-6 flex items-center justify-center gap-4 xl:gap-5"
