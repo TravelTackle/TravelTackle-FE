@@ -171,6 +171,9 @@ function EmptyState({ icon, title, desc, to, cta }) {
   )
 }
 
+// 제목은 첫 로딩 뒤 어절이 차례로 떠오른다 (배너 문구와 같은 결)
+const HEADING = [{ text: '좋은 여행은' }, { text: '좋은 참견에서', accent: true }, { text: '시작됩니다.' }]
+
 // 로그인 사용자의 "전체" 탭은 선호도 기반 추천으로 채운다 — 맞춤 추천 섹션이 비면 인기 여행지 섹션으로
 function pickRecommended(sections) {
   const bySection = Object.fromEntries((sections || []).map((s) => [s.sectionId, s]))
@@ -243,6 +246,12 @@ export default function ExploreSection({ feed }) {
   const spotItems = spots.error && !region.areaCode ? FALLBACK_SPOTS : spots.items
   const loading = tab === 'spot' ? spots.loading : feed.loading
 
+  // 제목 스켈레톤은 섹션이 처음 열릴 때 한 번만 — 탭·지역을 바꿀 땐 카드만 다시 로딩된다
+  const [revealed, setRevealed] = useState(false)
+  useEffect(() => {
+    if (!loading) setRevealed(true)
+  }, [loading])
+
   function renderBody() {
     if (loading) return <SkeletonGrid />
 
@@ -313,14 +322,35 @@ export default function ExploreSection({ feed }) {
   return (
     <Section as="section" id="explore" className="py-14 sm:py-16">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-[22px] font-bold text-slate-900 text-balance">
-            좋은 여행은 <span className="text-brand font-extrabold">좋은 참견</span>에서 시작됩니다.
-          </h2>
-          <p className="mt-1.5 text-[13px] text-slate-500">
-            여행자들이 지금 보고 있는 관광지, 계획, 기록을 한곳에서 둘러보세요.
-          </p>
-        </div>
+        {loading && !revealed ? (
+          // 첫 로딩 — 제목·보조 문구 자리를 스켈레톤으로 잡아 둔다
+          <div role="status" aria-label="불러오는 중">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-6 w-28" />
+              <Skeleton className="h-6 w-24 rounded-full" style={{ animationDelay: '80ms' }} />
+              <Skeleton className="h-6 w-24" style={{ animationDelay: '160ms' }} />
+            </div>
+            <Skeleton className="mt-2.5 h-3.5 w-72 max-w-full" style={{ animationDelay: '240ms' }} />
+          </div>
+        ) : (
+          <div>
+            {/* ai-word가 inline-block이라 span 안의 공백이 사라진다 — 어절 사이 간격은 gap으로 */}
+            <h2 className="flex flex-wrap items-baseline gap-x-[0.28em] text-[22px] font-bold text-slate-900">
+              {HEADING.map((w, i) => (
+                <span
+                  key={w.text}
+                  className={`ai-word ${w.accent ? 'text-brand font-extrabold' : ''}`}
+                  style={{ animationDelay: `${i * 90}ms` }}
+                >
+                  {w.text}
+                </span>
+              ))}
+            </h2>
+            <p className="ai-word mt-1.5 text-[13px] text-slate-500" style={{ animationDelay: `${HEADING.length * 90}ms` }}>
+              여행자들이 지금 보고 있는 관광지, 계획, 기록을 한곳에서 둘러보세요.
+            </p>
+          </div>
+        )}
         {/* 전체보기 — 현재 탭 아이콘을 앞에 둔 연한 브랜드색 알약, 올리면 진한 색으로 차오른다 */}
         <Link
           to={activeTab.moreTo}
