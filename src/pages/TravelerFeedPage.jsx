@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Icon } from '@iconify/react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -54,10 +55,28 @@ export default function TravelerFeedPage() {
     return () => clearTimeout(timer)
   }, [searchInput])
 
+  // 홈 모아보기 등에서 ?open=<id>&filter=plan|record 로 들어오면 해당 글 상세를 바로 연다
+  const [searchParams, setSearchParams] = useSearchParams()
+  const openId = searchParams.get('open')
+  const initialFilter = ['plan', 'record'].includes(searchParams.get('filter')) ? searchParams.get('filter') : 'all'
+
   const [view, setView] = useState('list')
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter] = useState(initialFilter)
   const [region, setRegion] = useState(null)
   const [drawerItem, setDrawerItem] = useState(null)
+
+  useEffect(() => {
+    if (!openId) return
+    const target = [...realItems, ...MOCK_FEED_ITEMS].find((i) => i.id === openId)
+    if (!target) return
+    setDrawerItem(target)
+    // 한 번 열었으면 주소에서 지워 새로고침·뒤로가기 때 다시 열리지 않게
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('open')
+      return next
+    }, { replace: true })
+  }, [openId, realItems, setSearchParams])
   const [uploadOpen, setUploadOpen] = useState(false)
   const [toast, setToast] = useState('')
   const toastTimer = useRef(null)
