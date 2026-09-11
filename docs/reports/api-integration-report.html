@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Travel Tackle API 연동 감사 보고서</title>
+<style>
+  :root {
+    --bg: #f6f7fb;
+    --card: #ffffff;
+    --border: #e3e6ee;
+    --text: #1c2130;
+    --text-muted: #5b6270;
+    --brand: #2f6fed;
+    --brand-soft: #eaf1ff;
+    --ok-bg: #e7f7ee;
+    --ok-text: #146b38;
+    --ok-border: #b7e6c9;
+    --partial-bg: #fff6e5;
+    --partial-text: #8a5209;
+    --partial-border: #f3d9a1;
+    --bad-bg: #fdeeee;
+    --bad-text: #c23b3b;
+    --bad-border: #f3c6c6;
+    --none-bg: #eef0f4;
+    --none-text: #4b515c;
+    --none-border: #dadde5;
+    --brand-strong: #1d4fc4;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    line-height: 1.55;
+    font-size: 15px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 28px 18px 80px; }
+  header.page-head {
+    padding: 28px 24px;
+    background: linear-gradient(135deg, #142a6e, #2757c7);
+    color: #fff;
+    border-radius: 16px;
+    margin-bottom: 24px;
+  }
+  header.page-head h1 { margin: 0 0 8px; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color: #fff; }
+  header.page-head p { margin: 4px 0; font-size: 13.5px; color: #fff; }
+  header.page-head .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; font-size: 12.5px; }
+  header.page-head .meta span { background: rgba(0,0,0,0.24); color: #fff; padding: 4px 10px; border-radius: 999px; }
+
+  section { margin-bottom: 32px; }
+  h2 {
+    font-size: 17px; font-weight: 800; margin: 0 0 14px; color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+  }
+  h2::before { content: ""; width: 4px; height: 16px; background: var(--brand); border-radius: 2px; display: inline-block; }
+  h3 { font-size: 14.5px; font-weight: 700; margin: 18px 0 8px; }
+  p.section-desc { color: var(--text-muted); font-size: 13.5px; margin: -6px 0 16px; }
+
+  /* KPI */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 720px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+  .kpi-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 16px; text-align: left;
+  }
+  .kpi-card .num { font-size: 28px; font-weight: 800; color: var(--brand-strong); line-height: 1.1; }
+  .kpi-card .label { margin-top: 6px; font-size: 12.5px; color: var(--text-muted); font-weight: 600; }
+  .kpi-card .sub { margin-top: 2px; font-size: 11.5px; color: var(--text-muted); }
+
+  /* badges */
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 999px;
+    font-size: 11.5px; font-weight: 700; white-space: nowrap; border: 1px solid transparent;
+  }
+  .badge.ok { background: var(--ok-bg); color: var(--ok-text); border-color: var(--ok-border); }
+  .badge.partial { background: var(--partial-bg); color: var(--partial-text); border-color: var(--partial-border); }
+  .badge.bad { background: var(--bad-bg); color: var(--bad-text); border-color: var(--bad-border); }
+  .badge.none { background: var(--none-bg); color: var(--none-text); border-color: var(--none-border); }
+
+  /* usage tag */
+  .usage-tag { font-size: 11px; padding: 2px 8px; border-radius: 6px; background: var(--brand-soft); color: var(--brand-strong); font-weight: 600; display: inline-block; }
+  .usage-tag.other { background: #f1eefb; color: #5b34b8; }
+  .usage-tag.unused-fn { background: #fff1e0; color: #8a4f08; }
+  .usage-tag.missing { background: #f2f3f6; color: var(--text-muted); }
+
+  /* table */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 14px; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; min-width: 880px; font-size: 13px; }
+  thead th {
+    text-align: left; padding: 10px 12px; background: #f0f2f8; color: var(--text-muted);
+    font-weight: 700; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.02em;
+    border-bottom: 1px solid var(--border); position: sticky; top: 0;
+  }
+  tbody td { padding: 10px 12px; border-bottom: 1px solid #eef0f5; vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #fafbfe; }
+  td.method { font-weight: 700; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  td.path { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #2a2f3a; }
+  td.desc { color: var(--text-muted); }
+  .m-get { color: #1567b0; } .m-post { color: var(--ok-text); } .m-patch { color: var(--partial-text); } .m-put { color: #6a3fd6; } .m-delete { color: var(--bad-text); }
+
+  .filter-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .filter-btn {
+    border: 1px solid var(--border); background: #fff; color: var(--text-muted);
+    padding: 6px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .filter-btn.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+  /* section cards */
+  .section-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .home-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px;
+  }
+  .home-card .head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .home-card .head .name { font-weight: 800; font-size: 14.5px; }
+  .home-card .endpoints { margin-top: 8px; font-size: 12.5px; color: var(--text-muted); }
+  .home-card .endpoints code { background: #f0f2f8; padding: 1px 6px; border-radius: 5px; font-size: 11.5px; }
+  .home-card .note { margin-top: 8px; font-size: 12.5px; color: #7a5b0a; background: #fff9ec; border: 1px solid #f3e2b6; padding: 8px 10px; border-radius: 8px; }
+
+  /* gap list */
+  ol.gap-list { padding-left: 0; list-style: none; counter-reset: gap; margin: 0; }
+  ol.gap-list li {
+    counter-increment: gap; position: relative; padding: 14px 16px 14px 46px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px;
+  }
+  ol.gap-list li::before {
+    content: counter(gap); position: absolute; left: 14px; top: 14px;
+    width: 22px; height: 22px; border-radius: 50%; background: var(--brand); color: #fff;
+    font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+  }
+  ol.gap-list li .title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  ol.gap-list li .desc { font-size: 13px; color: var(--text-muted); }
+  .prio { font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 999px; margin-right: 6px; vertical-align: 1px; }
+  .prio.high { background: var(--bad-bg); color: var(--bad-text); }
+  .prio.mid { background: var(--partial-bg); color: var(--partial-text); }
+  .prio.low { background: var(--none-bg); color: var(--none-text); }
+
+  ul.req-list { margin: 0; padding-left: 18px; }
+  ul.req-list li { margin-bottom: 8px; font-size: 13.5px; }
+  ul.req-list li b { font-weight: 700; }
+
+  footer.page-foot { text-align: center; color: var(--text-muted); font-size: 12px; margin-top: 40px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page-head">
+    <h1>Travel Tackle API 연동 감사 보고서</h1>
+    <p>프론트엔드(React 19 + Vite + Tailwind v4)가 백엔드(Spring Boot) API를 얼마나, 어디서 사용하고 있는지 점검한 결과입니다.</p>
+    <div class="meta">
+      <span>생성 일시: 2026-09-11</span>
+      <span>기준 커밋: f3cfe7a (refactor/home-page)</span>
+      <span>비교 기준: origin/develop</span>
+    </div>
+  </header>
+
+  <section id="summary">
+    <h2>요약</h2>
+    <p class="section-desc">백엔드 컨트롤러 11개, 총 55개 엔드포인트를 기준으로 집계했습니다.</p>
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="num">55</div>
+        <div class="label">전체 백엔드 엔드포인트</div>
+        <div class="sub">11개 컨트롤러 합산</div>
+      </div>
+      <div class="kpi-card">
+        <div class="num">39</div>
+        <div class="label">프론트에서 사용 중</div>
+        <div class="sub">연동완료 36 + 부분연동 3 (71%)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="num">16</div>
+        <div class="label">홈 화면에서 사용</div>
+        <div class="sub">Navbar·AiSummaryFeed·ParticipateSection·ExploreSection·ChatbotWidget·FloatingCart</div>
+      </div>
+      <div class="kpi-card">
+        <div class="num">16</div>
+        <div class="label">미연동 (프론트에 없음/미사용)</div>
+        <div class="sub">프론트에 없음 15 + 함수만 있고 미사용 1</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="endpoints">
+    <h2>엔드포인트 표</h2>
+    <p class="section-desc">상태 배지를 클릭하듯 아래 필터로 골라볼 수 있습니다 (전체 55개).</p>
+    <div class="filter-row" id="filterRow">
+      <button class="filter-btn active" data-filter="all">전체 55</button>
+      <button class="filter-btn" data-filter="ok">연동완료 36</button>
+      <button class="filter-btn" data-filter="partial">부분연동 3</button>
+      <button class="filter-btn" data-filter="bad">미연동 16</button>
+      <button class="filter-btn" data-filter="home">홈 화면 사용 16</button>
+    </div>
+    <div class="table-scroll">
+      <table id="epTable">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Path</th>
+            <th>설명</th>
+            <th>프론트 함수</th>
+            <th>사용처</th>
+            <th>상태</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- AuthController -->
+          <tr data-status="ok" data-home="0"><td class="method m-post">POST</td><td class="path">/api/auth/email-verifications</td><td class="desc">이메일 인증번호 요청</td><td><code>requestEmailCode</code></td><td><span class="usage-tag other">SignupPage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-post">POST</td><td class="path">/api/auth/email-verifications/confirm</td><td class="desc">이메일 인증번호 확인</td><td><code>confirmEmailCode</code></td><td><span class="usage-tag other">SignupPage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-post">POST</td><td class="path">/api/auth/signup</td><td class="desc">일반 회원가입</td><td><code>signup</code></td><td><span class="usage-tag other">SignupPage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-post">POST</td><td class="path">/api/auth/login</td><td class="desc">이메일 로그인</td><td><code>login</code></td><td><span class="usage-tag other">LoginPage, AuthContext</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-post">POST</td><td class="path">/api/auth/refresh</td><td class="desc">Access Token 재발급</td><td><code>client.js 인터셉터</code></td><td><span class="usage-tag other">전역 401 재시도</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="1"><td class="method m-post">POST</td><td class="path">/api/auth/logout</td><td class="desc">로그아웃</td><td><code>logout</code></td><td><span class="usage-tag">Navbar</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="1"><td class="method m-get">GET</td><td class="path">/api/auth/me</td><td class="desc">현재 로그인 사용자 조회</td><td><code>getMe</code></td><td><span class="usage-tag">AuthContext(전역), Navbar</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="bad" data-home="0"><td class="method m-patch">PATCH</td><td class="path">/api/auth/password</td><td class="desc">로그인 상태 비밀번호 변경</td><td>-</td><td><span class="usage-tag missing">프론트에 없음</span></td><td><span class="badge bad">미연동</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-post">POST</td><td class="path">/api/auth/password-resets</td><td class="desc">비밀번호 재설정 인증번호 요청</td><td><code>requestPasswordReset</code></td><td><span class="usage-tag other">PasswordResetModal</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-post">POST</td><td class="path">/api/auth/password-resets/confirm</td><td class="desc">비밀번호 재설정 확인</td><td><code>confirmPasswordReset</code></td><td><span class="usage-tag other">PasswordResetModal</span></td><td><span class="badge ok">연동완료</span></td></tr>
+
+          <!-- CartController -->
+          <tr data-status="ok" data-home="1"><td class="method m-post">POST</td><td class="path">/api/cart-items</td><td class="desc">관광 콘텐츠 장바구니 추가</td><td><code>addCartItem</code></td><td><span class="usage-tag">FloatingCart</span> <span class="usage-tag other">TourExplorePage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="1"><td class="method m-get">GET</td><td class="path">/api/cart-items</td><td class="desc">내 장바구니 조회</td><td><code>getCartItems</code></td><td><span class="usage-tag">FloatingCart</span> <span class="usage-tag other">TripCartPanel 등</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="1"><td class="method m-delete">DELETE</td><td class="path">/api/cart-items/{cartItemId}</td><td class="desc">장바구니 항목 삭제</td><td><code>removeCartItem</code></td><td><span class="usage-tag">FloatingCart</span> <span class="usage-tag other">TripCartPanel</span></td><td><span class="badge ok">연동완료</span></td></tr>
+
+          <!-- ChatController -->
+          <tr data-status="ok" data-home="1"><td class="method m-post">POST</td><td class="path">/api/chat</td><td class="desc">추천 챗봇 대화</td><td><code>sendChatMessage</code></td><td><span class="usage-tag">ChatbotWidget</span></td><td><span class="badge ok">연동완료</span></td></tr>
+
+          <!-- UserPreferenceController -->
+          <tr data-status="ok" data-home="0"><td class="method m-post">POST</td><td class="path">/api/preferences</td><td class="desc">여행 선호도 등록 (온보딩)</td><td><code>createPreferences</code></td><td><span class="usage-tag other">PreferenceWizard</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="1"><td class="method m-get">GET</td><td class="path">/api/preferences</td><td class="desc">내 여행 선호도 조회</td><td><code>getPreferences</code></td><td><span class="usage-tag">AiSummaryFeed</span> <span class="usage-tag other">OAuthCallback, LoginPage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="bad" data-home="0"><td class="method m-put">PUT</td><td class="path">/api/preferences</td><td class="desc">여행 선호도 수정</td><td><code>updatePreferences</code></td><td><span class="usage-tag unused-fn">함수만 있고 미사용</span></td><td><span class="badge bad">미연동</span></td></tr>
+
+          <!-- TourController -->
+          <tr data-status="partial" data-home="1"><td class="method m-get">GET</td><td class="path">/api/tour/recommended</td><td class="desc">선호도 기반 섹션 추천</td><td><code>getRecommendedSpots</code></td><td><span class="usage-tag">ExploreSection</span></td><td><span class="badge partial">부분연동</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-get">GET</td><td class="path">/api/tour/areas</td><td class="desc">지역 또는 시군구 코드 조회</td><td><code>getTourAreas</code></td><td><span class="usage-tag other">ExploreSidebar, TourExplorePage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="bad" data-home="0"><td class="method m-get">GET</td><td class="path">/api/tour/categories</td><td class="desc">관광 콘텐츠 분류코드 조회</td><td>-</td><td><span class="usage-tag missing">프론트에 없음</span></td><td><span class="badge bad">미연동</span></td></tr>
+          <tr data-status="ok" data-home="1"><td class="method m-get">GET</td><td class="path">/api/tour/contents</td><td class="desc">지역별 관광 콘텐츠 조회 및 키워드 검색</td><td><code>getTourContents</code></td><td><span class="usage-tag">ExploreSection</span> <span class="usage-tag other">TourExplorePage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="bad" data-home="0"><td class="method m-get">GET</td><td class="path">/api/tour/contents/nearby</td><td class="desc">좌표 기반 주변 관광 콘텐츠 조회</td><td>-</td><td><span class="usage-tag missing">프론트에 없음</span></td><td><span class="badge bad">미연동</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-get">GET</td><td class="path">/api/tour/contents/{contentId}</td><td class="desc">관광 콘텐츠 상세 및 이미지 조회</td><td><code>getTourContentDetail</code></td><td><span class="usage-tag other">TourDetailDrawer</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="bad" data-home="0"><td class="method m-get">GET</td><td class="path">/api/tour/festivals</td><td class="desc">기간별 축제·행사 조회</td><td>-</td><td><span class="usage-tag missing">프론트에 없음</span></td><td><span class="badge bad">미연동</span></td></tr>
+          <tr data-status="bad" data-home="0"><td class="method m-get">GET</td><td class="path">/api/tour/stays</td><td class="desc">지역별 숙박 조회</td><td>-</td><td><span class="usage-tag missing">프론트에 없음</span></td><td><span class="badge bad">미연동</span></td></tr>
+
+          <!-- FeedController -->
+          <tr data-status="ok" data-home="1"><td class="method m-get">GET</td><td class="path">/api/feed</td><td class="desc">공개 여행 피드 조회 (sort=popular)</td><td><code>getFeed</code></td><td><span class="usage-tag">useHomeFeed</span> <span class="usage-tag other">TravelerFeedPage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-get">GET</td><td class="path">/api/feed/{tripId}</td><td class="desc">공개 여행 상세 조회</td><td><code>getFeedDetail</code></td><td><span class="usage-tag other">FeedDetailDrawer</span></td><td><span class="badge ok">연동완료</span></td></tr>
+
+          <!-- SavedTripController -->
+          <tr data-status="ok" data-home="1"><td class="method m-post">POST</td><td class="path">/api/saved-trips</td><td class="desc">공개 여행을 내 계획으로 저장(복사)</td><td><code>saveTrip</code></td><td><span class="usage-tag">ParticipateSection</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="bad" data-home="0"><td class="method m-get">GET</td><td class="path">/api/saved-trips</td><td class="desc">내가 저장한 여행 목록 조회</td><td>-</td><td><span class="usage-tag missing">프론트에 없음</span></td><td><span class="badge bad">미연동</span></td></tr>
+          <tr data-status="bad" data-home="0"><td class="method m-delete">DELETE</td><td class="path">/api/saved-trips/{savedTripId}</td><td class="desc">저장한 여행 기록 삭제</td><td>-</td><td><span class="usage-tag missing">프론트에 없음</span></td><td><span class="badge bad">미연동</span></td></tr>
+
+          <!-- TripController -->
+          <tr data-status="ok" data-home="0"><td class="method m-post">POST</td><td class="path">/api/trips</td><td class="desc">여행 계획 생성</td><td><code>createTrip</code></td><td><span class="usage-tag other">TripPlannerPage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-get">GET</td><td class="path">/api/trips</td><td class="desc">내 여행 계획 목록 조회</td><td><code>getMyTrips</code></td><td><span class="usage-tag other">TripPlannerPage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-get">GET</td><td class="path">/api/trips/{tripId}</td><td class="desc">여행 계획 상세 조회</td><td><code>getTripDetail</code></td><td><span class="usage-tag other">TripPlannerPage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-patch">PATCH</td><td class="path">/api/trips/{tripId}</td><td class="desc">여행 제목·기간 수정</td><td><code>updateTrip</code></td><td><span class="usage-tag other">TripPlannerPage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-delete">DELETE</td><td class="path">/api/trips/{tripId}</td><td class="desc">여행 계획 삭제</td><td><code>deleteTrip</code></td><td><span class="usage-tag other">TripPlannerPage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-post">POST</td><td class="path">/api/trips/{tripId}/days/{dayId}/items</td><td class="desc">관광지를 일정에 추가</td><td><code>addTripItem</code></td><td><span class="usage-tag other">TripPlannerPage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-patch">PATCH</td><td class="path">/api/trips/{tripId}/days/{dayId}/items/{itemId}</td><td class="desc">일정 항목 방문 시간 수정</td><td><code>updateTripItemTime</code></td><td><span class="usage-tag other">TripPlannerPage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-delete">DELETE</td><td class="path">/api/trips/{tripId}/days/{dayId}/items/{itemId}</td><td class="desc">일정 항목 제거</td><td><code>deleteTripItem</code></td><td><span class="usage-tag other">TripPlannerPage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-patch">PATCH</td><td class="path">/api/trips/{tripId}/days/{dayId}/items/reorder</td><td class="desc">같은 날 일정 순서 변경</td><td><code>reorderTripItems</code></td><td><span class="usage-tag other">TripPlannerPage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-patch">PATCH</td><td class="path">/api/trips/{tripId}/items/{itemId}/move</td><td class="desc">관광지를 다른 날로 이동</td><td><code>moveTripItem</code></td><td><span class="usage-tag other">TripPlannerPage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-patch">PATCH</td><td class="path">/api/trips/{tripId}/publish</td><td class="desc">여행 계획 공개</td><td><code>publishTrip</code></td><td><span class="usage-tag other">TripPlannerPage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="0"><td class="method m-patch">PATCH</td><td class="path">/api/trips/{tripId}/unpublish</td><td class="desc">여행 계획 비공개 전환</td><td><code>unpublishTrip</code></td><td><span class="usage-tag other">TripPlannerPage</span></td><td><span class="badge ok">연동완료</span></td></tr>
+
+          <!-- TripFeedbackController -->
+          <tr data-status="ok" data-home="1"><td class="method m-post">POST</td><td class="path">/api/trips/{tripId}/feedback</td><td class="desc">피드백(참견) 작성</td><td><code>createFeedback</code></td><td><span class="usage-tag">ParticipateSection</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="ok" data-home="1"><td class="method m-get">GET</td><td class="path">/api/trips/{tripId}/feedback</td><td class="desc">피드백 목록 조회</td><td><code>getTripFeedback</code></td><td><span class="usage-tag">ParticipateSection</span></td><td><span class="badge ok">연동완료</span></td></tr>
+          <tr data-status="bad" data-home="0"><td class="method m-get">GET</td><td class="path">/api/trips/{tripId}/feedback/all</td><td class="desc">피드백 전체 조회 (하이라이트/지도용)</td><td>-</td><td><span class="usage-tag missing">프론트에 없음</span></td><td><span class="badge bad">미연동</span></td></tr>
+          <tr data-status="bad" data-home="0"><td class="method m-patch">PATCH</td><td class="path">/api/trips/{tripId}/feedback/{feedbackId}</td><td class="desc">피드백 수정</td><td>-</td><td><span class="usage-tag missing">프론트에 없음</span></td><td><span class="badge bad">미연동</span></td></tr>
+          <tr data-status="bad" data-home="0"><td class="method m-delete">DELETE</td><td class="path">/api/trips/{tripId}/feedback/{feedbackId}</td><td class="desc">피드백 삭제</td><td>-</td><td><span class="usage-tag missing">프론트에 없음</span></td><td><span class="badge bad">미연동</span></td></tr>
+          <tr data-status="bad" data-home="0"><td class="method m-post">POST</td><td class="path">/api/trips/{tripId}/feedback/recommendations/{recommendationId}/cart</td><td class="desc">피드백 추천 장소를 카트에 담기</td><td>-</td><td><span class="usage-tag missing">프론트에 없음</span></td><td><span class="badge bad">미연동</span></td></tr>
+          <tr data-status="ok" data-home="1"><td class="method m-get">GET</td><td class="path">/api/trips/feedback/received</td><td class="desc">내 계획에 달린 피드백 모아보기</td><td><code>getReceivedFeedback</code></td><td><span class="usage-tag">Navbar</span></td><td><span class="badge ok">연동완료</span></td></tr>
+
+          <!-- TripRecordController -->
+          <tr data-status="bad" data-home="0"><td class="method m-post">POST</td><td class="path">/api/trips/{tripId}/record</td><td class="desc">여행 기록 작성</td><td>-</td><td><span class="usage-tag missing">프론트에 없음</span></td><td><span class="badge bad">미연동</span></td></tr>
+          <tr data-status="bad" data-home="0"><td class="method m-get">GET</td><td class="path">/api/trips/{tripId}/record</td><td class="desc">여행 기록 조회</td><td>-</td><td><span class="usage-tag missing">프론트에 없음</span></td><td><span class="badge bad">미연동</span></td></tr>
+          <tr data-status="bad" data-home="0"><td class="method m-patch">PATCH</td><td class="path">/api/trips/{tripId}/record</td><td class="desc">여행 기록 수정</td><td>-</td><td><span class="usage-tag missing">프론트에 없음</span></td><td><span class="badge bad">미연동</span></td></tr>
+          <tr data-status="bad" data-home="0"><td class="method m-delete">DELETE</td><td class="path">/api/trips/{tripId}/record</td><td class="desc">여행 기록 삭제</td><td>-</td><td><span class="usage-tag missing">프론트에 없음</span></td><td><span class="badge bad">미연동</span></td></tr>
+
+          <!-- TripRecommendationController -->
+          <tr data-status="partial" data-home="1"><td class="method m-get">GET</td><td class="path">/api/recommendations/trips</td><td class="desc">계획 추천 (선호도 일치순)</td><td><code>getRecommendedTrips</code></td><td><span class="usage-tag">AiSummaryFeed</span></td><td><span class="badge partial">부분연동</span></td></tr>
+          <tr data-status="partial" data-home="1"><td class="method m-get">GET</td><td class="path">/api/recommendations/records</td><td class="desc">기록 추천 (선호도 일치순)</td><td><code>getRecommendedRecords</code></td><td><span class="usage-tag">AiSummaryFeed</span></td><td><span class="badge partial">부분연동</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="home-sections">
+    <h2>홈 화면 섹션별 연동 현황</h2>
+    <p class="section-desc"><code>src/pages/HomePage.jsx</code> 기준, 렌더되는 컴포넌트 순서대로 정리했습니다.</p>
+    <div class="section-grid">
+
+      <div class="home-card">
+        <div class="head"><span class="name">Navbar</span><span class="badge ok">연동완료</span></div>
+        <div class="endpoints">사용 API: <code>GET /api/auth/me</code>, <code>POST /api/auth/logout</code>, <code>GET /api/trips/feedback/received</code></div>
+        <div class="note">마이페이지 링크(<code>/mypage</code>)는 라우트와 API가 모두 없어 클릭해도 이동하지 않습니다.</div>
+      </div>
+
+      <div class="home-card">
+        <div class="head"><span class="name">HeroSlider</span><span class="badge none">API 미사용</span></div>
+        <div class="endpoints">정적 슬라이드 + CTA 링크만 있으며 API 호출이 없습니다.</div>
+      </div>
+
+      <div class="home-card">
+        <div class="head"><span class="name">AiSummaryFeed (모아보기)</span><span class="badge partial">부분연동</span></div>
+        <div class="endpoints">사용 API: <code>GET /api/feed</code>(공유), <code>GET /api/preferences</code>, <code>GET /api/recommendations/trips</code>, <code>GET /api/recommendations/records</code></div>
+        <div class="note">인기 모드는 실제 데이터로 정상 동작합니다. 맞춤 모드는 추천 API가 현재 시드 데이터로는 매칭이 거의 없어 자주 빈 배열을 반환하고, 이 경우 인기 글로 대체되거나(맞춤 모드 자체 비활성화) 피드가 비면 <code>FALLBACK</code> 예시 카드로 채워집니다.</div>
+      </div>
+
+      <div class="home-card">
+        <div class="head"><span class="name">ParticipateSection (참견하기)</span><span class="badge partial">부분연동</span></div>
+        <div class="endpoints">사용 API: <code>GET /api/feed</code>(공유), <code>GET /api/trips/{tripId}/feedback</code>, <code>POST /api/trips/{tripId}/feedback</code>, <code>POST /api/saved-trips</code></div>
+        <div class="note">공개 피드가 비어 있으면 <code>SAMPLE_PLAN</code> 목업 데이터로 화면을 채웁니다. 피드백 수정·삭제 API가 없어 작성한 참견을 되돌릴 수 없습니다.</div>
+      </div>
+
+      <div class="home-card">
+        <div class="head"><span class="name">ExploreSection (탐색)</span><span class="badge partial">부분연동</span></div>
+        <div class="endpoints">사용 API: <code>GET /api/tour/contents</code>, <code>GET /api/tour/recommended</code></div>
+        <div class="note">전체 지역 탭에서 관광지 API가 실패하면 <code>FALLBACK_SPOTS</code> 예시 카드로 대체됩니다. 개인화 추천(<code>/api/tour/recommended</code>)은 로그인이 필요하고, 실패·빈 결과 시 일반 목록 조회로 조용히 전환됩니다.</div>
+      </div>
+
+      <div class="home-card">
+        <div class="head"><span class="name">ChatbotWidget</span><span class="badge ok">연동완료</span></div>
+        <div class="endpoints">사용 API: <code>POST /api/chat</code></div>
+      </div>
+
+      <div class="home-card">
+        <div class="head"><span class="name">FloatingCart</span><span class="badge ok">연동완료</span></div>
+        <div class="endpoints">사용 API: <code>GET /api/cart-items</code>, <code>POST /api/cart-items</code>, <code>DELETE /api/cart-items/{cartItemId}</code></div>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="gaps">
+    <h2>부족한 점 · 권장 작업 (우선순위순)</h2>
+    <ol class="gap-list">
+      <li>
+        <div class="title"><span class="prio high">High</span>추천/맞춤 기능이 시드 데이터 부족으로 사실상 항상 폴백 상태</div>
+        <div class="desc"><code>/api/recommendations/trips</code>, <code>/api/recommendations/records</code>, <code>/api/tour/recommended</code> 모두 프론트 연동은 끝났지만, 현재 시드 데이터로는 카테고리·지역 매칭이 거의 발생하지 않아 빈 배열을 반환합니다. 프론트가 이를 인기순/예시 카드로 조용히 감추고 있어 개인화 기능이 실제로 동작하는지 QA로 확인하기 어렵습니다. 백엔드에 태그·지역이 다양하게 채워진 시드 데이터가 필요합니다.</div>
+      </li>
+      <li>
+        <div class="title"><span class="prio high">High</span>피드백(참견) 수정·삭제 API가 프론트에 연결되지 않음</div>
+        <div class="desc"><code>PATCH/DELETE /api/trips/{tripId}/feedback/{feedbackId}</code>가 백엔드에는 있지만 <code>src/api/feed.js</code>에 함수가 없습니다. 사용자가 남긴 참견을 고치거나 지울 수 있는 UI가 전혀 없습니다.</div>
+      </li>
+      <li>
+        <div class="title"><span class="prio high">High</span>저장한 여행 목록 조회·삭제 미연동 (마이페이지 부재)</div>
+        <div class="desc"><code>GET/DELETE /api/saved-trips</code>가 미사용입니다. <code>saveTrip</code>으로 저장은 가능하지만 무엇을 저장했는지 확인하거나 취소할 화면이 없고, Navbar의 <code>/mypage</code> 링크도 라우트가 없어 죽은 링크입니다. 마이페이지(또는 유사 화면) 신설이 필요합니다.</div>
+      </li>
+      <li>
+        <div class="title"><span class="prio mid">Mid</span>여행 기록(TripRecord) CRUD 전체 미연동</div>
+        <div class="desc"><code>POST/GET/PATCH/DELETE /api/trips/{tripId}/record</code> 4개 엔드포인트 모두 프론트에 대응하는 <code>api/*.js</code> 모듈이 없습니다. <code>RecordUploadModal.jsx</code> UI는 존재하지만 실제 API 호출 코드가 붙어 있지 않아 사실상 목업입니다.</div>
+      </li>
+      <li>
+        <div class="title"><span class="prio mid">Mid</span>로그인 상태 비밀번호 변경 미구현</div>
+        <div class="desc"><code>PATCH /api/auth/password</code>에 대응하는 프론트 화면·함수가 없습니다. 비밀번호 찾기(재설정) 흐름만 구현되어 있습니다.</div>
+      </li>
+      <li>
+        <div class="title"><span class="prio mid">Mid</span>선호도 수정 화면 부재</div>
+        <div class="desc"><code>updatePreferences</code> 함수는 <code>src/api/preferences.js</code>에 정의되어 있지만 어디서도 호출되지 않습니다(<code>PUT /api/preferences</code>). 온보딩(등록)만 가능하고 이후 취향을 바꿀 UI가 없습니다.</div>
+      </li>
+      <li>
+        <div class="title"><span class="prio mid">Mid</span>피드백 추천 장소 → 카트 담기 미연동</div>
+        <div class="desc"><code>POST /api/trips/{tripId}/feedback/recommendations/{recommendationId}/cart</code>가 미사용입니다. 참견에 달린 추천 장소를 바로 내 카트로 옮기는 기능을 구현할 수 있습니다.</div>
+      </li>
+      <li>
+        <div class="title"><span class="prio low">Low</span>관광 콘텐츠 보조 API 4종 미사용</div>
+        <div class="desc"><code>/api/tour/categories</code>, <code>/api/tour/contents/nearby</code>, <code>/api/tour/festivals</code>, <code>/api/tour/stays</code>가 프론트에 전혀 연결되지 않았습니다. ExploreSection의 탭·필터를 확장할 때 활용할 수 있습니다.</div>
+      </li>
+      <li>
+        <div class="title"><span class="prio low">Low</span>text/html 응답을 401로 변환하는 인터셉터</div>
+        <div class="desc"><code>src/api/client.js</code>는 세션 만료 시 백엔드가 로그인 HTML로 리다이렉트하는 상황을 감안해 <code>text/html</code> 응답을 강제로 401 에러로 바꿉니다. 의도된 방어 로직이지만, 로컬 프록시·CORS 설정이 잘못됐을 때도 같은 증상(HTML 응답)이 나올 수 있어 디버깅 시 혼동될 수 있습니다.</div>
+      </li>
+    </ol>
+  </section>
+
+  <section id="backend-requests">
+    <h2>백엔드 요청 목록</h2>
+    <p class="section-desc">프론트 관점에서 백엔드 팀에 요청하면 좋을 항목입니다.</p>
+    <ul class="req-list">
+      <li><b>추천 매칭용 시드 데이터 확충</b> — 관광 콘텐츠 카테고리·지역 태그가 다양하게 채워진 시드가 있어야 <code>/api/recommendations/*</code>, <code>/api/tour/recommended</code>를 실제로 검증하고 데모할 수 있습니다.</li>
+      <li><b>로컬 개발용 CORS Origin 패턴 확인</b> — 프론트 로컬 개발 서버(Vite, 기본 5173)에서 쿠키 기반 인증(<code>withCredentials: true</code>)이 원활히 동작하도록 허용 Origin 목록을 다시 확인해 주세요.</li>
+      <li><b>좋아요(<code>likeCount</code>) 엔티티 도입 여부 확정</b> — 현재 <code>saveCount</code>(저장 수)만 내려오고 <code>likeCount</code>는 존재하지 않습니다. 프론트 <code>feedAdapter.js</code>는 이를 감안해 <code>saveCount</code>만 사용 중이며, 별도 좋아요 기능이 예정이라면 API 스펙을 알려주시기 바랍니다.</li>
+      <li><b>피드백 수정·삭제, 저장한 여행 목록/삭제 API의 프론트 연동 일정 조율</b> — 백엔드는 이미 구현되어 있으므로 프론트 작업 일정에 맞춰 우선순위를 함께 정하면 좋겠습니다.</li>
+    </ul>
+  </section>
+
+  <footer class="page-foot">
+    Travel Tackle 프론트엔드 API 연동 감사 · 생성 2026-09-11 · 기준 커밋 f3cfe7a · 재생성 방법은 <code>docs/reports/README.md</code> 참고
+  </footer>
+
+</div>
+
+<script>
+  (function () {
+    var buttons = document.querySelectorAll('.filter-btn');
+    var rows = document.querySelectorAll('#epTable tbody tr');
+    buttons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        buttons.forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var filter = btn.getAttribute('data-filter');
+        rows.forEach(function (row) {
+          var status = row.getAttribute('data-status');
+          var home = row.getAttribute('data-home') === '1';
+          var show = filter === 'all'
+            || (filter === 'home' && home)
+            || (filter !== 'home' && status === filter);
+          row.hidden = !show;
+        });
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>
