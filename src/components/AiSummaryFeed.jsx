@@ -16,7 +16,7 @@ let revealedOnce = false
 // 추천 응답 캐시 (사용자 id → { trips, records })
 const recCache = new Map()
 
-// 두 열: 왼쪽은 여행 계획(참견·피드백이 달리는 글), 오른쪽은 다녀온 뒤 남긴 후기
+// 두 열: 왼쪽은 여행 계획(참견·피드백이 달리는 글), 오른쪽은 다녀온 뒤 남긴 기록
 const GROUPS = {
   plan: {
     key: 'plan',
@@ -32,15 +32,15 @@ const GROUPS = {
   },
   record: {
     key: 'record',
-    title: '사용자 후기',
+    title: '기록',
     icon: 'solar:camera-linear',
     accent: 'text-[#0F766E]',
     accentBg: 'bg-[#F0FDFA]',
     filter: 'record',
-    popularCaption: '반응이 많았던 후기',
-    personalCaption: '취향이 비슷한 여행자의 후기',
-    empty: '아직 올라온 후기가 없어요',
-    fallbackCaption: '취향에 맞는 후기가 아직 없어 인기 후기로 채웠어요',
+    popularCaption: '반응이 많았던 기록',
+    personalCaption: '취향이 비슷한 여행자의 기록',
+    empty: '아직 올라온 기록이 없어요',
+    fallbackCaption: '취향에 맞는 기록이 아직 없어 인기 기록으로 채웠어요',
   },
 }
 
@@ -256,7 +256,7 @@ const HEADLINE_POPULAR = [
   { text: '가장 인기있는', accent: true },
   { text: '여행 계획 및 피드백' },
   { text: '·', dot: true },
-  { text: '사용자 후기를' },
+  { text: '기록을' },
   { text: '요약했어요' },
 ]
 
@@ -266,7 +266,7 @@ function personalHeadline(name) {
     { text: '맞는', accent: true },
     { text: '여행 계획' },
     { text: '·', dot: true },
-    { text: '사용자 후기를' },
+    { text: '기록을' },
     { text: '가져왔어요' },
   ]
 }
