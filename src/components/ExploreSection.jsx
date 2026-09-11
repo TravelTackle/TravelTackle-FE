@@ -321,13 +321,17 @@ export default function ExploreSection({ feed }) {
             여행자들이 지금 보고 있는 관광지, 계획, 기록을 한곳에서 둘러보세요.
           </p>
         </div>
+        {/* 전체보기 — 현재 탭 아이콘을 앞에 둔 연한 브랜드색 알약, 올리면 진한 색으로 차오른다 */}
         <Link
           to={activeTab.moreTo}
           aria-label={activeTab.moreLabel}
-          className="group flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-[12.5px] font-bold text-slate-600 transition-all hover:border-brand hover:text-brand hover:shadow-card"
+          className="group relative flex shrink-0 items-center gap-2 overflow-hidden rounded-full bg-brand-light py-2 pl-2 pr-4 text-[12.5px] font-bold text-brand transition-colors duration-300 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         >
-          {activeTab.label} 전체보기
-          <Icon icon="solar:alt-arrow-right-linear" width={14} className="transition-transform group-hover:translate-x-0.5" />
+          <span aria-hidden="true" className="absolute inset-0 origin-left scale-x-0 bg-brand transition-transform duration-300 ease-out group-hover:scale-x-100" />
+          <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-white text-brand transition-transform duration-300 group-hover:scale-110">
+            <Icon icon={activeTab.icon} width={13} />
+          </span>
+          <span className="relative">{activeTab.label} 전체보기</span>
         </Link>
       </div>
 
