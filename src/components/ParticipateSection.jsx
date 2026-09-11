@@ -92,6 +92,23 @@ function PanelSkeleton({ composer }) {
   )
 }
 
+// 제목 옆 말풍선 배지 — 로딩 중엔 스켈레톤 원, 준비되면 말풍선이 톡 튀어나오고 안의 점이 대화하듯 튄다
+function TalkBadge({ loading }) {
+  if (loading) {
+    return <Skeleton className="h-9 w-11 shrink-0 rounded-[14px]" aria-hidden="true" />
+  }
+  return (
+    <span className="relative flex h-9 w-11 shrink-0 items-center justify-center" aria-hidden="true">
+      <span className="talk-ping absolute inset-1 rounded-[14px] bg-brand/30" />
+      <span className="talk-pop relative flex h-8 w-10 items-center justify-center gap-[3px] rounded-[14px] rounded-bl-[4px] bg-gradient-to-br from-brand-mid to-brand shadow-[0_6px_14px_rgba(37,99,235,0.35)]">
+        {[0, 1, 2].map((i) => (
+          <span key={i} className="talk-dot h-1.5 w-1.5 rounded-full bg-white" style={{ animationDelay: `${i * 160}ms` }} />
+        ))}
+      </span>
+    </span>
+  )
+}
+
 export default function ParticipateSection({ feed }) {
   const { user } = useAuth()
   const plans = useMemo(() => feed.items.filter((i) => i.type === 'plan' && i.days.length > 0), [feed.items])
@@ -211,9 +228,12 @@ export default function ParticipateSection({ feed }) {
   return (
     <Section as="section" id="participate" className="py-14 sm:py-16">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <h2 className="text-[22px] font-bold text-slate-900 text-balance">
-          다른 여행자의 계획에 직접 <span className="text-brand font-extrabold">참견</span>해보세요
-        </h2>
+        <div className="flex items-center gap-3">
+          <TalkBadge loading={feed.loading} />
+          <h2 className="text-[22px] font-bold text-slate-900 text-balance">
+            다른 여행자의 계획에 직접 <span className="text-brand font-extrabold">참견</span>해보세요
+          </h2>
+        </div>
         <button
           type="button"
           onClick={showNextPlan}

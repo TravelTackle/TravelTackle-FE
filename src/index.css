@@ -143,6 +143,34 @@ body {
   animation: cta-pulse 3s ease-out 1.2s infinite;
 }
 
+/* 참견하기 제목 옆 말풍선 배지 — 톡 튀어나온 뒤 살짝 둥실거리고, 안의 점은 대화하듯 튄다 */
+@keyframes talk-pop {
+  0% { transform: scale(0.4) rotate(-12deg); opacity: 0; }
+  60% { transform: scale(1.12) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+@keyframes talk-bob {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-4px) rotate(3deg); }
+}
+.talk-pop {
+  animation: talk-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both, talk-bob 3s ease-in-out 0.5s infinite;
+}
+@keyframes talk-dot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-3px); opacity: 1; }
+}
+.talk-dot {
+  animation: talk-dot 1.2s ease-in-out infinite;
+}
+@keyframes talk-ping {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+.talk-ping {
+  animation: talk-ping 2.4s cubic-bezier(0, 0, 0.2, 1) 0.6s infinite;
+}
+
 /* 홈 히어로 슬라이드·카드 페이지 전환 — 이미 보이는 위치에서 살짝 올라오며 나타남 */
 @keyframes slide-in {
   from { opacity: 0; transform: translateY(10px); }
