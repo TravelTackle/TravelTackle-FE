@@ -213,8 +213,9 @@ export default function FloatingCart() {
           </div>
 
           {/* 테마 칩 — 담긴 개수와 함께, 가로로 넘김 */}
+          {/* 테마 칩 — 칩이 많아지면 옆으로 잘리지 않게 줄바꿈 */}
           {user && items.length > 0 && (
-            <div className="scrollbar-hide flex shrink-0 gap-1.5 overflow-x-auto border-b border-slate-100 px-3 py-2.5" role="tablist" aria-label="테마별 보기">
+            <div className="flex shrink-0 flex-wrap gap-1.5 border-b border-slate-100 px-3 py-2.5" role="tablist" aria-label="테마별 보기">
               {visibleTabs.map((t) => {
                 const active = tab === t.key
                 return (
