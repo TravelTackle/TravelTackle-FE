@@ -61,17 +61,17 @@ function RegionChip({ children }) {
 
 function SpotCard({ spot }) {
   return (
-    <Card as={Link} to="/explore" className="block overflow-hidden">
-      <div className="relative">
+    <Card as={Link} to="/explore" className="group block overflow-hidden">
+      <div className="relative overflow-hidden">
         {spot.imageUrl ? (
-          <img src={spot.imageUrl} className="w-full h-[150px] object-cover" alt={spot.title} loading="lazy" />
+          <img src={spot.imageUrl} className="w-full h-[150px] object-cover transition-transform duration-500 ease-out group-hover:scale-105" alt={spot.title} loading="lazy" />
         ) : (
           <div className="w-full h-[150px] bg-gradient-to-br from-slate-100 to-slate-200" />
         )}
         {spot.address && <RegionChip>{shortRegion(spot.address)}</RegionChip>}
       </div>
       <div className="p-3">
-        <div className="text-[13px] font-bold text-slate-900 truncate">{spot.title}</div>
+        <div className="text-[13px] font-bold text-slate-900 truncate transition-colors group-hover:text-brand">{spot.title}</div>
         <div className="text-[11px] text-slate-400 mt-0.5 truncate">{spot.address || ' '}</div>
       </div>
     </Card>
@@ -81,12 +81,12 @@ function SpotCard({ spot }) {
 function PlanCard({ item }) {
   const photos = (item.days?.[0]?.places ?? []).filter((p) => p.imageUrl).slice(0, 3)
   return (
-    <Card as={Link} to="/feed" className="block overflow-hidden">
-      <div className="relative">
+    <Card as={Link} to={`/feed?open=${encodeURIComponent(item.id)}&filter=plan`} className="group block overflow-hidden">
+      <div className="relative overflow-hidden">
         {photos.length ? (
           <div className="grid h-[150px] gap-0.5" style={{ gridTemplateColumns: `repeat(${photos.length}, minmax(0, 1fr))` }}>
             {photos.map((p, i) => (
-              <img key={i} src={p.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover bg-slate-100" />
+              <img key={i} src={p.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover bg-slate-100 transition-transform duration-500 ease-out group-hover:scale-105" />
             ))}
           </div>
         ) : (
@@ -95,7 +95,7 @@ function PlanCard({ item }) {
         {item.region && <RegionChip>{item.region}</RegionChip>}
       </div>
       <div className="p-3">
-        <div className="text-[13px] font-bold text-slate-900 truncate">{item.title}</div>
+        <div className="text-[13px] font-bold text-slate-900 truncate transition-colors group-hover:text-brand">{item.title}</div>
         <div className="text-[11px] text-slate-400 mt-0.5 truncate">
           {item.user.nickname} · {item.duration} · 장소 {item.placeCount}곳
           {typeof item.saveCount === 'number' && (
@@ -111,17 +111,17 @@ function PlanCard({ item }) {
 
 function RecordCard({ item }) {
   return (
-    <Card as={Link} to="/feed" className="block overflow-hidden">
-      <div className="relative">
+    <Card as={Link} to={`/feed?open=${encodeURIComponent(item.id)}&filter=record`} className="group block overflow-hidden">
+      <div className="relative overflow-hidden">
         {item.imageUrl ? (
-          <img src={item.imageUrl} className="w-full h-[150px] object-cover bg-slate-100" alt="" loading="lazy" />
+          <img src={item.imageUrl} className="w-full h-[150px] object-cover bg-slate-100 transition-transform duration-500 ease-out group-hover:scale-105" alt="" loading="lazy" />
         ) : (
           <div className="w-full h-[150px] bg-gradient-to-br from-emerald-50 to-slate-200" />
         )}
         {item.region && <RegionChip>{item.region}</RegionChip>}
       </div>
       <div className="p-3">
-        <div className="text-[13px] font-bold text-slate-900 truncate">{item.title}</div>
+        <div className="text-[13px] font-bold text-slate-900 truncate transition-colors group-hover:text-brand">{item.title}</div>
         <div className="text-[11px] text-slate-400 mt-0.5 truncate">
           {item.comment || item.user.nickname}
           {typeof item.saveCount === 'number' && (
@@ -140,10 +140,13 @@ function SkeletonGrid() {
     <div className="mt-5 grid grid-cols-2 md:grid-cols-3 gap-4" role="status" aria-label="불러오는 중">
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="rounded-2xl overflow-hidden border border-slate-100 bg-white">
-          <Skeleton className="h-[150px] w-full rounded-none" />
+          <div className="relative">
+            <Skeleton className="h-[150px] w-full rounded-none" style={{ animationDelay: `${i * 110}ms` }} />
+            <Skeleton className="absolute left-2 top-2 h-5 w-10 rounded-full" style={{ animationDelay: `${i * 110 + 40}ms` }} />
+          </div>
           <div className="p-3">
-            <Skeleton className="h-3.5 w-2/3" />
-            <Skeleton className="mt-2 h-2.5 w-1/2" />
+            <Skeleton className="h-3.5 w-2/3" style={{ animationDelay: `${i * 110 + 80}ms` }} />
+            <Skeleton className="mt-2 h-2.5 w-1/2" style={{ animationDelay: `${i * 110 + 120}ms` }} />
           </div>
         </div>
       ))}
@@ -274,8 +277,10 @@ export default function ExploreSection({ feed }) {
             </p>
           )}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {spotItems.map((s) => (
-              <SpotCard key={s.contentId} spot={s} />
+            {spotItems.map((s, i) => (
+              <div key={s.contentId} className="animate-slide-in" style={{ animationDelay: `${i * 60}ms` }}>
+                <SpotCard spot={s} />
+              </div>
             ))}
           </div>
         </div>
@@ -295,20 +300,44 @@ export default function ExploreSection({ feed }) {
       )
     }
     return (
-      <div key={`${tab}-${region.label}`} className="animate-slide-in mt-5 grid grid-cols-2 md:grid-cols-3 gap-4">
-        {feedItems.map((item) => (tab === 'plan' ? <PlanCard key={item.id} item={item} /> : <RecordCard key={item.id} item={item} />))}
+      <div key={`${tab}-${region.label}`} className="mt-5 grid grid-cols-2 md:grid-cols-3 gap-4">
+        {feedItems.map((item, i) => (
+          <div key={item.id} className="animate-slide-in" style={{ animationDelay: `${i * 60}ms` }}>
+            {tab === 'plan' ? <PlanCard item={item} /> : <RecordCard item={item} />}
+          </div>
+        ))}
       </div>
     )
   }
 
   return (
     <Section as="section" id="explore" className="py-14 sm:py-16">
-      <h2 className="text-[22px] font-bold text-slate-900 text-balance">
-        좋은 여행은 <span className="text-brand font-extrabold">좋은 참견</span>에서 시작됩니다.
-      </h2>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-[22px] font-bold text-slate-900 text-balance">
+            좋은 여행은 <span className="text-brand font-extrabold">좋은 참견</span>에서 시작됩니다.
+          </h2>
+          <p className="mt-1.5 text-[13px] text-slate-500">
+            여행자들이 지금 보고 있는 관광지, 계획, 기록을 한곳에서 둘러보세요.
+          </p>
+        </div>
+        <Link
+          to={activeTab.moreTo}
+          aria-label={activeTab.moreLabel}
+          className="group flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-[12.5px] font-bold text-slate-600 transition-all hover:border-brand hover:text-brand hover:shadow-card"
+        >
+          {activeTab.label} 전체보기
+          <Icon icon="solar:alt-arrow-right-linear" width={14} className="transition-transform group-hover:translate-x-0.5" />
+        </Link>
+      </div>
 
-      {/* 주요 콘텐츠 탭 — 전체 너비에 균등 배치 */}
-      <div className="mt-6 grid grid-cols-3 border-b border-slate-100" role="tablist" aria-label="탐색 콘텐츠 종류">
+      {/* 콘텐츠 종류 탭 — 흰 알약이 선택 쪽으로 미끄러진다 */}
+      <div className="relative mt-6 grid grid-cols-3 rounded-full bg-slate-100 p-1" role="tablist" aria-label="탐색 콘텐츠 종류">
+        <span
+          aria-hidden="true"
+          className="mode-thumb pointer-events-none absolute inset-y-1 left-1 w-[calc((100%-8px)/3)] rounded-full bg-white shadow-card"
+          style={{ transform: `translateX(${TABS.findIndex((t) => t.key === tab) * 100}%)` }}
+        />
         {TABS.map((t) => {
           const active = tab === t.key
           return (
@@ -318,45 +347,41 @@ export default function ExploreSection({ feed }) {
               role="tab"
               aria-selected={active}
               onClick={() => setTab(t.key)}
-              className={`relative flex min-w-0 flex-col items-center gap-1.5 py-4 transition-colors ${
-                active ? 'text-brand' : 'text-slate-400 hover:text-slate-600'
+              className={`relative z-10 flex min-w-0 items-center justify-center gap-1.5 rounded-full py-2.5 text-[13px] font-bold transition-colors duration-300 ${
+                active ? 'text-brand' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <Icon icon={t.icon} width={19} />
-              <span className="text-[12.5px] font-bold">{t.label}</span>
-              {active && <span className="absolute inset-x-0 -bottom-px h-0.5 bg-brand" />}
+              <Icon icon={t.icon} width={16} />
+              <span className="truncate">{t.label}</span>
             </button>
           )
         })}
       </div>
 
-      {/* 지역 칩 + 전체보기 */}
-      <div className="mt-3 flex items-center justify-between gap-3">
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" role="group" aria-label="지역 선택">
-          {REGIONS.map((r) => {
-            const active = region.label === r.label
-            return (
-              <button
-                key={r.label}
-                type="button"
-                onClick={() => setRegion(r)}
-                aria-pressed={active}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-[12.5px] font-bold border transition-all ${
-                  active ? 'bg-brand text-white border-brand' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                {r.label}
-              </button>
-            )
-          })}
-        </div>
-        <Link
-          to={activeTab.moreTo}
-          aria-label={activeTab.moreLabel}
-          className="shrink-0 flex items-center gap-1.5 bg-white border border-slate-200 rounded-full px-4 py-1.5 text-[13px] font-bold text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all"
-        >
-          전체보기 <Icon icon="solar:arrow-right-linear" width={15} />
-        </Link>
+      {/* 지역 칩 — 좁은 화면에선 옆으로 밀고, 오른쪽 끝은 살짝 흐려 더 있음을 알린다 */}
+      <div
+        className="mt-3 flex gap-2 overflow-x-auto pb-1 scrollbar-hide [mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent)] md:[mask-image:none]"
+        role="group"
+        aria-label="지역 선택"
+      >
+        {REGIONS.map((r) => {
+          const active = region.label === r.label
+          return (
+            <button
+              key={r.label}
+              type="button"
+              onClick={() => setRegion(r)}
+              aria-pressed={active}
+              className={`shrink-0 rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition-all duration-200 ${
+                active
+                  ? 'border-brand bg-brand text-white shadow-[0_4px_12px_rgba(37,99,235,0.28)]'
+                  : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-800'
+              }`}
+            >
+              {r.label}
+            </button>
+          )
+        })}
       </div>
 
       {renderBody()}
