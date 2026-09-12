@@ -184,7 +184,7 @@ export default function FeedbackDrawer({ target, onClose, onPosted }) {
                         type="button"
                         onClick={handleSubmit}
                         disabled={!draft.trim() || submitting}
-                        className="flex items-center gap-1.5 rounded-full bg-rose-500 px-3.5 py-1.5 text-[12px] font-bold text-white transition-colors hover:bg-rose-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                        className="flex items-center gap-1.5 rounded-full bg-rose-500 px-3.5 py-1.5 text-[12px] font-bold text-white transition-colors hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-rose-500"
                       >
                         {submitting ? <Icon icon="mdi:loading" width={14} className="animate-spin" /> : <Icon icon="solar:chat-round-dots-bold" width={14} />}
                         {submitting ? '남기는 중' : '참견 남기기'}
