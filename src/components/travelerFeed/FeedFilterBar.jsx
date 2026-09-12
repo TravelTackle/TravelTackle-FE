@@ -5,8 +5,8 @@ import Skeleton from '../ui/Skeleton'
 
 const FILTERS = [
   { value: 'all', label: '전체', icon: 'mdi:shuffle-variant' },
-  { value: 'plan', label: '계획만', icon: 'mdi:calendar-blank-outline' },
-  { value: 'record', label: '기록만', icon: 'mdi:camera-outline' },
+  { value: 'plan', label: '계획', icon: 'mdi:calendar-blank-outline' },
+  { value: 'record', label: '기록', icon: 'mdi:camera-outline' },
 ]
 
 const VIEWS = [
@@ -53,7 +53,7 @@ export default function FeedFilterBar({ filter, onFilterChange, view, onViewChan
     return (
       <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2.5" role="status" aria-label="피드 필터를 준비하는 중">
         <div className="flex items-center gap-1 rounded-full bg-slate-50 p-1">
-          {[64, 76, 76].map((w, i) => (
+          {[64, 64, 64].map((w, i) => (
             <Skeleton key={i} className="h-8 rounded-full" style={{ width: w, animationDelay: `${i * 70}ms` }} />
           ))}
         </div>
