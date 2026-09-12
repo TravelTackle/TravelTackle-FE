@@ -91,7 +91,7 @@ export default function RecordFeedCard({ item, onOpen, findPlan, extra }) {
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') onOpen(item)
           }}
-          className="flip-face cursor-pointer p-4"
+          className="flip-face flip-front cursor-pointer p-4"
         >
           <div className="flex items-center justify-between">
             <FeedUserHeader item={item} showChip={!flipSwitch} />
@@ -129,7 +129,7 @@ export default function RecordFeedCard({ item, onOpen, findPlan, extra }) {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') onOpen(plan)
               }}
-              className="animate-slide-in cursor-pointer"
+              className="flip-content cursor-pointer"
             >
               <PlanCardBody item={plan} headerRight={flipSwitch} />
             </div>

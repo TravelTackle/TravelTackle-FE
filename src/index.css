@@ -337,15 +337,27 @@ body {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
+/* iOS Safari는 앞뒤 면이 같은 평면에 있으면 z-fighting으로 일부가 비쳐 보이고, 면 안쪽에 transform 애니메이션이 있으면
+   backface-visibility가 풀려 거울상으로 깨진다 — 면을 앞뒤로 살짝 띄우고, 뒷면 내용은 transform 없이 opacity로만 등장시킨다 */
+.flip-front {
+  transform: rotateY(0deg) translateZ(1px);
+}
 .flip-back {
-  transform: rotateY(180deg);
+  transform: rotateY(180deg) translateZ(1px);
+}
+@keyframes flip-content-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.flip-content {
+  animation: flip-content-in 0.35s ease-out 0.2s both;
 }
 @media (prefers-reduced-motion: reduce) {
   .flip-inner { transition: height 0.2s ease; }
   .flip-inner.is-flipped { transform: none; }
   .flip-inner.is-flipped .flip-face:not(.flip-back) { visibility: hidden; }
   .flip-inner:not(.is-flipped) .flip-back { visibility: hidden; }
-  .flip-back { transform: none; }
+  .flip-front, .flip-back { transform: none; }
 }
 
 /* 피드 인기 지역 시상대 — 기둥이 바닥에서 위로 자라난다 */
