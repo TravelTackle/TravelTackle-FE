@@ -134,7 +134,8 @@ export default function TravelerFeedPage() {
     <div className="bg-white text-slate-900">
       <Navbar />
 
-      <Section as="main" className="flex flex-col gap-5 pb-8">
+      {/* 필터 버튼 왼쪽 끝은 탑바 로고, 기록 업로드 버튼 오른쪽 끝은 프로필 알약과 같은 선 — 탑바 컨테이너(1200px, px-4 sm:px-6)와 폭을 맞춘다 */}
+      <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-col gap-5 pb-8">
         <div className="sticky top-16 z-10 bg-white pt-2.5">
           <FeedFilterBar
             filter={filter}
@@ -151,8 +152,8 @@ export default function TravelerFeedPage() {
         )}
 
         {view === 'list' ? (
-          <div className="flex flex-col gap-6 md:flex-row md:justify-center">
-            <div className="order-2 flex min-w-0 flex-1 flex-col gap-5 md:order-1 md:max-w-[520px]">
+          <div className="flex flex-col gap-6 md:flex-row md:gap-7">
+            <div className="order-2 flex min-w-0 flex-1 flex-col gap-5 md:order-1">
               {/* 검색 중일 때만 노출 — 외곽선 없이 텍스트+작은 화살표만, 드롭다운은 기본 브라우저 UI 대신 커스텀 패널 */}
               {searchKeyword && (
                 <div className="relative -mb-2" ref={sortMenuRef}>
@@ -195,7 +196,7 @@ export default function TravelerFeedPage() {
                 items.map(renderCard)
               )}
             </div>
-            <aside className="order-1 flex w-full shrink-0 flex-col gap-4 md:order-2 md:sticky md:top-[134px] md:w-[260px] md:self-start">
+            <aside className="order-1 flex w-full shrink-0 flex-col gap-4 md:order-2 md:sticky md:top-[134px] md:w-[300px] md:self-start">
               <div
                 className={`flex h-9 items-center gap-1.5 rounded-lg border bg-white px-2.5 shadow-card transition-colors ${
                   searchFocused ? 'border-brand/40' : 'border-slate-200'
@@ -240,9 +241,9 @@ export default function TravelerFeedPage() {
           </div>
         ) : (
           galleryItems.length === 0 ? (
-            <div className="max-w-[1060px] py-20 text-center text-[13px] text-slate-400">해당하는 피드가 없어요.</div>
+            <div className="py-20 text-center text-[13px] text-slate-400">해당하는 피드가 없어요.</div>
           ) : (
-            <div className="flex max-w-[1060px] gap-5">
+            <div className="flex gap-6">
               <div className="flex min-w-0 flex-1 flex-col gap-5">{galleryLeft.map(renderCard)}</div>
               <div className="flex min-w-0 flex-1 flex-col gap-5">{galleryRight.map(renderCard)}</div>
             </div>

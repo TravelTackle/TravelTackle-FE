@@ -14,7 +14,7 @@ const VIEWS = [
 
 export default function FeedFilterBar({ filter, onFilterChange, view, onViewChange, onUploadClick }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2 md:pr-[72px]">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2">
       <div className="flex items-center gap-2">
         {FILTERS.map((f) => {
           const active = filter === f.value
