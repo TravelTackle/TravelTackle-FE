@@ -95,8 +95,8 @@ export default function FeedbackDrawer({ target, onClose, onPosted }) {
   }
 
   const count = state.items.length
-  // 백엔드는 본인 계획에 참견을 막는다(TRIP_019). 피드 응답엔 작성자 id가 없어 이름으로 가려낸다.
-  const isMine = !!(user && target?.ownerName && target.ownerName === user.name)
+  // 백엔드는 본인 계획에 참견을 막는다(TRIP_019). 작성자 id가 내려올 때만 미리 안내하고, 없으면 서버 응답(message)에 맡긴다.
+  const isMine = !!(user && target?.ownerId && target.ownerId === user.userId)
 
   return (
     <>

@@ -32,12 +32,12 @@ function adaptDays(days) {
   }))
 }
 
-function adaptPlan({ tripId, ownerName, region, title, startDate, endDate, days, feedbackCount, saveCount, createdAt, savedTripId, thumbnailUrl }) {
+function adaptPlan({ tripId, ownerName, ownerId, region, title, startDate, endDate, days, feedbackCount, saveCount, createdAt, savedTripId, thumbnailUrl }) {
   const adaptedDays = adaptDays(days)
   return {
     id: tripId,
     type: 'plan',
-    user: { nickname: ownerName },
+    user: { nickname: ownerName, id: ownerId ?? null }, // id는 백엔드가 ownerId를 내려줄 때만 채워진다
     region,
     title,
     startDate,
@@ -61,7 +61,7 @@ function adaptRecord(entry) {
   return {
     id: `${entry.tripId}-record`,
     type: 'record',
-    user: { nickname: entry.ownerName },
+    user: { nickname: entry.ownerName, id: entry.ownerId ?? null },
     region: entry.region,
     title: entry.title,
     comment: entry.content,
@@ -83,6 +83,7 @@ export function adaptPlanDetail(detail) {
   return adaptPlan({
     tripId: detail.id,
     ownerName: detail.ownerName,
+    ownerId: detail.ownerId,
     region: detail.region,
     title: detail.title,
     startDate: detail.startDate,

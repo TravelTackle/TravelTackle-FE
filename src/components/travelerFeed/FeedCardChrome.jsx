@@ -122,8 +122,9 @@ export function FeedUserHeader({ item, showChip = true }) {
 export function FeedActionBar({ item, bordered = true, size = 20 }) {
   const { user, savedIds, pendingIds, saveDelta, feedbackDelta, toggleSave, openFeedback } = useFeedActions()
   const tripId = targetTripId(item)
-  // 백엔드는 본인 계획 저장을 막는다(TRIP_011). 피드 응답엔 작성자 id가 없어 이름으로 가려낸다.
-  const isMine = !!(user && item?.user?.nickname && item.user.nickname === user.name)
+  // 백엔드는 본인 계획 저장을 막는다(TRIP_011). 작성자 id가 내려올 때만 미리 잠그고, 없으면 서버 판단에 맡긴다 —
+  // 이름 비교는 같은 이름의 다른 계정(카카오/구글로 따로 가입한 같은 사람 등)까지 막아버린다.
+  const isMine = !!(user && item?.user?.id && item.user.id === user.userId)
   const saved = !!(tripId && savedIds.has(tripId))
   const pending = !!(tripId && pendingIds.has(tripId))
   const feedbackCount = item ? (item.feedbackCount ?? 0) + (feedbackDelta[tripId] ?? 0) : null
