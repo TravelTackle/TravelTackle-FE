@@ -91,7 +91,7 @@ export function unsaveTrip(savedTripId) {
 
 // 내가 스크랩한 여행 목록 (보관함)
 export function getSavedTrips() {
-  return client.get('/saved-trips').then((res) => res.data)
+  return client.get('/saved-trips').then((res) => (Array.isArray(res.data) ? res.data : []))
 }
 
 // 보관함에 스크랩해둔 여행을 실제로 내 계획으로 복사

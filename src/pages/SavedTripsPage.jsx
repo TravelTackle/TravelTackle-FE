@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Icon } from '@iconify/react'
 import Navbar from '../components/Navbar'
@@ -10,17 +10,13 @@ import Button from '../components/ui/Button'
 import PlanFeedCard from '../components/travelerFeed/PlanFeedCard'
 import RecordFeedCard from '../components/travelerFeed/RecordFeedCard'
 import FeedDetailDrawer from '../components/travelerFeed/FeedDetailDrawer'
-import { getSavedTrips, copySavedTrip } from '../api/trip'
+import FeedbackDrawer from '../components/travelerFeed/FeedbackDrawer'
+import { FeedActionsProvider, targetTripId } from '../components/travelerFeed/FeedActionsContext'
+import { useAuth } from '../context/AuthContext'
+import { getSavedTrips, saveTrip, unsaveTrip, copySavedTrip } from '../api/trip'
 import { adaptSavedTrip } from '../data/feedAdapter'
-import useScrapMap from '../hooks/useScrapMap'
 
 const COLUMNS = 3
-
-// 기록을 보고 스크랩했으면 기록 카드, 계획을 보고 스크랩했으면 계획 카드 — 스크랩 상태는 항상
-// 원본 계획(tripId) 기준이라 기록 카드는 자신이 가리키는 계획(planId)을 키로 쓴다.
-function scrapTripIdOf(item) {
-  return item.type === 'record' ? item.planId : item.id
-}
 
 // 스크랩만으로는 내 계획이 되지 않는다 — 이 버튼을 눌러야 실제 Trip으로 복사된다.
 // 이미 복사한 항목은 버튼 대신 "내 계획에 있어요" 상태로 바뀐다.
@@ -69,7 +65,7 @@ function CopyToPlanButton({ item, onCopied }) {
 }
 
 export default function SavedTripsPage() {
-  const scrapMap = useScrapMap()
+  const { user } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [drawerItem, setDrawerItem] = useState(null)
@@ -84,41 +80,82 @@ export default function SavedTripsPage() {
 
   const [reloadKey, setReloadKey] = useState(0)
   useEffect(() => {
+    let ignore = false
     setLoading(true)
     getSavedTrips()
-      .then((list) => setItems((Array.isArray(list) ? list : []).map(adaptSavedTrip)))
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false))
+      .then((list) => { if (!ignore) setItems(list.map(adaptSavedTrip)) })
+      .catch(() => { if (!ignore) setItems([]) })
+      .finally(() => { if (!ignore) setLoading(false) })
+    return () => { ignore = true }
   }, [reloadKey])
 
-  // 카드와 상세 패널이 서로 다른 스크랩 상태를 들고 있지 않도록, 서버 초기값을 공유 map에 한 번씩 채워둔다.
+  // 여행자 피드와 같은 FeedActionsContext를 여기서도 직접 채워서, 카드/상세 패널 하단 아이콘이
+  // 피드와 완전히 같은 컴포넌트(FeedActionBar)로 그려지고 동작도 똑같이 맞는다.
+  // 보관함에 보이는 항목은 전부 이미 스크랩된 상태라, 목록을 받을 때마다 savedIds를 그 값으로 채운다.
+  const [savedIds, setSavedIds] = useState(() => new Map())
+  const [pendingIds, setPendingIds] = useState(() => new Set())
+  const [saveDelta, setSaveDelta] = useState({})
+  const [feedbackDelta, setFeedbackDelta] = useState({})
+  const [feedbackTarget, setFeedbackTarget] = useState(null)
+
   useEffect(() => {
-    items.forEach((it) => scrapMap.seed(scrapTripIdOf(it), it.savedTripId))
+    setSavedIds(new Map(items.map((it) => [targetTripId(it), it.savedTripId])))
+  }, [items])
+
+  const toggleSave = useCallback(async (item) => {
+    const tripId = targetTripId(item)
+    if (!tripId || pendingIds.has(tripId)) return
+    setPendingIds((s) => new Set(s).add(tripId))
+    const savedTripId = savedIds.get(tripId)
+    try {
+      if (savedTripId) {
+        await unsaveTrip(savedTripId)
+        setSavedIds((m) => { const next = new Map(m); next.delete(tripId); return next })
+        showToast('보관함에서 지웠어요')
+        // 여기서 지운(스크랩 해제) 항목은 목록에서도 빠져야 하니 다시 불러온다
+        setReloadKey((k) => k + 1)
+      } else {
+        const res = await saveTrip(tripId, item.type === 'record' ? 'RECORD' : 'PLAN')
+        setSavedIds((m) => new Map(m).set(tripId, res.savedTripId))
+        setSaveDelta((d) => ({ ...d, [tripId]: (d[tripId] ?? 0) + 1 }))
+        showToast('보관함에 저장했어요')
+      }
+    } catch {
+      showToast('처리하지 못했어요. 잠시 후 다시 시도해주세요')
+    } finally {
+      setPendingIds((s) => { const next = new Set(s); next.delete(tripId); return next })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedIds, pendingIds])
+
+  const openFeedback = useCallback((item) => {
+    const tripId = targetTripId(item)
+    if (!tripId) return
+    // 기록에서 열면 참견 대상은 그 기록의 계획 — 제목은 목록에 있으면 계획 제목, 없으면 기록 제목을 쓴다
+    const plan = item.type === 'plan' ? item : items.find((i) => i.type === 'plan' && i.id === tripId)
+    setFeedbackTarget({ tripId, title: plan?.title ?? item.title, ownerName: (plan ?? item).user?.nickname })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items])
+
+  const feedActions = useMemo(
+    () => ({ user, savedIds, pendingIds, saveDelta, feedbackDelta, toggleSave, openFeedback }),
+    [user, savedIds, pendingIds, saveDelta, feedbackDelta, toggleSave, openFeedback],
+  )
+
+  // 기록 카드가 뒤집힐 때 그 계획이 이미 목록에 있으면 조회 없이 바로 보여준다
+  function findPlan(planId) {
+    return items.find((i) => i.type === 'plan' && i.id === planId) ?? null
+  }
 
   // 여행자 피드 갤러리형과 같은 마스킹 방식(좌우 컬럼 독립 스택) — 3열로 확장
   const columns = Array.from({ length: COLUMNS }, (_, c) => items.filter((_, i) => i % COLUMNS === c))
 
   function renderCard(it) {
-    const tripId = scrapTripIdOf(it)
-    const scrapProps = {
-      saved: !!scrapMap.savedTripIdOf(tripId, it.savedTripId),
-      pending: scrapMap.isPending(tripId),
-      onToggleSave: async () => {
-        const wasSaved = !!scrapMap.savedTripIdOf(tripId, it.savedTripId)
-        const ok = await scrapMap.toggle(tripId, it.savedTripId, it.type === 'record' ? 'RECORD' : 'PLAN')
-        if (!ok) return
-        showToast(wasSaved ? '보관함에서 지웠어요' : '보관함에 저장했어요')
-        // 여기서 지운(스크랩 해제) 항목은 보관함 목록에서도 빠져야 하니 다시 불러온다
-        if (wasSaved) setReloadKey((k) => k + 1)
-      },
-      extra: <CopyToPlanButton item={it} onCopied={() => showToast('나의 계획으로 복사했어요')} />,
-    }
+    const extra = <CopyToPlanButton item={it} onCopied={() => showToast('나의 계획으로 복사했어요')} />
     return it.type === 'record' ? (
-      <RecordFeedCard key={it.savedTripId} item={it} onOpen={setDrawerItem} {...scrapProps} />
+      <RecordFeedCard key={it.savedTripId} item={it} onOpen={setDrawerItem} findPlan={findPlan} extra={extra} />
     ) : (
-      <PlanFeedCard key={it.savedTripId} item={it} onOpen={setDrawerItem} {...scrapProps} />
+      <PlanFeedCard key={it.savedTripId} item={it} onOpen={setDrawerItem} extra={extra} />
     )
   }
 
@@ -126,46 +163,50 @@ export default function SavedTripsPage() {
     <div className="bg-white text-slate-900">
       <Navbar />
 
-      <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-col gap-5 pb-16 pt-8">
-        <div className="border-b border-slate-100 pb-5">
-          <h1 className="text-[19px] font-bold text-slate-900">보관함</h1>
-          <p className="mt-1 text-[13px] text-slate-400">
-            여행자 피드에서 스크랩한 다른 여행자의 계획이에요. 마음에 들면 나의 계획으로 복사해보세요.
-          </p>
-        </div>
+      <FeedActionsProvider value={feedActions}>
+        <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-col gap-5 pb-16 pt-8">
+          <div className="border-b border-slate-100 pb-5">
+            <h1 className="text-[19px] font-bold text-slate-900">보관함</h1>
+            <p className="mt-1 text-[13px] text-slate-400">
+              여행자 피드에서 스크랩한 다른 여행자의 계획이에요. 마음에 들면 나의 계획으로 복사해보세요.
+            </p>
+          </div>
 
-        {loading ? (
-          <div className="py-20 text-center text-[13px] text-slate-400">불러오는 중…</div>
-        ) : items.length === 0 ? (
-          <div className="py-20 text-center text-[13px] text-slate-400">
-            아직 스크랩한 여행이 없어요. 여행자 피드에서 마음에 드는 계획을 찜해보세요.
-          </div>
-        ) : (
-          <div className="flex gap-5">
-            {columns.map((col, c) => (
-              <div key={c} className="flex min-w-0 flex-1 flex-col gap-5">
-                {col.map(renderCard)}
-              </div>
-            ))}
-          </div>
-        )}
-      </Section>
+          {loading ? (
+            <div className="py-20 text-center text-[13px] text-slate-400">불러오는 중…</div>
+          ) : items.length === 0 ? (
+            <div className="py-20 text-center text-[13px] text-slate-400">
+              아직 스크랩한 여행이 없어요. 여행자 피드에서 마음에 드는 계획을 찜해보세요.
+            </div>
+          ) : (
+            <div className="flex gap-5">
+              {columns.map((col, c) => (
+                <div key={c} className="flex min-w-0 flex-1 flex-col gap-5">
+                  {col.map(renderCard)}
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+
+        <FeedDetailDrawer
+          item={drawerItem}
+          items={items}
+          onClose={() => setDrawerItem(null)}
+          onSavePlan={toggleSave}
+          fromSaved
+        />
+
+        <FeedbackDrawer
+          target={feedbackTarget}
+          onClose={() => setFeedbackTarget(null)}
+          onPosted={(tripId) => setFeedbackDelta((d) => ({ ...d, [tripId]: (d[tripId] ?? 0) + 1 }))}
+        />
+      </FeedActionsProvider>
 
       <Footer />
       <ChatbotWidget />
       <FloatingCart />
-
-      <FeedDetailDrawer
-        item={drawerItem}
-        items={items}
-        onClose={() => setDrawerItem(null)}
-        scrapMap={scrapMap}
-        fromSaved
-        onSaved={(justSaved) => {
-          showToast(justSaved ? '보관함에 저장했어요' : '보관함에서 지웠어요')
-          if (!justSaved) setReloadKey((k) => k + 1)
-        }}
-      />
 
       <div
         className={`fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-slate-900/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
