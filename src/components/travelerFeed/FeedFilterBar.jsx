@@ -21,7 +21,9 @@ const MIN_SKELETON_MS = 550
 export default function FeedFilterBar({ filter, onFilterChange, view, onViewChange, onUploadClick }) {
   const [revealed, setRevealed] = useState(revealedOnce)
   const trackRef = useRef(null)
-  const [thumb, setThumb] = useState(null) // { x, w } — 활성 필터 버튼 위치
+  const [hover, setHover] = useState(null) // 마우스를 올린 필터 값 — 탑바 알약처럼 썸이 커서를 따라간다
+  const [thumb, setThumb] = useState(null) // { x, w } — 썸이 가 있을 버튼(호버 중이면 호버, 아니면 활성) 위치
+  const target = hover ?? filter
 
   useEffect(() => {
     if (revealed) return
@@ -32,13 +34,13 @@ export default function FeedFilterBar({ filter, onFilterChange, view, onViewChan
     return () => clearTimeout(t)
   }, [revealed])
 
-  // 라벨 폭이 달라 활성 버튼을 재서 썸을 옮긴다. 웹폰트가 늦게 오면 폭이 바뀌므로 한 번 더 잰다.
+  // 라벨 폭이 달라 대상 버튼을 재서 썸을 옮긴다. 웹폰트가 늦게 오면 폭이 바뀌므로 한 번 더 잰다.
   useLayoutEffect(() => {
     if (!revealed) return
     function measure() {
-      const active = trackRef.current?.querySelector('[aria-pressed="true"]')
-      if (!active) return
-      setThumb({ x: active.offsetLeft, w: active.offsetWidth })
+      const el = trackRef.current?.querySelector(`[data-filter="${target}"]`)
+      if (!el) return
+      setThumb({ x: el.offsetLeft, w: el.offsetWidth })
     }
     measure()
     const t = setTimeout(measure, 300)
@@ -47,7 +49,7 @@ export default function FeedFilterBar({ filter, onFilterChange, view, onViewChan
       clearTimeout(t)
       window.removeEventListener('resize', measure)
     }
-  }, [revealed, filter])
+  }, [revealed, target])
 
   if (!revealed) {
     return (
@@ -75,6 +77,7 @@ export default function FeedFilterBar({ filter, onFilterChange, view, onViewChan
         role="group"
         aria-label="피드 종류"
         className="relative flex items-center gap-0.5 rounded-full bg-slate-100 p-1"
+        onMouseLeave={() => setHover(null)}
       >
         <span
           aria-hidden="true"
@@ -87,17 +90,22 @@ export default function FeedFilterBar({ filter, onFilterChange, view, onViewChan
         />
         {FILTERS.map((f) => {
           const active = filter === f.value
+          const lit = target === f.value // 썸이 올라와 있는 버튼 — 활성이거나 호버 중
           return (
             <button
               key={f.value}
               type="button"
+              data-filter={f.value}
               onClick={() => onFilterChange(f.value)}
+              onMouseEnter={() => setHover(f.value)}
+              onFocus={() => setHover(f.value)}
+              onBlur={() => setHover(null)}
               aria-pressed={active}
               className={`relative z-10 flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12.5px] font-bold whitespace-nowrap transition-colors duration-300 ${
-                active ? 'text-brand-dark' : 'text-slate-500 hover:text-slate-800'
+                active ? 'text-brand-dark' : lit ? 'text-slate-800' : 'text-slate-500'
               }`}
             >
-              <Icon icon={f.icon} width={14} className={`transition-colors duration-300 ${active ? 'text-brand' : 'text-slate-400'}`} />
+              <Icon icon={f.icon} width={14} className={`transition-colors duration-300 ${active ? 'text-brand' : lit ? 'text-slate-600' : 'text-slate-400'}`} />
               {f.label}
             </button>
           )
