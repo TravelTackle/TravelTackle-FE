@@ -124,11 +124,16 @@ export default function TravelerFeedPage() {
   const galleryLeft = galleryItems.filter((_, i) => i % 2 === 0)
   const galleryRight = galleryItems.filter((_, i) => i % 2 === 1)
 
+  // 기록 카드가 뒤집힐 때 그 계획이 이미 목록에 있으면 조회 없이 바로 보여준다
+  function findPlan(planId) {
+    return allItems.find((i) => i.type === 'plan' && i.id === planId) ?? null
+  }
+
   function renderCard(item) {
     return item.type === 'plan' ? (
       <PlanFeedCard key={item.id} item={item} onOpen={setDrawerItem} />
     ) : (
-      <RecordFeedCard key={item.id} item={item} onOpen={setDrawerItem} />
+      <RecordFeedCard key={item.id} item={item} onOpen={setDrawerItem} findPlan={findPlan} />
     )
   }
 
