@@ -27,7 +27,7 @@ function loadPlan(planId, findPlan) {
   return planCache.get(planId)
 }
 
-// 기록 카드 — 앞면은 기록, "계획 보기"를 누르면 카드가 뒤집혀 뒷면에 그 기록의 여행 계획이 나온다.
+// 기록 카드 — 앞면은 기록, 헤더의 기록|계획 스위치를 누르면 카드가 뒤집혀 뒷면에 그 기록의 여행 계획이 나온다.
 // findPlan(planId): 피드 목록에 이미 있는 계획을 돌려주면 조회 없이 바로 뒤집힌다.
 export default function RecordFeedCard({ item, onOpen, findPlan }) {
   const [flipped, setFlipped] = useState(false)
@@ -70,16 +70,8 @@ export default function RecordFeedCard({ item, onOpen, findPlan }) {
     setFlipped((v) => !v)
   }
 
-  const flipBackButton = (
-    <button
-      type="button"
-      onClick={flip}
-      className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-600 transition-colors hover:bg-emerald-100"
-    >
-      <Icon icon="mdi:rotate-3d-variant" width={13} />
-      기록으로
-    </button>
-  )
+  // 헤더 오른쪽 타입 칩 자리에 놓는 기록|계획 스위치 — 앞·뒷면 같은 자리라 뒤집혀도 손이 가는 위치가 그대로다
+  const flipSwitch = item.planId ? <FlipSwitch value={flipped ? 'plan' : 'record'} onToggle={flip} /> : null
 
   return (
     <Card as="div" shadow className="flip-scene p-0 text-left">
@@ -100,7 +92,10 @@ export default function RecordFeedCard({ item, onOpen, findPlan }) {
           }}
           className="flip-face cursor-pointer p-4"
         >
-          <FeedUserHeader item={item} />
+          <div className="flex items-center justify-between">
+            <FeedUserHeader item={item} showChip={!flipSwitch} />
+            {flipSwitch}
+          </div>
 
           {/* 가로 사진은 4:3, 세로 사진은 계획 카드 썸네일과 같은 4:5로 맞춰 폭에 비례해 스케일 */}
           <div
@@ -110,17 +105,6 @@ export default function RecordFeedCard({ item, onOpen, findPlan }) {
           >
             {item.imageUrl && (
               <img src={item.imageUrl} alt={item.title} className="absolute inset-0 h-full w-full object-cover" />
-            )}
-            {item.planId && (
-              <button
-                type="button"
-                onClick={flip}
-                aria-label="이 기록의 여행 계획 보기"
-                className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-[11.5px] font-bold text-brand-dark shadow-card transition-all hover:bg-white hover:shadow-card-hover"
-              >
-                <Icon icon="mdi:rotate-3d-variant" width={14} className="text-brand" />
-                계획 보기
-              </button>
             )}
           </div>
 
@@ -146,7 +130,7 @@ export default function RecordFeedCard({ item, onOpen, findPlan }) {
               }}
               className="animate-slide-in cursor-pointer"
             >
-              <PlanCardBody item={plan} headerRight={flipBackButton} />
+              <PlanCardBody item={plan} headerRight={flipSwitch} />
             </div>
           ) : planError ? (
             <div className="flex flex-col items-center gap-3 py-10 text-center">
@@ -160,11 +144,11 @@ export default function RecordFeedCard({ item, onOpen, findPlan }) {
                 >
                   다시 시도
                 </button>
-                {flipBackButton}
+                {flipSwitch}
               </div>
             </div>
           ) : (
-            <PlanSkeleton headerRight={flipBackButton} />
+            <PlanSkeleton headerRight={flipSwitch} />
           )}
         </div>
       </div>
@@ -205,6 +189,47 @@ function PlanSkeleton({ headerRight }) {
         <Skeleton className="h-5 w-5 rounded-md" />
         <Skeleton className="h-5 w-5 rounded-md" />
       </div>
+    </div>
+  )
+}
+
+const SIDES = [
+  { value: 'record', label: '기록', icon: 'mdi:camera-outline', active: 'text-emerald-600' },
+  { value: 'plan', label: '계획', icon: 'mdi:calendar-blank-outline', active: 'text-brand-dark' },
+]
+
+// 기록|계획 미니 스위치 — 흰 썸이 선택 쪽으로 미끄러진다. 두 칸 폭이 같아 100% 단위로 옮긴다.
+function FlipSwitch({ value, onToggle }) {
+  const index = SIDES.findIndex((s) => s.value === value)
+  return (
+    <div
+      role="group"
+      aria-label="기록과 계획 전환"
+      className="relative grid shrink-0 grid-cols-2 rounded-full bg-slate-100 p-0.5"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <span
+        aria-hidden="true"
+        className="mode-thumb pointer-events-none absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-white shadow-card"
+        style={{ transform: `translateX(${index * 100}%)` }}
+      />
+      {SIDES.map((side) => {
+        const active = side.value === value
+        return (
+          <button
+            key={side.value}
+            type="button"
+            aria-pressed={active}
+            onClick={(e) => { if (!active) onToggle(e) }}
+            className={`relative z-10 flex items-center justify-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold whitespace-nowrap transition-colors duration-300 ${
+              active ? side.active : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <Icon icon={side.icon} width={13} />
+            {side.label}
+          </button>
+        )
+      })}
     </div>
   )
 }
