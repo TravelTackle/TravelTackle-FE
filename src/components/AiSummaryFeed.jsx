@@ -145,8 +145,8 @@ function RankRow({ card, rank, index, personal }) {
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[14px] font-bold text-slate-900 transition-colors group-hover:text-brand">{card.title}</span>
         <span className="mt-0.5 block truncate text-[12px] text-slate-500">{card.desc}</span>
-        <span className="mt-1 flex items-center gap-2 text-[11px] text-slate-400">
-          <span className="truncate">{card.meta}</span>
+        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-400">
+          <span className="min-w-0 truncate">{card.meta}</span>
           <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 font-bold tabular-nums ${stat.className}`}>
             <Icon icon={stat.icon} width={10} /> {stat.label}
           </span>
@@ -479,7 +479,7 @@ export default function AiSummaryFeed({ feed }) {
 
         <div key={showPersonal ? 'personal' : 'popular'} className="mt-5 grid gap-4 md:grid-cols-2">
           {['plan', 'record'].map((key, i) => (
-            <div key={key} className="animate-slide-in" style={{ animationDelay: `${i * 120}ms` }}>
+            <div key={key} className="min-w-0 animate-slide-in" style={{ animationDelay: `${i * 120}ms` }}>
               <GroupColumn
                 group={GROUPS[key]}
                 cards={columns[key].cards}
