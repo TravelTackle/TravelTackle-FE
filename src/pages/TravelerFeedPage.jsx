@@ -7,7 +7,7 @@ import ChatbotWidget from '../components/ChatbotWidget'
 import FloatingCart from '../components/FloatingCart'
 import Section from '../components/ui/Section'
 import FeedFilterBar from '../components/travelerFeed/FeedFilterBar'
-import RegionRankPanel, { useRegionStats } from '../components/travelerFeed/RegionRankPanel'
+import RegionRankPanel, { useMonthlyRegions, useRegionChips } from '../components/travelerFeed/RegionRankPanel'
 import Skeleton from '../components/ui/Skeleton'
 import PopularPlansTop5 from '../components/travelerFeed/PopularPlansTop5'
 import PlanFeedCard from '../components/travelerFeed/PlanFeedCard'
@@ -206,8 +206,9 @@ export default function TravelerFeedPage() {
   const allItemsRef = useRef(allItems)
   allItemsRef.current = allItems
   const items = allItems.filter(matchesFilters)
-  // 지역 순위·칩은 받아온 피드의 region으로 센다(백엔드 지역 집계 API 없음)
-  const regionStats = useRegionStats(allItems)
+  // 인기 지역 순위는 이번 달 피드를 따로 받아 세고, 필터 칩은 지금 보이는 목록의 지역으로 만든다
+  const monthlyRegions = useMonthlyRegions()
+  const regionChips = useRegionChips(allItems)
   // 갤러리는 grid 행 높이가 좌우 중 큰 쪽에 맞춰져 짧은 카드 아래 빈 공간이 생기므로,
   // 좌/우 컬럼을 독립된 세로 스택 두 개로 나눠 각자 빈틈없이 붙게 렌더링한다.
   const galleryLeft = items.filter((_, i) => i % 2 === 0)
@@ -245,7 +246,7 @@ export default function TravelerFeedPage() {
 
         {/* 인기 지역은 필터탭과 달리 스크롤하면 같이 흘러가도록 sticky 래퍼 밖에 둠 */}
         {view === 'gallery' && (
-          <RegionRankPanel stats={regionStats} loading={feedLoading} active={region} onSelect={setRegion} layout="row" />
+          <RegionRankPanel monthly={monthlyRegions} chips={regionChips} loading={feedLoading} active={region} onSelect={setRegion} layout="row" />
         )}
 
         {view === 'list' ? (
@@ -332,7 +333,7 @@ export default function TravelerFeedPage() {
                 )}
               </div>
 
-              <RegionRankPanel stats={regionStats} loading={feedLoading} active={region} onSelect={setRegion} />
+              <RegionRankPanel monthly={monthlyRegions} chips={regionChips} loading={feedLoading} active={region} onSelect={setRegion} />
               <PopularPlansTop5 onOpen={setDrawerItem} />
             </aside>
           </div>

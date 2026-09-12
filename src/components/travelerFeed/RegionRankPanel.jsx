@@ -1,9 +1,12 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Icon } from '@iconify/react'
 import Card from '../ui/Card'
 import Skeleton from '../ui/Skeleton'
+import { getFeed } from '../../api/feed'
+import { adaptFeedItem } from '../../data/feedAdapter'
 
-const WEEK_MS = 7 * 86_400_000
+const PAGE = 50 // 백엔드 최대 페이지 크기
+const MAX_PAGES = 4 // 이번 달 게시물이 많아도 최대 200건까지만 훑는다
 
 // 1위 금 · 2위 은 · 3위 동 — 홈 모아보기 순위와 같은 배지
 const RANK_STYLE = [
@@ -22,28 +25,59 @@ function countRegions(items) {
   return [...counts.entries()].map(([region, count]) => ({ region, count })).sort((a, b) => b.count - a.count)
 }
 
-// 이번 주 인기 지역 TOP 3 + 지역 필터 칩. 백엔드에 지역 집계 API가 없어 받아온 피드(계획·기록)의 region으로 센다.
-// 이번 주(최근 7일) 게시물이 없으면 전체 기간으로 대신 세고 캡션에 표시한다.
-export function useRegionStats(items) {
-  return useMemo(() => {
-    const since = Date.now() - WEEK_MS
-    const thisWeek = items.filter((i) => i.createdAt && new Date(i.createdAt).getTime() >= since)
-    const weekly = countRegions(thisWeek)
-    const all = countRegions(items)
-    const top = (weekly.length ? weekly : all).slice(0, 3)
-    return { top, all, weekly: weekly.length > 0 }
-  }, [items])
+// 이번 달 인기 지역 TOP 3 — 페이지 목록(검색·정렬 결과)과 별개로 최신순 피드를 따로 받아,
+// 이번 달 1일 이후 게시물(계획·기록)만 지역별로 센다. 백엔드에 지역 집계 API가 없어 프론트에서 세되,
+// 이번 달 게시물이 없으면 다른 기간으로 대체하지 않는다. 같은 세션에서는 한 번만 조회한다.
+let monthlyCache = null
+
+async function fetchMonthlyRegions() {
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
+  const items = []
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const res = await getFeed({ page, size: PAGE, sort: 'latest' })
+    const content = (res?.content ?? []).map(adaptFeedItem)
+    items.push(...content)
+    const last = content[content.length - 1]
+    // 최신순이므로 마지막 항목이 이번 달 이전이면 더 볼 필요가 없다
+    if (content.length < PAGE || !last?.createdAt || new Date(last.createdAt).getTime() < monthStart) break
+  }
+  const thisMonth = items.filter((i) => i.createdAt && new Date(i.createdAt).getTime() >= monthStart)
+  return { top: countRegions(thisMonth).slice(0, 3), month: now.getMonth() + 1 }
 }
 
-export default function RegionRankPanel({ stats, loading, active, onSelect, layout = 'sidebar' }) {
-  const { top, all, weekly } = stats
+export function useMonthlyRegions() {
+  const [state, setState] = useState(() => (monthlyCache ? { ...monthlyCache, loading: false } : { top: [], month: new Date().getMonth() + 1, loading: true }))
+  useEffect(() => {
+    if (monthlyCache) return
+    let ignore = false
+    fetchMonthlyRegions()
+      .then((r) => {
+        monthlyCache = r
+        if (!ignore) setState({ ...r, loading: false })
+      })
+      .catch(() => { if (!ignore) setState((s) => ({ ...s, loading: false })) })
+    return () => { ignore = true }
+  }, [])
+  return state
+}
+
+// 지역 필터 칩 — 지금 화면에 보이는 목록(검색·정렬 결과)의 지역별 개수. 눌렀을 때 결과가 항상 있도록 목록과 같은 데이터를 쓴다
+export function useRegionChips(items) {
+  return useMemo(() => countRegions(items), [items])
+}
+
+export default function RegionRankPanel({ monthly, chips, loading, active, onSelect, layout = 'sidebar' }) {
+  const { top, month, loading: monthlyLoading } = monthly
+  const all = chips
+  const title = `${month}월 인기 지역`
 
   if (layout === 'row') {
     // 갤러리 보기 상단 — 순위 3개를 앞에 두고 나머지 지역 칩을 이어 붙인 한 줄
     return (
       <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <span className="shrink-0 text-[13px] font-bold text-slate-900">{weekly ? '이번 주 인기 지역' : '인기 지역'}</span>
-        {loading ? (
+        <span className="shrink-0 text-[13px] font-bold text-slate-900">{title}</span>
+        {loading || monthlyLoading ? (
           [72, 64, 68, 60, 60].map((w, i) => <Skeleton key={i} className="h-8 shrink-0 rounded-full" style={{ width: w, animationDelay: `${i * 60}ms` }} />)
         ) : (
           <>
@@ -64,11 +98,11 @@ export default function RegionRankPanel({ stats, loading, active, onSelect, layo
   return (
     <Card className="p-4">
       <div className="flex items-center justify-between">
-        <div className="text-[13px] font-bold text-slate-900">{weekly ? '이번 주 인기 지역' : '인기 지역'}</div>
-        {!loading && !weekly && all.length > 0 && <span className="text-[10.5px] text-slate-400">전체 기간</span>}
+        <div className="text-[13px] font-bold text-slate-900">{title}</div>
+        <span className="text-[10.5px] text-slate-400">이번 달 게시물 기준</span>
       </div>
 
-      {loading ? (
+      {monthlyLoading ? (
         <div className="mt-3 flex items-end justify-center gap-2 px-2" role="status" aria-label="인기 지역을 집계하는 중">
           {[52, 76, 44].map((h, i) => (
             <div key={i} className="flex w-full flex-col items-center gap-1.5">
@@ -78,7 +112,7 @@ export default function RegionRankPanel({ stats, loading, active, onSelect, layo
           ))}
         </div>
       ) : top.length === 0 ? (
-        <p className="mt-3 text-[12px] text-slate-400">아직 지역별 게시물이 없어요.</p>
+        <p className="mt-3 rounded-xl bg-slate-50 px-3 py-3 text-center text-[12px] text-slate-400">{month}월에 올라온 게시물이 아직 없어요.</p>
       ) : (
         <Podium top={top} active={active} onSelect={onSelect} />
       )}
