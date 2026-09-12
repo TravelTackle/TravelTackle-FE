@@ -3,7 +3,8 @@ import { Icon } from '@iconify/react'
 import Card from '../ui/Card'
 import { FeedUserHeader, FeedActionBar } from './FeedCardChrome'
 
-export default function PlanFeedCard({ item, onOpen }) {
+// extra: 카드 하단에 덧붙일 요소 — 보관함에서 "나의 계획으로 복사하기" 버튼을 붙이는 데 쓴다.
+export default function PlanFeedCard({ item, onOpen, extra }) {
   return (
     <Card
       as="div"
@@ -17,6 +18,7 @@ export default function PlanFeedCard({ item, onOpen }) {
       className="cursor-pointer p-4 text-left"
     >
       <PlanCardBody item={item} />
+      {extra}
     </Card>
   )
 }

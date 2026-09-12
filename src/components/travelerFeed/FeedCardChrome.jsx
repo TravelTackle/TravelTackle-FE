@@ -1,6 +1,9 @@
+import { useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Icon } from '@iconify/react'
 import Chip from '../ui/Chip'
 import IconBadge from '../ui/IconBadge'
+import { publishTrip, unpublishTrip } from '../../api/trip'
 import { targetTripId, useFeedActions } from './FeedActionsContext'
 
 const TYPE_CHIP = {
@@ -8,9 +11,91 @@ const TYPE_CHIP = {
   record: { label: '여행 기록', className: 'bg-emerald-50 text-emerald-600' },
 }
 
+// TripHeader(나의 여행 - 나의 계획)에서 게시 전환 시 뜨는 토스트와 같은 문구·스타일
+const PUBLISH_TOAST = {
+  on: '게시했어요! 여행자 피드에서 확인할 수 있어요.',
+  off: '비공개로 전환했어요.',
+}
+
+// TripHeader(나의 여행 - 나의 계획)의 나만보기/전체공개 토글과 완전히 같은 디자인·동작 —
+// 두 라벨을 같은 grid 셀에 겹쳐 버튼 폭은 고정하고 위아래로 슬라이드+페이드하며 전환한다.
+// item.published가 있는(=내 계획인) 카드에서만 쓰이므로 상태는 로컬로 들고 직접 API를 호출한다.
+function PublishToggle({ item }) {
+  const [published, setPublished] = useState(item.published)
+  const [saving, setSaving] = useState(false)
+  const [toast, setToast] = useState('')
+  const toastTimer = useRef(null)
+
+  function showToast(message) {
+    setToast(message)
+    clearTimeout(toastTimer.current)
+    toastTimer.current = setTimeout(() => setToast(''), 2200)
+  }
+
+  async function handleToggle(e) {
+    e.stopPropagation()
+    if (saving) return
+    const next = !published
+    setSaving(true)
+    setPublished(next)
+    // TripHeader와 동일하게 낙관적으로 먼저 알리고, 실패하면 조용히 되돌린다(토스트는 다시 취소하지 않음)
+    showToast(next ? PUBLISH_TOAST.on : PUBLISH_TOAST.off)
+    try {
+      await (next ? publishTrip(item.id) : unpublishTrip(item.id))
+    } catch {
+      setPublished(!next) // 실패하면 원래 상태로 되돌린다
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={handleToggle}
+        disabled={saving}
+        title={published ? '눌러서 나만 보기로 전환' : '눌러서 전체공개로 전환'}
+        style={{ display: 'grid' }}
+        className={`shrink-0 overflow-hidden rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors duration-150 disabled:opacity-60 ${
+          published ? 'bg-brand-light text-brand' : 'bg-rose-50 text-rose-600'
+        }`}
+      >
+        <span
+          className={`col-start-1 row-start-1 flex items-center justify-center transition-all duration-150 ease-out ${
+            published ? 'translate-y-0 opacity-100' : '-translate-y-1 opacity-0'
+          }`}
+        >
+          전체공개
+        </span>
+        <span
+          className={`col-start-1 row-start-1 flex items-center justify-center transition-all duration-150 ease-out ${
+            published ? 'translate-y-1 opacity-0' : 'translate-y-0 opacity-100'
+          }`}
+        >
+          나만 보기
+        </span>
+      </button>
+
+      {/* TripPlannerPage 토스트와 동일한 위치·스타일 — 카드(Card)에 hover 시 걸리는 .lift의
+          transform이 fixed 자손의 기준을 카드로 바꿔버려서, body에 포탈로 그려 화면 기준 하단
+          중앙에 뜨게 한다 */}
+      {toast &&
+        createPortal(
+          <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-900/90 px-4 py-2.5 text-[12.5px] font-semibold text-white shadow-popup">
+            {toast}
+          </div>,
+          document.body,
+        )}
+    </>
+  )
+}
+
 // 카드/상세 사이드바에서 공통으로 쓰는 작성자 헤더 (아바타 + 닉네임 + 지역 + 타입 칩)
 export function FeedUserHeader({ item, showChip = true }) {
   const chip = TYPE_CHIP[item.type]
+  // item.published는 내 계획(마이페이지 프로필 탭)에서만 채워 넣는 값 — 남의 계획엔 없어서 자연히 안 보인다.
+  const showPublishToggle = showChip && item.type === 'plan' && typeof item.published === 'boolean'
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
@@ -22,7 +107,12 @@ export function FeedUserHeader({ item, showChip = true }) {
           <div className="text-[11px] text-slate-400">{item.region}</div>
         </div>
       </div>
-      {showChip && <Chip className={`px-2.5 py-1 text-[11px] font-bold ${chip.className}`}>{chip.label}</Chip>}
+      {showChip && (
+        <div className="flex shrink-0 items-center gap-1.5">
+          {showPublishToggle && <PublishToggle item={item} />}
+          <Chip className={`px-2.5 py-1 text-[11px] font-bold ${chip.className}`}>{chip.label}</Chip>
+        </div>
+      )}
     </div>
   )
 }

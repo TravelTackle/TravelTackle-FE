@@ -154,11 +154,11 @@ export default function ParticipateSection({ feed }) {
   async function handleSave() {
     if (saving || saved) return
     if (isSample) {
-      setNotice({ tone: 'err', message: '예시 계획은 담을 수 없어요.' })
+      setNotice({ tone: 'err', message: '예시 계획은 저장할 수 없어요.' })
       return
     }
     if (!user) {
-      setNotice({ tone: 'err', message: '로그인 후 스크랩할 수 있어요.', login: true })
+      setNotice({ tone: 'err', message: '로그인 후 보관함에 저장할 수 있어요.', login: true })
       return
     }
     setSaving(true)
@@ -166,15 +166,15 @@ export default function ParticipateSection({ feed }) {
     try {
       await saveTrip(plan.id, 'PLAN')
       setSavedIds((c) => ({ ...c, [plan.id]: true }))
-      setNotice({ tone: 'ok', message: '보관함에 스크랩했어요.' })
+      setNotice({ tone: 'ok', message: '보관함에 저장했어요.', trips: true })
     } catch (err) {
       const status = err.response?.status
       setNotice(
         status === 401
-          ? { tone: 'err', message: '로그인 후 스크랩할 수 있어요.', login: true }
+          ? { tone: 'err', message: '로그인 후 보관함에 저장할 수 있어요.', login: true }
           : status === 409
-            ? { tone: 'err', message: '이미 보관함에 있는 계획이에요.' }
-            : { tone: 'err', message: err.response?.data?.message || '스크랩하지 못했어요. 잠시 후 다시 시도해주세요.' },
+            ? { tone: 'err', message: '이미 보관함에 저장한 계획이에요.', trips: true }
+            : { tone: 'err', message: '계획을 저장하지 못했어요. 잠시 후 다시 시도해주세요.' },
       )
     } finally {
       setSaving(false)
@@ -310,7 +310,7 @@ export default function ParticipateSection({ feed }) {
                   <Icon icon="solar:chat-round-dots-bold" width={13} /> 참견 {feedbackCount}
                 </span>
                 {typeof plan.saveCount === 'number' && (
-                  <span className="flex items-center gap-1 text-amber-600 text-[11px] font-bold tabular-nums" title="내 여행으로 담은 수">
+                  <span className="flex items-center gap-1 text-amber-600 text-[11px] font-bold tabular-nums" title="스크랩(보관함에 저장)한 수">
                     <Icon icon="solar:bookmark-bold" width={12} /> 저장 {plan.saveCount + (saved ? 1 : 0)}
                   </span>
                 )}
@@ -326,7 +326,7 @@ export default function ParticipateSection({ feed }) {
                   }`}
                 >
                   <Icon icon={saved ? 'solar:bookmark-bold' : 'solar:bookmark-linear'} width={13} />
-                  {saved ? '스크랩했어요' : saving ? '스크랩 중…' : '스크랩하기'}
+                  {saved ? '저장됨' : saving ? '저장 중…' : '보관함에 저장'}
                 </button>
               </div>
             </div>
@@ -372,7 +372,7 @@ export default function ParticipateSection({ feed }) {
                 {notice?.trips && (
                   <>
                     {' '}
-                    <Link to="/trips" className="underline underline-offset-2 text-brand">나의 여행 보기</Link>
+                    <Link to="/trips/saved" className="underline underline-offset-2 text-brand">보관함 보기</Link>
                   </>
                 )}
               </p>

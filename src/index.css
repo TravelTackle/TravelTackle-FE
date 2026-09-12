@@ -264,6 +264,23 @@ body {
   animation: day-slide-in-left 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* 탈퇴 요약 팝업 — 처음 0.1초는 완전히 안 보이다가, 두 캐릭터가 각자 멀리서(작게 시작해 커지며)
+   날아와 가운데서 마주 보게 된다. animation-fill-mode의 backwards가 delay 동안 from 상태(투명)를 유지시켜준다 */
+@keyframes fly-in-from-left {
+  from { opacity: 0; transform: translateX(-260px) scale(0.4) rotate(-14deg); }
+  to { opacity: 1; transform: translateX(0) scale(1) rotate(0); }
+}
+@keyframes fly-in-from-right {
+  from { opacity: 0; transform: translateX(260px) scale(0.4) rotate(14deg); }
+  to { opacity: 1; transform: translateX(0) scale(1) rotate(0); }
+}
+.animate-fly-in-left {
+  animation: fly-in-from-left 1.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+.animate-fly-in-right {
+  animation: fly-in-from-right 1.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+
 /* 스크롤 기능은 유지하되 스크롤바만 숨김 */
 .scrollbar-hide {
   scrollbar-width: none;

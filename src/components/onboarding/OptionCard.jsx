@@ -6,7 +6,7 @@ export default function OptionCard({ option, selected, multiple, onClick }) {
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className={`w-full flex items-center gap-2 rounded-xl border-2 px-3 py-3 text-left transition-all ${
+      className={`w-full flex items-center gap-2 rounded-xl border-2 px-3 py-3 text-left transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand/40 ${
         selected ? 'border-brand bg-brand-light' : 'border-slate-100 bg-slate-50 hover:border-slate-200'
       }`}
     >
