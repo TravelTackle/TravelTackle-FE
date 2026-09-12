@@ -7,7 +7,7 @@ import ChatbotWidget from '../components/ChatbotWidget'
 import FloatingCart from '../components/FloatingCart'
 import Section from '../components/ui/Section'
 import FeedFilterBar from '../components/travelerFeed/FeedFilterBar'
-import RegionRankPanel, { useRegionStats } from '../components/travelerFeed/RegionRankPanel'
+import RegionRankPanel, { useMonthlyRegions, useRegionChips } from '../components/travelerFeed/RegionRankPanel'
 import Skeleton from '../components/ui/Skeleton'
 import PopularPlansTop5 from '../components/travelerFeed/PopularPlansTop5'
 import PlanFeedCard from '../components/travelerFeed/PlanFeedCard'
@@ -143,24 +143,27 @@ export default function TravelerFeedPage() {
         setSaveDelta((d) => ({ ...d, [tripId]: (d[tripId] ?? 0) - 1 }))
         showToast('스크랩을 해제했어요')
       } else {
-        // sourceType: 기록에서 스크랩했으면 'RECORD', 계획에서 했으면 'PLAN' — 보관함에서 그 형태
-        // 그대로 카드를 보여주는 데 쓰인다.
-        await saveTrip(tripId, item.type === 'record' ? 'RECORD' : 'PLAN')
-        // 방금 저장한 항목의 savedTripId를 알기 위해 목록을 다시 받는다(응답은 복사된 계획만 돌려준다)
-        const list = await getSavedTrips().catch(() => [])
-        setSavedIds(new Map(list.map((t) => [t.originalTripId, t.savedTripId])))
+        const saved = await saveTrip(tripId, item.type === 'record' ? 'RECORD' : 'PLAN')
+        setSavedIds((m) => new Map(m).set(tripId, saved.savedTripId))
         setSaveDelta((d) => ({ ...d, [tripId]: (d[tripId] ?? 0) + 1 }))
-        showToast('내 여행으로 스크랩했어요 · 나의 여행에서 확인')
+        showToast('보관함에 스크랩했어요')
       }
     } catch (err) {
       const data = err?.response?.data
-      showToast(
-        err?.response?.status === 401
-          ? '로그인이 필요해요'
-          : data?.code === 'TRIP_011'
-            ? '내 계획은 스크랩할 수 없어요'
-            : data?.message || '스크랩에 실패했어요. 잠시 후 다시 시도해주세요',
-      )
+      if (data?.code === 'TRIP_012') {
+        // 이미 보관함에 있음 — 목록을 다시 받아 상태만 맞춘다
+        const list = await getSavedTrips().catch(() => [])
+        setSavedIds(new Map(list.map((t) => [t.originalTripId, t.savedTripId])))
+        showToast('이미 보관함에 있는 계획이에요')
+      } else {
+        showToast(
+          err?.response?.status === 401
+            ? '로그인이 필요해요'
+            : data?.code === 'TRIP_011'
+              ? '내 계획은 스크랩할 수 없어요'
+              : data?.message || '스크랩에 실패했어요. 잠시 후 다시 시도해주세요',
+        )
+      }
     } finally {
       setPendingIds((s) => { const next = new Set(s); next.delete(tripId); return next })
     }
@@ -208,8 +211,9 @@ export default function TravelerFeedPage() {
   const allItemsRef = useRef(allItems)
   allItemsRef.current = allItems
   const items = allItems.filter(matchesFilters)
-  // 지역 순위·칩은 받아온 피드의 region으로 센다(백엔드 지역 집계 API 없음)
-  const regionStats = useRegionStats(allItems)
+  // 인기 지역 순위는 이번 달 피드를 따로 받아 세고, 필터 칩은 지금 보이는 목록의 지역으로 만든다
+  const monthlyRegions = useMonthlyRegions()
+  const regionChips = useRegionChips(allItems)
   // 갤러리는 grid 행 높이가 좌우 중 큰 쪽에 맞춰져 짧은 카드 아래 빈 공간이 생기므로,
   // 좌/우 컬럼을 독립된 세로 스택 두 개로 나눠 각자 빈틈없이 붙게 렌더링한다.
   const galleryLeft = items.filter((_, i) => i % 2 === 0)
@@ -247,7 +251,7 @@ export default function TravelerFeedPage() {
 
         {/* 인기 지역은 필터탭과 달리 스크롤하면 같이 흘러가도록 sticky 래퍼 밖에 둠 */}
         {view === 'gallery' && (
-          <RegionRankPanel stats={regionStats} loading={feedLoading} active={region} onSelect={setRegion} layout="row" />
+          <RegionRankPanel monthly={monthlyRegions} chips={regionChips} loading={feedLoading} active={region} onSelect={setRegion} layout="row" />
         )}
 
         {view === 'list' ? (
@@ -334,7 +338,7 @@ export default function TravelerFeedPage() {
                 )}
               </div>
 
-              <RegionRankPanel stats={regionStats} loading={feedLoading} active={region} onSelect={setRegion} />
+              <RegionRankPanel monthly={monthlyRegions} chips={regionChips} loading={feedLoading} active={region} onSelect={setRegion} />
               <PopularPlansTop5 onOpen={setDrawerItem} />
             </aside>
           </div>

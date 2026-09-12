@@ -43,7 +43,7 @@ function adaptPlan({ tripId, ownerName, region, title, startDate, endDate, days,
     startDate,
     endDate,
     feedbackCount: feedbackCount ?? 0,
-    saveCount: typeof saveCount === 'number' ? saveCount : null, // 내 여행으로 담은(저장) 수 — 좋아요 엔티티가 생기면 likeCount를 따로 받는다
+    saveCount: typeof saveCount === 'number' ? saveCount : null, // 스크랩(내 여행으로 저장) 수 — 좋아요는 도입하지 않기로 해 이 값만 쓴다
     createdAt,
     duration: toDuration(startDate, endDate),
     placeCount: adaptedDays.reduce((sum, d) => sum + d.places.length, 0),

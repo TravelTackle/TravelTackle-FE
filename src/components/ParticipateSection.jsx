@@ -164,7 +164,7 @@ export default function ParticipateSection({ feed }) {
     setSaving(true)
     setNotice(null)
     try {
-      await saveTrip(plan.id)
+      await saveTrip(plan.id, 'PLAN')
       setSavedIds((c) => ({ ...c, [plan.id]: true }))
       setNotice({ tone: 'ok', message: '보관함에 저장했어요.', trips: true })
     } catch (err) {
