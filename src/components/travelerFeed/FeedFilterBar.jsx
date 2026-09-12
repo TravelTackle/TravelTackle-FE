@@ -3,7 +3,7 @@ import { Icon } from '@iconify/react'
 import Button from '../ui/Button'
 import Skeleton from '../ui/Skeleton'
 
-const FILTERS = [
+export const FILTERS = [
   { value: 'all', label: '전체', icon: 'mdi:shuffle-variant' },
   { value: 'plan', label: '계획', icon: 'mdi:calendar-blank-outline' },
   { value: 'record', label: '기록', icon: 'mdi:camera-outline' },
@@ -14,29 +14,17 @@ const VIEWS = [
   { value: 'gallery', icon: 'mdi:view-grid', label: '갤러리 보기' },
 ]
 
-// 첫 진입에만 스켈레톤 → 드러나기 모션. 필터를 오갈 때마다 반복되면 새로고침처럼 느껴진다.
-let revealedOnce = false
-const MIN_SKELETON_MS = 550
-
-export default function FeedFilterBar({ filter, onFilterChange, view, onViewChange, onUploadClick }) {
-  const [revealed, setRevealed] = useState(revealedOnce)
+// 전체/계획/기록 세그먼트 — 흰 썸이 선택 쪽으로 미끄러지고, 활성 라벨만 브랜드 색.
+// 마이페이지 프로필 탭에서도 이 토글을 그대로 재사용한다(스켈레톤/보기방식/업로드 버튼 없이 이 부분만).
+// options: 보여줄 필터 목록 — 마이페이지는 "전체" 없이 계획/기록만 쓰므로 FILTERS 일부만 넘긴다.
+export function FeedTypeFilter({ filter, onFilterChange, options = FILTERS }) {
   const trackRef = useRef(null)
   const [hover, setHover] = useState(null) // 마우스를 올린 필터 값 — 탑바 알약처럼 썸이 커서를 따라간다
   const [thumb, setThumb] = useState(null) // { x, w } — 썸이 가 있을 버튼(호버 중이면 호버, 아니면 활성) 위치
   const target = hover ?? filter
 
-  useEffect(() => {
-    if (revealed) return
-    const t = setTimeout(() => {
-      revealedOnce = true
-      setRevealed(true)
-    }, MIN_SKELETON_MS)
-    return () => clearTimeout(t)
-  }, [revealed])
-
   // 라벨 폭이 달라 대상 버튼을 재서 썸을 옮긴다. 웹폰트가 늦게 오면 폭이 바뀌므로 한 번 더 잰다.
   useLayoutEffect(() => {
-    if (!revealed) return
     function measure() {
       const el = trackRef.current?.querySelector(`[data-filter="${target}"]`)
       if (!el) return
@@ -49,29 +37,10 @@ export default function FeedFilterBar({ filter, onFilterChange, view, onViewChan
       clearTimeout(t)
       window.removeEventListener('resize', measure)
     }
-  }, [revealed, target])
-
-  if (!revealed) {
-    return (
-      <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2.5" role="status" aria-label="피드 필터를 준비하는 중">
-        <div className="flex items-center gap-1 rounded-full bg-slate-50 p-1">
-          {[64, 64, 64].map((w, i) => (
-            <Skeleton key={i} className="h-8 rounded-full" style={{ width: w, animationDelay: `${i * 70}ms` }} />
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <Skeleton className="hidden h-9 w-[76px] rounded-xl sm:block" style={{ animationDelay: '220ms' }} />
-          <Skeleton className="h-9 w-[112px] rounded-full" style={{ animationDelay: '300ms' }} />
-        </div>
-      </div>
-    )
-  }
+  }, [target])
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2.5">
-      {/* 필터 세그먼트 — 흰 썸이 선택 쪽으로 미끄러지고, 활성 라벨만 브랜드 색.
-          ai-word는 display:inline-block을 강제하므로 flex 트랙이 아니라 바깥 래퍼에 건다 */}
-      <div className="ai-word">
+    <div className="ai-word">
       <div
         ref={trackRef}
         role="group"
@@ -88,7 +57,7 @@ export default function FeedFilterBar({ filter, onFilterChange, view, onViewChan
             opacity: thumb ? 1 : 0,
           }}
         />
-        {FILTERS.map((f) => {
+        {options.map((f) => {
           const active = filter === f.value
           const lit = target === f.value // 썸이 올라와 있는 버튼 — 활성이거나 호버 중
           return (
@@ -111,7 +80,45 @@ export default function FeedFilterBar({ filter, onFilterChange, view, onViewChan
           )
         })}
       </div>
+    </div>
+  )
+}
+
+// 첫 진입에만 스켈레톤 → 드러나기 모션. 필터를 오갈 때마다 반복되면 새로고침처럼 느껴진다.
+let revealedOnce = false
+const MIN_SKELETON_MS = 550
+
+export default function FeedFilterBar({ filter, onFilterChange, view, onViewChange, onUploadClick }) {
+  const [revealed, setRevealed] = useState(revealedOnce)
+
+  useEffect(() => {
+    if (revealed) return
+    const t = setTimeout(() => {
+      revealedOnce = true
+      setRevealed(true)
+    }, MIN_SKELETON_MS)
+    return () => clearTimeout(t)
+  }, [revealed])
+
+  if (!revealed) {
+    return (
+      <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2.5" role="status" aria-label="피드 필터를 준비하는 중">
+        <div className="flex items-center gap-1 rounded-full bg-slate-50 p-1">
+          {[64, 64, 64].map((w, i) => (
+            <Skeleton key={i} className="h-8 rounded-full" style={{ width: w, animationDelay: `${i * 70}ms` }} />
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="hidden h-9 w-[76px] rounded-xl sm:block" style={{ animationDelay: '220ms' }} />
+          <Skeleton className="h-9 w-[112px] rounded-full" style={{ animationDelay: '300ms' }} />
+        </div>
       </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2.5">
+      <FeedTypeFilter filter={filter} onFilterChange={onFilterChange} />
 
       <div className="ai-word" style={{ animationDelay: '120ms' }}>
       <div className="flex items-center gap-2">
