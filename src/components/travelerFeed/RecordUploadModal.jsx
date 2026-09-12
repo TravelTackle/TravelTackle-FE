@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import Cropper from 'react-easy-crop'
 import { Icon } from '@iconify/react'
+import { Link } from 'react-router-dom'
 import Button from '../ui/Button'
-import { MOCK_TOP5_PLANS } from '../../data/feed'
+import Skeleton from '../ui/Skeleton'
+import { useAuth } from '../../context/AuthContext'
+import { getMyTrips } from '../../api/trip'
+import { createTripRecord, recordErrorMessage } from '../../api/record'
+import { formatDuration } from '../../lib/homeFormat'
 import { getCroppedImg } from './cropImage'
 
 const MAX_COMMENT = 500
@@ -13,7 +18,9 @@ const ORIENTATIONS = [
   { value: 'landscape', label: '가로', ratio: '4:3', aspect: 4 / 3, icon: 'mdi:crop-landscape' },
 ]
 
-export default function RecordUploadModal({ open, onClose }) {
+// onUploaded(record, trip): 업로드 성공 시 호출 — 피드 페이지가 목록을 새로 고치고 토스트를 띄운다
+export default function RecordUploadModal({ open, onClose, onUploaded }) {
+  const { user, loading: authLoading } = useAuth()
   const [step, setStep] = useState('form') // 'form' | 'crop' | 'confirmClose'
   const [sessionOrientation, setSessionOrientation] = useState(null) // 첫 사진 확정 후 잠기는 값
   const [cropOrientation, setCropOrientation] = useState('portrait') // 크롭 화면에서 현재 선택된 값
@@ -24,7 +31,10 @@ export default function RecordUploadModal({ open, onClose }) {
 
   const [planId, setPlanId] = useState('')
   const [planListOpen, setPlanListOpen] = useState(false)
-  const [photos, setPhotos] = useState([])
+  const [plans, setPlans] = useState({ items: [], loading: false, error: false })
+  const [photos, setPhotos] = useState([]) // [{ url, blob }]
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const [title, setTitle] = useState('')
   const [comment, setComment] = useState('')
   const [dragActive, setDragActive] = useState(false)
@@ -76,6 +86,21 @@ export default function RecordUploadModal({ open, onClose }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, step, sessionOrientation])
 
+  // 열릴 때 내 여행 계획 목록을 불러온다 — 기록은 내 계획에만 남길 수 있다
+  useEffect(() => {
+    if (!open || !user) return
+    let ignore = false
+    setPlans((p) => ({ ...p, loading: true, error: false }))
+    getMyTrips()
+      .then((list) => {
+        if (ignore) return
+        const items = (Array.isArray(list) ? list : []).slice().sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+        setPlans({ items, loading: false, error: false })
+      })
+      .catch(() => { if (!ignore) setPlans({ items: [], loading: false, error: true }) })
+    return () => { ignore = true }
+  }, [open, user])
+
   // Esc로도 현재 단계에 보이는 뒤로가기/취소 버튼과 동일하게 동작
   useEffect(() => {
     if (!open) return
@@ -94,8 +119,9 @@ export default function RecordUploadModal({ open, onClose }) {
 
   if (!open) return null
 
-  const selectedPlan = MOCK_TOP5_PLANS.find((p) => p.id === planId)
+  const selectedPlan = plans.items.find((p) => p.id === planId)
   const hasDraftContent = Boolean(title || comment || photos.length > 0 || planId)
+  const canSubmit = Boolean(selectedPlan && title.trim() && comment.trim() && photos.length > 0) && !submitting
   const orientationLocked = sessionOrientation !== null
   const activeAspect = ORIENTATIONS.find((o) => o.value === cropOrientation)?.aspect ?? ORIENTATIONS[0].aspect
 
@@ -135,6 +161,7 @@ export default function RecordUploadModal({ open, onClose }) {
     if (!croppedAreaPixels || !pendingFileUrl) return
     const cropped = await getCroppedImg(pendingFileUrl, croppedAreaPixels)
     setPhotos((prev) => [...prev, cropped])
+    setSubmitError('')
     if (!orientationLocked) setSessionOrientation(cropOrientation)
     URL.revokeObjectURL(pendingFileUrl) // 크롭 원본은 결과물이 나온 뒤로는 더 이상 필요 없음
     setPendingFileUrl(null)
@@ -143,7 +170,7 @@ export default function RecordUploadModal({ open, onClose }) {
 
   function handleRemovePhoto(index) {
     setPhotos((prev) => {
-      URL.revokeObjectURL(prev[index])
+      URL.revokeObjectURL(prev[index].url)
       const next = prev.filter((_, i) => i !== index)
       if (next.length === 0) setSessionOrientation(null)
       return next
@@ -151,11 +178,13 @@ export default function RecordUploadModal({ open, onClose }) {
   }
 
   function resetAll() {
-    photos.forEach((src) => URL.revokeObjectURL(src))
+    photos.forEach((p) => URL.revokeObjectURL(p.url))
     if (pendingFileUrl) URL.revokeObjectURL(pendingFileUrl)
     setPlanId('')
     setPlanListOpen(false)
     setPhotos([])
+    setSubmitError('')
+    setSubmitting(false)
     setTitle('')
     setComment('')
     setSessionOrientation(null)
@@ -177,9 +206,23 @@ export default function RecordUploadModal({ open, onClose }) {
     onClose()
   }
 
-  function handleSubmit() {
-    resetAll()
-    onClose()
+  async function handleSubmit() {
+    if (!canSubmit) return
+    setSubmitting(true)
+    setSubmitError('')
+    try {
+      const record = await createTripRecord(selectedPlan.id, {
+        title: title.trim(),
+        content: comment.trim(),
+        photos,
+      })
+      onUploaded?.(record, selectedPlan)
+      resetAll()
+      onClose()
+    } catch (err) {
+      setSubmitError(recordErrorMessage(err))
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -214,45 +257,90 @@ export default function RecordUploadModal({ open, onClose }) {
                   <Icon icon="mdi:chevron-left" width={20} />
                 </button>
                 <h2 className="text-[15px] font-bold text-slate-900">새 기록 만들기</h2>
-                <Button onClick={handleSubmit} className="rounded-full px-4 py-1.5 text-[12.5px] font-bold">
-                  업로드
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!canSubmit}
+                  className="flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12.5px] font-bold disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {submitting && <Icon icon="mdi:loading" width={14} className="animate-spin" />}
+                  {submitting ? '올리는 중' : '업로드'}
                 </Button>
               </div>
 
+              {!authLoading && !user ? (
+                <div className="flex flex-col items-center gap-3 px-4 py-14 text-center">
+                  <Icon icon="solar:user-circle-linear" width={30} className="text-slate-300" />
+                  <p className="text-[13px] text-slate-500">기록은 로그인한 뒤 내 여행 계획에 남길 수 있어요.</p>
+                  <Link to="/login" className="rounded-full bg-brand px-4 py-2 text-[12.5px] font-bold text-white transition-colors hover:bg-brand-dark">
+                    로그인하기
+                  </Link>
+                </div>
+              ) : (
               <div className="p-4">
+                {submitError && (
+                  <p role="alert" className="mb-3 flex items-start gap-1.5 rounded-xl bg-rose-50 px-3 py-2 text-[12px] font-semibold text-rose-600">
+                    <Icon icon="solar:danger-triangle-bold" width={14} className="mt-0.5 shrink-0" />
+                    {submitError}
+                  </p>
+                )}
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => setPlanListOpen((v) => !v)}
-                    className="flex w-full items-center gap-2 rounded-full border border-slate-200 px-3.5 py-2 text-[12.5px] text-slate-500"
+                    disabled={plans.loading}
+                    aria-expanded={planListOpen}
+                    className="flex w-full items-center gap-2 rounded-full border border-slate-200 px-3.5 py-2 text-[12.5px] text-slate-500 transition-colors hover:border-brand/40 disabled:cursor-default"
                   >
                     <Icon icon="mdi:format-list-bulleted" width={16} />
-                    <span className={selectedPlan ? 'font-semibold text-slate-900' : ''}>
-                      {selectedPlan ? selectedPlan.title : '여행 계획을 선택하세요'}
-                    </span>
-                    <Icon icon="mdi:chevron-down" width={16} className={`ml-auto transition-transform ${planListOpen ? 'rotate-180' : ''}`} />
+                    {plans.loading ? (
+                      <Skeleton className="h-3.5 w-40" />
+                    ) : (
+                      <span className={`truncate ${selectedPlan ? 'font-semibold text-slate-900' : ''}`}>
+                        {selectedPlan ? selectedPlan.title : '기록을 남길 여행 계획을 선택하세요'}
+                      </span>
+                    )}
+                    {selectedPlan && !selectedPlan.published && (
+                      <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-500">비공개</span>
+                    )}
+                    <Icon icon="mdi:chevron-down" width={16} className={`ml-auto shrink-0 transition-transform ${planListOpen ? 'rotate-180' : ''}`} />
                   </button>
-                  {planListOpen && (
-                    <ul className="absolute left-0 right-0 z-10 mt-1 max-h-48 overflow-y-auto rounded-2xl border border-slate-100 bg-white py-1.5 shadow-[0_12px_28px_rgba(15,23,42,0.12)]">
-                      {MOCK_TOP5_PLANS.map((p) => (
+                  {planListOpen && !plans.loading && (
+                    <ul className="absolute left-0 right-0 z-10 mt-1 max-h-56 overflow-y-auto rounded-2xl border border-slate-100 bg-white py-1.5 shadow-popup">
+                      {plans.error && (
+                        <li className="px-3.5 py-3 text-[12px] text-rose-500">내 여행 계획을 불러오지 못했어요.</li>
+                      )}
+                      {!plans.error && plans.items.length === 0 && (
+                        <li className="flex flex-col items-start gap-1.5 px-3.5 py-3 text-[12px] text-slate-500">
+                          아직 여행 계획이 없어요. 계획을 먼저 만들어야 기록을 남길 수 있어요.
+                          <Link to="/trips" className="font-bold text-brand-dark hover:underline">나의 여행에서 계획 만들기</Link>
+                        </li>
+                      )}
+                      {plans.items.map((p) => (
                         <li key={p.id}>
                           <button
                             type="button"
-                            onClick={() => { setPlanId(p.id); setPlanListOpen(false) }}
-                            className="w-full px-3.5 py-2 text-left text-[12.5px] text-slate-600 hover:bg-slate-50"
+                            onClick={() => { setPlanId(p.id); setPlanListOpen(false); setSubmitError('') }}
+                            className={`flex w-full items-center gap-2 px-3.5 py-2 text-left text-[12.5px] transition-colors hover:bg-slate-50 ${
+                              p.id === planId ? 'bg-brand-light font-bold text-brand-dark' : 'text-slate-600'
+                            }`}
                           >
-                            {p.title}
+                            <span className="min-w-0 flex-1 truncate">{p.title}</span>
+                            <span className="shrink-0 text-[11px] text-slate-400">{formatDuration(p.startDate, p.endDate)}</span>
+                            {!p.published && <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-500">비공개</span>}
                           </button>
                         </li>
                       ))}
                     </ul>
                   )}
                 </div>
+                {selectedPlan && !selectedPlan.published && (
+                  <p className="mt-2 px-1 text-[11.5px] text-slate-400">비공개 계획의 기록은 저장은 되지만, 계획을 공개해야 피드에 보여요.</p>
+                )}
 
                 <div className="mt-4 grid grid-cols-4 gap-2">
-                  {photos.map((src, i) => (
-                    <div key={i} className="relative">
-                      <img src={src} alt="" className="h-24 w-full rounded-xl object-cover" />
+                  {photos.map((photo, i) => (
+                    <div key={photo.url} className="relative">
+                      <img src={photo.url} alt="" className="h-24 w-full rounded-xl object-cover" />
                       <button
                         type="button"
                         onClick={() => handleRemovePhoto(i)}
@@ -294,6 +382,7 @@ export default function RecordUploadModal({ open, onClose }) {
                 />
                 <div className="text-right text-[11px] text-slate-300">{comment.length}/{MAX_COMMENT}</div>
               </div>
+              )}
             </>
           )}
         </div>
