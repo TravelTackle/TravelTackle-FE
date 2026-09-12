@@ -143,22 +143,27 @@ export default function TravelerFeedPage() {
         setSaveDelta((d) => ({ ...d, [tripId]: (d[tripId] ?? 0) - 1 }))
         showToast('스크랩을 해제했어요')
       } else {
-        await saveTrip(tripId)
-        // 방금 저장한 항목의 savedTripId를 알기 위해 목록을 다시 받는다(응답은 복사된 계획만 돌려준다)
-        const list = await getSavedTrips().catch(() => [])
-        setSavedIds(new Map(list.map((t) => [t.originalTripId, t.savedTripId])))
+        const saved = await saveTrip(tripId, item.type === 'record' ? 'RECORD' : 'PLAN')
+        setSavedIds((m) => new Map(m).set(tripId, saved.savedTripId))
         setSaveDelta((d) => ({ ...d, [tripId]: (d[tripId] ?? 0) + 1 }))
-        showToast('내 여행으로 스크랩했어요 · 나의 여행에서 확인')
+        showToast('보관함에 스크랩했어요')
       }
     } catch (err) {
       const data = err?.response?.data
-      showToast(
-        err?.response?.status === 401
-          ? '로그인이 필요해요'
-          : data?.code === 'TRIP_011'
-            ? '내 계획은 스크랩할 수 없어요'
-            : data?.message || '스크랩에 실패했어요. 잠시 후 다시 시도해주세요',
-      )
+      if (data?.code === 'TRIP_012') {
+        // 이미 보관함에 있음 — 목록을 다시 받아 상태만 맞춘다
+        const list = await getSavedTrips().catch(() => [])
+        setSavedIds(new Map(list.map((t) => [t.originalTripId, t.savedTripId])))
+        showToast('이미 보관함에 있는 계획이에요')
+      } else {
+        showToast(
+          err?.response?.status === 401
+            ? '로그인이 필요해요'
+            : data?.code === 'TRIP_011'
+              ? '내 계획은 스크랩할 수 없어요'
+              : data?.message || '스크랩에 실패했어요. 잠시 후 다시 시도해주세요',
+        )
+      }
     } finally {
       setPendingIds((s) => { const next = new Set(s); next.delete(tripId); return next })
     }

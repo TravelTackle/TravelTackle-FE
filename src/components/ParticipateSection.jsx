@@ -158,23 +158,23 @@ export default function ParticipateSection({ feed }) {
       return
     }
     if (!user) {
-      setNotice({ tone: 'err', message: '로그인 후 내 여행으로 담을 수 있어요.', login: true })
+      setNotice({ tone: 'err', message: '로그인 후 스크랩할 수 있어요.', login: true })
       return
     }
     setSaving(true)
     setNotice(null)
     try {
-      await saveTrip(plan.id)
+      await saveTrip(plan.id, 'PLAN')
       setSavedIds((c) => ({ ...c, [plan.id]: true }))
-      setNotice({ tone: 'ok', message: '내 여행으로 담았어요.', trips: true })
+      setNotice({ tone: 'ok', message: '보관함에 스크랩했어요.' })
     } catch (err) {
       const status = err.response?.status
       setNotice(
         status === 401
-          ? { tone: 'err', message: '로그인 후 내 여행으로 담을 수 있어요.', login: true }
+          ? { tone: 'err', message: '로그인 후 스크랩할 수 있어요.', login: true }
           : status === 409
-            ? { tone: 'err', message: '이미 내 여행에 담긴 계획이에요.', trips: true }
-            : { tone: 'err', message: '계획을 담지 못했어요. 잠시 후 다시 시도해주세요.' },
+            ? { tone: 'err', message: '이미 보관함에 있는 계획이에요.' }
+            : { tone: 'err', message: err.response?.data?.message || '스크랩하지 못했어요. 잠시 후 다시 시도해주세요.' },
       )
     } finally {
       setSaving(false)
@@ -326,7 +326,7 @@ export default function ParticipateSection({ feed }) {
                   }`}
                 >
                   <Icon icon={saved ? 'solar:bookmark-bold' : 'solar:bookmark-linear'} width={13} />
-                  {saved ? '담았어요' : saving ? '담는 중…' : '내 여행으로 담기'}
+                  {saved ? '스크랩했어요' : saving ? '스크랩 중…' : '스크랩하기'}
                 </button>
               </div>
             </div>
