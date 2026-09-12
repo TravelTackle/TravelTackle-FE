@@ -44,6 +44,7 @@ export default function DayColumn({
   onSaveTime,
   onSaveMemo,
   onDeleteItem,
+  deleteLocked = false, // 공개 중인 계획에서 이 날의 마지막 일정일 때 — 삭제 버튼을 잠근다(TRIP_023)
 }) {
   const [dragOver, setDragOver] = useState(false)
   const [dropIndex, setDropIndex] = useState(null)
@@ -141,6 +142,7 @@ export default function DayColumn({
                   onSaveTime={(time) => onSaveTime(day.id, item.id, time)}
                   onSaveMemo={(memo) => onSaveMemo(day.id, item.id, memo)}
                   onDelete={() => onDeleteItem(day.id, item.id)}
+                  deleteLocked={deleteLocked}
                 />
               </div>
             </div>

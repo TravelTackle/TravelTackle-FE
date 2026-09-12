@@ -6,7 +6,7 @@ import { TRIP_ITEM_DRAG_TYPE } from '../../lib/dragTypes'
 // Day 안에 배치된 관광지 카드. 핸들 아이콘 자체만 draggable이라 순서변경/이동 드래그가 거기서만 시작되고,
 // 카드의 나머지 영역(시간 클릭, 메모 더블클릭, 삭제)은 드래그와 무관하게 그대로 동작한다.
 // readOnly=true면 지도 탭의 호버 상세카드처럼 보여주기만 하고 편집 UI(핸들/시간팝업/메모편집/삭제)는 다 숨긴다.
-export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDelete, readOnly = false }) {
+export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDelete, readOnly = false, deleteLocked = false }) {
   const [timePopupOpen, setTimePopupOpen] = useState(false)
   const [editingMemo, setEditingMemo] = useState(false)
   const [memoDraft, setMemoDraft] = useState(item.memo)
@@ -138,10 +138,13 @@ export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDe
       {!readOnly && (
         <button
           onClick={onDelete}
-          aria-label={`${item.cachedTitle} 삭제`}
-          className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-rose-300 shadow-card transition-colors hover:text-rose-500"
+          aria-label={deleteLocked ? `${item.cachedTitle} — 공개 중인 계획의 마지막 일정이라 지울 수 없어요` : `${item.cachedTitle} 삭제`}
+          title={deleteLocked ? '공개 중인 계획은 각 일차에 일정이 하나 이상 남아야 해요' : undefined}
+          className={`absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-card transition-colors ${
+            deleteLocked ? 'cursor-not-allowed text-slate-300' : 'text-rose-300 hover:text-rose-500'
+          }`}
         >
-          <Icon icon="solar:close-circle-bold" width={16} />
+          <Icon icon={deleteLocked ? 'solar:lock-keyhole-minimalistic-bold' : 'solar:close-circle-bold'} width={deleteLocked ? 12 : 16} />
         </button>
       )}
     </div>

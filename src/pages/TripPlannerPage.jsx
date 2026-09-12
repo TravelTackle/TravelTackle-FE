@@ -157,7 +157,9 @@ export default function TripPlannerPage() {
       try {
         return await fn()
       } catch (err) {
-        if (i === attempts - 1) throw err
+        // 4xx는 규칙 위반(공개 조건 등)이라 다시 보내도 결과가 같다 — 바로 실패 처리
+        const status = err?.response?.status
+        if (i === attempts - 1 || (status >= 400 && status < 500)) throw err
         await new Promise((resolve) => setTimeout(resolve, delayMs * (i + 1)))
       }
     }
@@ -177,6 +179,11 @@ export default function TripPlannerPage() {
       .then(() => 'saved')
       .catch((err) => {
         onError?.(err)
+        // 백엔드 규칙 위반(TRIP_022 공개 조건, TRIP_023 공개 계획 보호, TRIP_024 공개 중 날짜 변경 등)은
+        // 서버 message에 어떤 일차가 문제인지까지 담겨 오므로 그대로 보여준다
+        const status = err?.response?.status
+        const message = err?.response?.data?.message
+        if (status >= 400 && status < 500 && message) showToast(message)
         return 'error'
       })
       .then((status) => {
@@ -267,8 +274,15 @@ export default function TripPlannerPage() {
     })
   }
 
+  // 전체공개 조건(백엔드 TRIP_022): 모든 일차에 일정이 1개 이상. 미리 계산해 토글과 안내에 쓴다
+  const emptyDays = activeTrip ? activeTrip.days.filter((d) => d.items.length === 0).map((d) => d.dayNumber) : []
+
   function handlePublishToggle() {
     const willPublish = !activeTrip.published
+    if (willPublish && emptyDays.length > 0) {
+      showToast(`모든 일차에 일정이 1개 이상 있어야 전체공개할 수 있어요. 비어 있는 일차: ${emptyDays.map((n) => `Day ${n}`).join(', ')}`)
+      return
+    }
     const snapshot = activeTrip
     const tripId = activeTrip.id
     setActiveTrip((t) => togglePublished(t))
@@ -299,6 +313,11 @@ export default function TripPlannerPage() {
   // 기간을 바꾸면 서버가 기존 Day/일정을 전부 새로 만들기 때문에(진짜 id가 필요) 미리 낙관적으로 반영하지
   // 않고, 저장이 끝난 뒤 상세를 다시 받아와 그대로 반영한다.
   function handleUpdateDates(startDate, endDate) {
+    // 공개 중엔 날짜 변경 불가(백엔드 TRIP_024) — 날짜를 바꾸면 일정이 전부 초기화돼 공개 조건이 깨진다
+    if (activeTrip.published) {
+      showToast('공개 중인 계획은 날짜를 바꿀 수 없어요. 나만 보기로 전환한 뒤 바꿔주세요.')
+      return
+    }
     const tripId = activeTrip.id
     const title = activeTrip.title
     runSync(
@@ -362,7 +381,18 @@ export default function TripPlannerPage() {
     )
   }
 
+  // 공개 중인 계획은 어느 날도 비면 안 된다(백엔드 TRIP_023) — 그 날의 마지막 일정을 지우거나 다른 날로 옮기는 걸 막는다
+  const PROTECT_MESSAGE = '공개 중인 계획은 각 일차에 일정이 하나 이상 남아 있어야 해요. 나만 보기로 전환하면 자유롭게 지울 수 있어요.'
+  function wouldEmptyDay(dayId) {
+    const day = activeTrip.days.find((d) => d.id === dayId)
+    return activeTrip.published && day && day.items.length <= 1
+  }
+
   function handleMoveItem(fromDayId, toDayId, itemId, index) {
+    if (fromDayId !== toDayId && wouldEmptyDay(fromDayId)) {
+      showToast(PROTECT_MESSAGE)
+      return
+    }
     const snapshot = activeTrip
     const tripId = activeTrip.id
     const prevFromDay = activeTrip.days.find((d) => d.id === fromDayId)
@@ -418,6 +448,10 @@ export default function TripPlannerPage() {
   }
 
   function handleDeleteItem(dayId, itemId) {
+    if (wouldEmptyDay(dayId)) {
+      showToast(PROTECT_MESSAGE)
+      return
+    }
     const snapshot = activeTrip
     const tripId = activeTrip.id
     const next = deleteItem(activeTrip, dayId, itemId)
@@ -449,6 +483,7 @@ export default function TripPlannerPage() {
               onUpdateTitle={handleUpdateTitle}
               onUpdateDates={handleUpdateDates}
               onTogglePublish={handlePublishToggle}
+              publishBlockedDays={emptyDays}
               onDeleteTrip={handleDeleteTrip}
             />
           </div>
@@ -514,6 +549,7 @@ export default function TripPlannerPage() {
                     onSaveTime={handleSaveTime}
                     onSaveMemo={handleSaveMemo}
                     onDeleteItem={handleDeleteItem}
+                    deleteLocked={activeTrip.published && day.items.length <= 1}
                   />
                 ))}
               </div>
