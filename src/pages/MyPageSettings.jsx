@@ -632,6 +632,8 @@ function ProfileTab({ user }) {
   return (
     <>
       <Card className="p-8">
+        {/* 카드 자체는 nav바 폭에 맞춰 넓어지되, 행 내용은 너무 헐렁해 보이지 않게 폭을 한 번 더 제한 */}
+        <div className="max-w-[760px]">
         <SettingRow label="프로필 사진">
           <Avatar user={{ ...user, name: nickname }} size={44} />
           <button
@@ -766,6 +768,7 @@ function ProfileTab({ user }) {
             회원 탈퇴
           </button>
         </SettingRow>
+        </div>
       </Card>
 
       {confirmOff && (
@@ -838,6 +841,8 @@ function PreferenceEditWizard({ answers, onCancel, onFinish }) {
 
   return (
     <Card className="p-8">
+      {/* 문항 흐름은 온보딩과 같은 집중형 UI라 넓은 카드 안에서도 중앙에 좁게 유지 */}
+      <div className="mx-auto max-w-[640px]">
       <div className="flex items-center justify-between mb-2">
         <span className="text-[12px] font-bold text-slate-400">
           {stepIndex + 1}/{STEPS.length}
@@ -892,6 +897,7 @@ function PreferenceEditWizard({ answers, onCancel, onFinish }) {
         >
           {stepIndex === STEPS.length - 1 ? '완료' : '다음'}
         </button>
+      </div>
       </div>
     </Card>
   )
@@ -957,9 +963,11 @@ function PreferenceTab({ preferences, setPreferences }) {
 
   return (
     <Card className="p-8">
+      {/* 프로필 설정과 달리 여긴 좌우 대칭인 2x2 박스라 가운데 정렬 */}
+      <div className="mx-auto max-w-[900px]">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {summaryRows.map((row) => (
-          <div key={row.title} className="rounded-2xl border border-slate-100 p-5">
+          <div key={row.title} className="rounded-2xl border border-slate-100 p-6">
             <span className="flex items-center gap-1.5 text-[13.5px] font-bold text-slate-700">
               <Icon icon={row.icon} width={15} className="shrink-0 text-brand" />
               {row.title}
@@ -982,7 +990,7 @@ function PreferenceTab({ preferences, setPreferences }) {
           </div>
         ))}
       </div>
-      <div className="mt-6 flex border-t border-slate-100 pt-5">
+      <div className="mt-6 flex justify-end border-t border-slate-100 pt-5">
         <button
           type="button"
           onClick={() => setEditing(true)}
@@ -990,6 +998,7 @@ function PreferenceTab({ preferences, setPreferences }) {
         >
           수정하기
         </button>
+      </div>
       </div>
     </Card>
   )
@@ -1012,7 +1021,8 @@ export default function MyPageSettings() {
     <div className="flex min-h-screen flex-col bg-white text-slate-900">
       <Navbar />
 
-      <Section as="main" maxWidth="max-w-[880px]" className="flex flex-1 flex-col gap-8 py-12">
+      {/* 토글 좌우 끝을 Navbar 컨테이너(1200px, px-4 sm:px-6)와 맞춘다 — TourExplorePage와 동일한 패턴 */}
+      <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-1 flex-col gap-8 py-12">
         <div className="flex items-center justify-center gap-2.5">
           {authLoading ? (
             <>
