@@ -79,8 +79,9 @@ export function unpublishTrip(tripId) {
 }
 
 // 다른 사용자의 공개 계획을 스크랩(찜) — 복사는 아직 안 됨, 보관함에서 copySavedTrip을 따로 호출해야 내 계획이 된다.
-export function saveTrip(tripId) {
-  return client.post('/saved-trips', { tripId }).then((res) => res.data)
+// sourceType: 어느 카드에서 스크랩했는지('PLAN' | 'RECORD') — 보관함에서 그 형태 그대로 카드를 보여주는 데 쓴다.
+export function saveTrip(tripId, sourceType = 'PLAN') {
+  return client.post('/saved-trips', { tripId, sourceType }).then((res) => res.data)
 }
 
 // 스크랩 해제 — 이미 복사해서 만든 내 계획(Trip)은 그대로 남는다

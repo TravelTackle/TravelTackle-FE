@@ -56,30 +56,21 @@ function DesktopNav({ pathname }) {
   const target = hover ?? (activeIdx >= 0 ? activeIdx : null)
   const trackRef = useRef(null)
 
-  // 드롭다운(나의 계획/보관함) 안에서도 위쪽 3개 메뉴와 같은 슬라이딩 알약 하이라이트를 쓴다 — 세로 버전
+  // 드롭다운(나의 계획/보관함) 안에서도 위쪽 3개 메뉴와 같은 슬라이딩 알약을 쓴다 — 세로 버전.
+  // 항목 높이가 h-9(36px)로 고정돼 있어 DOM 측정 없이 인덱스만으로 위치를 계산한다.
+  // 알약을 담는 ul 자체에는 패딩을 주지 않는다(패딩은 바깥 래퍼로 옮김) — ul에 패딩이 있으면
+  // absolute 자식의 top:0 기준이 "패딩 바깥쪽 padding box"가 되어, 실제 li가 시작하는
+  // content box 위치와 안 맞아 알약이 어긋나 보이는 문제가 있었다.
+  const DROPDOWN_ITEM_HEIGHT = 36
+  const DROPDOWN_ITEM_GAP = 4
   const dropdownGroup = NAV.find((n) => n.children)
-  const childRefs = useRef([])
-  const childListRef = useRef(null)
   const [childHover, setChildHover] = useState(null)
-  const [childPill, setChildPill] = useState({ top: 0, height: 0, visible: false })
   const childActiveIdx = dropdownGroup ? dropdownGroup.children.findIndex((c) => c.to === pathname) : -1
   const childTarget = childHover ?? (childActiveIdx >= 0 ? childActiveIdx : null)
 
   useEffect(() => {
     if (!dropdownOpen) setChildHover(null)
   }, [dropdownOpen])
-
-  useLayoutEffect(() => {
-    if (!dropdownOpen) return
-    const el = childTarget != null ? childRefs.current[childTarget] : null
-    if (!el || !childListRef.current) {
-      setChildPill((p) => ({ ...p, visible: false }))
-      return
-    }
-    const listRect = childListRef.current.getBoundingClientRect()
-    const elRect = el.getBoundingClientRect()
-    setChildPill({ top: elRect.top - listRect.top, height: elRect.height, visible: true })
-  }, [dropdownOpen, childTarget])
 
   // 나의 여행 드롭다운 — 바깥 클릭/Esc로 닫고, 페이지가 바뀌면 자동으로 닫는다
   useEffect(() => {
@@ -189,42 +180,39 @@ function DesktopNav({ pathname }) {
                   className="nav-pop absolute left-1/2 top-full z-50 -translate-x-1/2 pt-2"
                   style={{ transformOrigin: 'top center' }}
                 >
-                  <ul
-                    ref={childListRef}
-                    role="menu"
-                    className="relative flex w-36 flex-col gap-1 rounded-2xl bg-slate-900/[0.035] p-1.5"
-                    onMouseLeave={() => setChildHover(null)}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={`nav-pill pointer-events-none absolute left-1.5 right-1.5 rounded-full bg-white shadow-card ${
-                        childPill.visible ? 'opacity-100' : 'opacity-0'
-                      }`}
-                      style={{ transform: `translateY(${childPill.top}px)`, height: childPill.height }}
-                    />
-                    {n.children.map((c, ci) => {
-                      const childActive = pathname === c.to
-                      return (
-                        <li key={c.to}>
-                          <Link
-                            to={c.to}
-                            ref={(el) => {
-                              childRefs.current[ci] = el
-                            }}
-                            role="menuitem"
-                            onMouseEnter={() => setChildHover(ci)}
-                            onClick={() => setDropdownOpen(false)}
-                            className={`relative z-10 flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-[13.5px] font-bold transition-colors duration-200 ${
-                              childActive ? 'text-brand' : 'text-slate-600'
-                            }`}
-                          >
-                            <Icon icon={c.icon} width={14} className={childActive ? 'text-brand' : 'text-slate-400'} />
-                            {c.label}
-                          </Link>
-                        </li>
-                      )
-                    })}
-                  </ul>
+                  {/* 패딩은 여기(바깥 래퍼)에 — 안쪽 ul은 패딩 0이라 top:0이 li가 시작하는 위치와 정확히 같다 */}
+                  <div className="w-36 rounded-2xl bg-white/90 p-1.5 backdrop-blur-sm">
+                    <ul role="menu" className="relative flex flex-col gap-1">
+                      <span
+                        aria-hidden="true"
+                        className={`nav-pill pointer-events-none absolute inset-x-0 top-0 h-9 rounded-full bg-brand-light shadow-card ${
+                          childTarget != null ? 'opacity-100' : 'opacity-0'
+                        }`}
+                        style={{
+                          transform: `translateY(${(childTarget ?? 0) * (DROPDOWN_ITEM_HEIGHT + DROPDOWN_ITEM_GAP)}px)`,
+                        }}
+                      />
+                      {n.children.map((c, ci) => {
+                        const childHighlighted = ci === childTarget
+                        return (
+                          <li key={c.to}>
+                            <Link
+                              to={c.to}
+                              role="menuitem"
+                              onMouseEnter={() => setChildHover(ci)}
+                              onClick={() => setDropdownOpen(false)}
+                              className={`relative z-10 flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full px-4 text-[13.5px] font-bold transition-colors duration-200 ${
+                                childHighlighted ? 'text-brand' : 'text-slate-600'
+                              }`}
+                            >
+                              <Icon icon={c.icon} width={14} className={childHighlighted ? 'text-brand' : 'text-slate-400'} />
+                              {c.label}
+                            </Link>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
                 </div>
               )}
             </div>

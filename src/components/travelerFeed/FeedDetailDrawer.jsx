@@ -3,11 +3,14 @@ import { Icon } from '@iconify/react'
 import Button from '../ui/Button'
 import { FeedUserHeader, FeedActionBar } from './FeedCardChrome'
 import { MOCK_FEED_ITEMS } from '../../data/feed'
-import { adaptPlanDetail } from '../../data/feedAdapter'
+import { adaptPlanDetail, adaptRecordDetail } from '../../data/feedAdapter'
 import { getFeedDetail } from '../../api/feed'
-import useScrapToggle from '../../hooks/useScrapToggle'
 
-export default function FeedDetailDrawer({ item, items, onClose, onSaved }) {
+// scrapMap: 부모 페이지가 useScrapMap()으로 만든 공유 상태 accessor — 카드와 이 패널이 동시에
+// 같은 tripId를 보고 있을 때 한쪽에서 토글하면 다른 쪽도 즉시 같은 값을 보게 하기 위함.
+// fromSaved: 보관함에서 열렸는지 — 계획이면서 기록도 있는 트립일 때만, 상단 버튼을
+// "보관함에 저장" 대신 "이 여행의 기록 보기"로 바꿔서 보여준다(피드에서 연 계획은 그대로 저장 버튼).
+export default function FeedDetailDrawer({ item, items, onClose, scrapMap, fromSaved = false, onSaved }) {
   const [stack, setStack] = useState([])
   const open = !!item
 
@@ -18,12 +21,29 @@ export default function FeedDetailDrawer({ item, items, onClose, onSaved }) {
   const current = stack[stack.length - 1]
   // 기록(record)은 자신이 가리키는 계획(planId) 기준으로 스크랩한다 — 계획(plan)이면 자기 자신(id).
   const scrapTripId = current?.type === 'record' ? current?.planId : current?.id
-  const scrap = useScrapToggle(scrapTripId, current?.savedTripId)
+  const sourceType = current?.type === 'record' ? 'RECORD' : 'PLAN'
+  const scrap = {
+    saved: !!scrapMap?.savedTripIdOf(scrapTripId, current?.savedTripId),
+    pending: !!scrapMap?.isPending(scrapTripId),
+    toggle: () => scrapMap?.toggle(scrapTripId, current?.savedTripId, sourceType),
+  }
 
   async function handleToggleSave() {
     const wasSaved = scrap.saved
     const ok = await scrap.toggle()
     if (ok) onSaved?.(!wasSaved)
+  }
+
+  // "이 여행의 기록 보기" — 이미 있는 계획 상세 조회(getFeedDetail)가 record도 함께 내려주므로
+  // 새 엔드포인트 없이 그대로 재사용한다. 그 사이 기록이 지워졌으면 조용히 무시.
+  async function handleViewRecord() {
+    try {
+      const detail = await getFeedDetail(current.id)
+      const recordItem = adaptRecordDetail(detail)
+      if (recordItem) setStack((s) => [...s, recordItem])
+    } catch {
+      // 조회 실패 시 그냥 현재 화면 유지
+    }
   }
 
   function handleBack() {
@@ -83,6 +103,15 @@ export default function FeedDetailDrawer({ item, items, onClose, onSaved }) {
                   <Icon icon="mdi:calendar-blank-outline" width={14} />
                   이 기록의 여행 계획 보기
                 </Button>
+              ) : fromSaved ? (
+                // 보관함에서 연 계획 상세는 "보관함에 저장" 버튼 대신 기록 보기로 바뀐다 —
+                // 기록이 아예 없으면(하나도 저장할 게 없으니) 버튼 자체를 숨긴다.
+                current.hasRecord && (
+                  <Button onClick={handleViewRecord} className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-bold">
+                    <Icon icon="mdi:image-multiple-outline" width={14} />
+                    이 여행의 기록 보기
+                  </Button>
+                )
               ) : (
                 <Button
                   onClick={handleToggleSave}

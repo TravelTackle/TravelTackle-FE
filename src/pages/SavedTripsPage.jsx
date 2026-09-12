@@ -8,11 +8,19 @@ import FloatingCart from '../components/FloatingCart'
 import Section from '../components/ui/Section'
 import Button from '../components/ui/Button'
 import PlanFeedCard from '../components/travelerFeed/PlanFeedCard'
+import RecordFeedCard from '../components/travelerFeed/RecordFeedCard'
 import FeedDetailDrawer from '../components/travelerFeed/FeedDetailDrawer'
 import { getSavedTrips, copySavedTrip } from '../api/trip'
 import { adaptSavedTrip } from '../data/feedAdapter'
+import useScrapMap from '../hooks/useScrapMap'
 
 const COLUMNS = 3
+
+// 기록을 보고 스크랩했으면 기록 카드, 계획을 보고 스크랩했으면 계획 카드 — 스크랩 상태는 항상
+// 원본 계획(tripId) 기준이라 기록 카드는 자신이 가리키는 계획(planId)을 키로 쓴다.
+function scrapTripIdOf(item) {
+  return item.type === 'record' ? item.planId : item.id
+}
 
 // 스크랩만으로는 내 계획이 되지 않는다 — 이 버튼을 눌러야 실제 Trip으로 복사된다.
 // 이미 복사한 항목은 버튼 대신 "내 계획에 있어요" 상태로 바뀐다.
@@ -61,6 +69,7 @@ function CopyToPlanButton({ item, onCopied }) {
 }
 
 export default function SavedTripsPage() {
+  const scrapMap = useScrapMap()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [drawerItem, setDrawerItem] = useState(null)
@@ -82,15 +91,43 @@ export default function SavedTripsPage() {
       .finally(() => setLoading(false))
   }, [reloadKey])
 
+  // 카드와 상세 패널이 서로 다른 스크랩 상태를 들고 있지 않도록, 서버 초기값을 공유 map에 한 번씩 채워둔다.
+  useEffect(() => {
+    items.forEach((it) => scrapMap.seed(scrapTripIdOf(it), it.savedTripId))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items])
+
   // 여행자 피드 갤러리형과 같은 마스킹 방식(좌우 컬럼 독립 스택) — 3열로 확장
   const columns = Array.from({ length: COLUMNS }, (_, c) => items.filter((_, i) => i % COLUMNS === c))
+
+  function renderCard(it) {
+    const tripId = scrapTripIdOf(it)
+    const scrapProps = {
+      saved: !!scrapMap.savedTripIdOf(tripId, it.savedTripId),
+      pending: scrapMap.isPending(tripId),
+      onToggleSave: async () => {
+        const wasSaved = !!scrapMap.savedTripIdOf(tripId, it.savedTripId)
+        const ok = await scrapMap.toggle(tripId, it.savedTripId, it.type === 'record' ? 'RECORD' : 'PLAN')
+        if (!ok) return
+        showToast(wasSaved ? '보관함에서 지웠어요' : '보관함에 저장했어요')
+        // 여기서 지운(스크랩 해제) 항목은 보관함 목록에서도 빠져야 하니 다시 불러온다
+        if (wasSaved) setReloadKey((k) => k + 1)
+      },
+      extra: <CopyToPlanButton item={it} onCopied={() => showToast('나의 계획으로 복사했어요')} />,
+    }
+    return it.type === 'record' ? (
+      <RecordFeedCard key={it.savedTripId} item={it} onOpen={setDrawerItem} {...scrapProps} />
+    ) : (
+      <PlanFeedCard key={it.savedTripId} item={it} onOpen={setDrawerItem} {...scrapProps} />
+    )
+  }
 
   return (
     <div className="bg-white text-slate-900">
       <Navbar />
 
       <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-col gap-5 pb-16 pt-8">
-        <div>
+        <div className="border-b border-slate-100 pb-5">
           <h1 className="text-[19px] font-bold text-slate-900">보관함</h1>
           <p className="mt-1 text-[13px] text-slate-400">
             여행자 피드에서 스크랩한 다른 여행자의 계획이에요. 마음에 들면 나의 계획으로 복사해보세요.
@@ -107,14 +144,7 @@ export default function SavedTripsPage() {
           <div className="flex gap-5">
             {columns.map((col, c) => (
               <div key={c} className="flex min-w-0 flex-1 flex-col gap-5">
-                {col.map((it) => (
-                  <PlanFeedCard
-                    key={it.savedTripId}
-                    item={it}
-                    onOpen={setDrawerItem}
-                    extra={<CopyToPlanButton item={it} onCopied={() => showToast('나의 계획으로 복사했어요')} />}
-                  />
-                ))}
+                {col.map(renderCard)}
               </div>
             ))}
           </div>
@@ -129,6 +159,8 @@ export default function SavedTripsPage() {
         item={drawerItem}
         items={items}
         onClose={() => setDrawerItem(null)}
+        scrapMap={scrapMap}
+        fromSaved
         onSaved={(justSaved) => {
           showToast(justSaved ? '보관함에 저장했어요' : '보관함에서 지웠어요')
           if (!justSaved) setReloadKey((k) => k + 1)

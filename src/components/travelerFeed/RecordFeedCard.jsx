@@ -1,7 +1,7 @@
 import Card from '../ui/Card'
 import { FeedUserHeader, FeedActionBar } from './FeedCardChrome'
 
-export default function RecordFeedCard({ item, onOpen }) {
+export default function RecordFeedCard({ item, onOpen, saved, pending, onToggleSave, extra }) {
   return (
     <Card
       as="div"
@@ -30,7 +30,8 @@ export default function RecordFeedCard({ item, onOpen }) {
       <div className="mt-3 text-[14px] font-bold text-slate-900">{item.title}</div>
       <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-slate-500">{item.comment}</p>
 
-      <FeedActionBar tripId={item.planId} initialSavedTripId={item.savedTripId} />
+      <FeedActionBar saved={saved} pending={pending} onToggle={onToggleSave} />
+      {extra}
     </Card>
   )
 }

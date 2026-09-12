@@ -17,6 +17,12 @@ import RecordUploadModal from '../components/travelerFeed/RecordUploadModal'
 import { FEED_REGIONS, MOCK_FEED_ITEMS, MOCK_GALLERY_ITEMS, MOCK_TOP5_PLANS } from '../data/feed'
 import { getFeed } from '../api/feed'
 import { adaptFeedItem } from '../data/feedAdapter'
+import useScrapMap from '../hooks/useScrapMap'
+
+// 카드/기록 모두 "원본 계획" 기준으로 스크랩한다 — 기록은 자신이 가리키는 계획(planId)을 쓴다.
+function scrapTripIdOf(item) {
+  return item.type === 'record' ? item.planId : item.id
+}
 
 const SORT_OPTIONS = [
   { value: 'relevance', label: '관련도순' },
@@ -25,6 +31,7 @@ const SORT_OPTIONS = [
 ]
 
 export default function TravelerFeedPage() {
+  const scrapMap = useScrapMap()
   const [realItems, setRealItems] = useState([])
   const [searchInput, setSearchInput] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
@@ -117,6 +124,12 @@ export default function TravelerFeedPage() {
 
   const allItems = [...realItems, ...MOCK_FEED_ITEMS.filter(matchesMockKeyword)]
   const items = allItems.filter(matchesFilters)
+
+  // 카드/상세 패널이 서로 다른 스크랩 상태를 들고 있지 않도록, 서버가 준 초기값을 공유 map에 한 번씩 채워둔다.
+  useEffect(() => {
+    allItems.forEach((it) => scrapMap.seed(scrapTripIdOf(it), it.savedTripId))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allItems])
   // 갤러리형은 계획→기록→기록→계획 Z자 순서로 보이도록 별도 배치 데이터 사용.
   // grid는 행 높이가 좌우 중 큰 쪽에 맞춰져 짧은 카드 아래 빈 공간이 생기므로,
   // 좌/우 컬럼을 독립된 세로 스택 두 개로 나눠 각자 빈틈없이 붙게 렌더링한다.
@@ -125,10 +138,20 @@ export default function TravelerFeedPage() {
   const galleryRight = galleryItems.filter((_, i) => i % 2 === 1)
 
   function renderCard(item) {
+    const tripId = scrapTripIdOf(item)
+    const scrapProps = {
+      saved: !!scrapMap.savedTripIdOf(tripId, item.savedTripId),
+      pending: scrapMap.isPending(tripId),
+      onToggleSave: async () => {
+        const wasSaved = !!scrapMap.savedTripIdOf(tripId, item.savedTripId)
+        const ok = await scrapMap.toggle(tripId, item.savedTripId, item.type === 'record' ? 'RECORD' : 'PLAN')
+        if (ok) showToast(wasSaved ? '보관함에서 지웠어요' : '보관함에 저장했어요')
+      },
+    }
     return item.type === 'plan' ? (
-      <PlanFeedCard key={item.id} item={item} onOpen={setDrawerItem} />
+      <PlanFeedCard key={item.id} item={item} onOpen={setDrawerItem} {...scrapProps} />
     ) : (
-      <RecordFeedCard key={item.id} item={item} onOpen={setDrawerItem} />
+      <RecordFeedCard key={item.id} item={item} onOpen={setDrawerItem} {...scrapProps} />
     )
   }
 
@@ -260,6 +283,7 @@ export default function TravelerFeedPage() {
         item={drawerItem}
         items={allItems}
         onClose={() => setDrawerItem(null)}
+        scrapMap={scrapMap}
         onSaved={(justSaved) => showToast(justSaved ? '보관함에 저장했어요' : '보관함에서 지웠어요')}
       />
 
