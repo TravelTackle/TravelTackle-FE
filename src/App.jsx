@@ -14,6 +14,7 @@ import CompletePage from './pages/onboarding/CompletePage'
 import TripPlannerPage from './pages/TripPlannerPage'
 import SavedTripsPage from './pages/SavedTripsPage'
 import MyPageSettings from './pages/MyPageSettings'
+import MyPageAccountSettings from './pages/MyPageAccountSettings'
 
 function App() {
   return (
@@ -48,6 +49,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <MyPageSettings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/mypage/settings"
+            element={
+              <ProtectedRoute>
+                <MyPageAccountSettings />
               </ProtectedRoute>
             }
           />

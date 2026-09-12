@@ -273,7 +273,7 @@ export default function TripPlannerPage() {
     const tripId = activeTrip.id
     setActiveTrip((t) => togglePublished(t))
     setTripSummaries((prev) => prev.map((t) => (t.id === tripId ? { ...t, published: willPublish } : t)))
-    showToast(willPublish ? '게시했어요! /feed에서 확인할 수 있어요.' : '비공개로 전환했어요.')
+    showToast(willPublish ? '게시했어요! 여행자 피드에서 확인할 수 있어요.' : '비공개로 전환했어요.')
     runSync(() => (willPublish ? publishTrip(tripId) : unpublishTrip(tripId)), {
       onError: () => {
         setActiveTrip(snapshot)
