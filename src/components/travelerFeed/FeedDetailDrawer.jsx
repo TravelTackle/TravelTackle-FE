@@ -5,10 +5,12 @@ import { FeedUserHeader, FeedActionBar } from './FeedCardChrome'
 import { MOCK_FEED_ITEMS } from '../../data/feed'
 import { adaptPlanDetail } from '../../data/feedAdapter'
 import { getFeedDetail } from '../../api/feed'
+import { targetTripId, useFeedActions } from './FeedActionsContext'
 
 export default function FeedDetailDrawer({ item, items, onClose, onSavePlan }) {
   const [stack, setStack] = useState([])
   const open = !!item
+  const { savedIds, pendingIds } = useFeedActions()
 
   useEffect(() => {
     if (item) setStack([item])
@@ -76,10 +78,16 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan }) {
               ) : (
                 <Button
                   onClick={() => onSavePlan(current)}
-                  className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-bold"
+                  disabled={pendingIds.has(targetTripId(current))}
+                  variant={savedIds.has(targetTripId(current)) ? 'light' : 'solid'}
+                  className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-bold disabled:cursor-wait disabled:opacity-70"
                 >
-                  <Icon icon="mdi:content-save-outline" width={14} />
-                  이 계획 저장하기
+                  {pendingIds.has(targetTripId(current)) ? (
+                    <Icon icon="mdi:loading" width={14} className="animate-spin" />
+                  ) : (
+                    <Icon icon={savedIds.has(targetTripId(current)) ? 'solar:bookmark-bold' : 'mdi:bookmark-outline'} width={14} />
+                  )}
+                  {savedIds.has(targetTripId(current)) ? '스크랩됨' : '이 계획 스크랩'}
                 </Button>
               )}
             </div>
@@ -106,7 +114,7 @@ function RecordDetail({ item }) {
         <FeedUserHeader item={item} showChip={false} />
         <div className="mt-3 text-[17px] font-bold text-slate-900">{item.title}</div>
         <p className="mt-2 text-[13px] leading-relaxed text-slate-600">{item.comment}</p>
-        <FeedActionBar size={22} />
+        <FeedActionBar item={item} size={22} />
       </div>
     </>
   )
@@ -158,7 +166,7 @@ function PlanDetail({ item }) {
         ))}
       </div>
 
-      <FeedActionBar size={22} />
+      <FeedActionBar item={item} size={22} />
     </>
   )
 }

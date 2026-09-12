@@ -82,3 +82,13 @@ export function unpublishTrip(tripId) {
 export function saveTrip(tripId) {
   return client.post('/saved-trips', { tripId }).then((res) => res.data)
 }
+
+// 내가 저장(스크랩)한 여행 목록 — [{ savedTripId, originalTripId, originalTitle, ownerName, savedAt }]
+export function getSavedTrips() {
+  return client.get('/saved-trips').then((res) => (Array.isArray(res.data) ? res.data : []))
+}
+
+// 스크랩 해제 — 복사된 내 계획은 유지되고 저장 기록만 지운다
+export function unsaveTrip(savedTripId) {
+  return client.delete(`/saved-trips/${savedTripId}`)
+}

@@ -111,7 +111,7 @@ export default function RecordFeedCard({ item, onOpen, findPlan }) {
           <div className="mt-3 text-[14px] font-bold text-slate-900">{item.title}</div>
           <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-slate-500">{item.comment}</p>
 
-          <FeedActionBar />
+          <FeedActionBar item={item} />
         </div>
 
         {/* 뒷면 — 이 기록의 여행 계획 */}
