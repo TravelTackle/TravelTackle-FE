@@ -148,7 +148,14 @@ export default function TravelerFeedPage() {
         showToast('내 여행으로 스크랩했어요 · 나의 여행에서 확인')
       }
     } catch (err) {
-      showToast(err?.response?.status === 401 ? '로그인이 필요해요' : '스크랩에 실패했어요. 잠시 후 다시 시도해주세요')
+      const data = err?.response?.data
+      showToast(
+        err?.response?.status === 401
+          ? '로그인이 필요해요'
+          : data?.code === 'TRIP_011'
+            ? '내 계획은 스크랩할 수 없어요'
+            : data?.message || '스크랩에 실패했어요. 잠시 후 다시 시도해주세요',
+      )
     } finally {
       setPendingIds((s) => { const next = new Set(s); next.delete(tripId); return next })
     }

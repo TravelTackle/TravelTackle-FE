@@ -30,8 +30,10 @@ export function FeedUserHeader({ item, showChip = true }) {
 // 카드/상세 사이드바 하단 공통 액션바 — 참견(말풍선 + 수)과 스크랩(북마크 + 수).
 // 동작과 저장 상태는 FeedActionsContext(피드 페이지 제공)에서 온다. item이 없거나 컨텍스트가 없으면 아이콘만 보인다.
 export function FeedActionBar({ item, bordered = true, size = 20 }) {
-  const { savedIds, pendingIds, saveDelta, feedbackDelta, toggleSave, openFeedback } = useFeedActions()
+  const { user, savedIds, pendingIds, saveDelta, feedbackDelta, toggleSave, openFeedback } = useFeedActions()
   const tripId = targetTripId(item)
+  // 백엔드는 본인 계획 저장을 막는다(TRIP_011). 피드 응답엔 작성자 id가 없어 이름으로 가려낸다.
+  const isMine = !!(user && item?.user?.nickname && item.user.nickname === user.name)
   const saved = !!(tripId && savedIds.has(tripId))
   const pending = !!(tripId && pendingIds.has(tripId))
   const feedbackCount = item ? (item.feedbackCount ?? 0) + (feedbackDelta[tripId] ?? 0) : null
@@ -50,12 +52,13 @@ export function FeedActionBar({ item, bordered = true, size = 20 }) {
       </button>
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); if (item) toggleSave(item) }}
-        disabled={pending}
+        onClick={(e) => { e.stopPropagation(); if (item && !isMine) toggleSave(item) }}
+        disabled={pending || isMine}
         aria-pressed={saved}
-        aria-label={saved ? '스크랩 해제' : '스크랩'}
-        className={`group/act flex items-center gap-1.5 rounded-full py-1 pl-2 transition-colors disabled:cursor-wait ${
-          saved ? 'text-brand' : 'text-slate-400 hover:text-brand'
+        aria-label={isMine ? '내 계획은 스크랩할 수 없어요' : saved ? '스크랩 해제' : '스크랩'}
+        title={isMine ? '내 계획은 스크랩할 수 없어요' : undefined}
+        className={`group/act flex items-center gap-1.5 rounded-full py-1 pl-2 transition-colors ${
+          isMine ? 'cursor-not-allowed text-slate-300' : pending ? 'cursor-wait' : saved ? 'text-brand' : 'text-slate-400 hover:text-brand'
         }`}
       >
         {saveCount != null && <span className="text-[12px] font-bold tabular-nums">{saveCount}</span>}
