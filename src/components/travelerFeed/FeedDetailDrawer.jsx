@@ -105,9 +105,11 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan, fro
   }, [item])
 
   const current = stack[stack.length - 1]
-  // 백엔드는 본인 계획 저장을 막는다(TRIP_011) — 피드 응답엔 작성자 id가 없어 이름으로 가려낸다.
-  // FeedActionBar(FeedCardChrome.jsx)와 같은 판별식.
-  const isMine = !!(user && current?.user?.nickname && current.user.nickname === user.name)
+  // 내 글 편집·삭제 메뉴 노출용. 작성자 id가 내려오면 id로, 아직 없으면 이름으로 가려낸다(서버가 최종 검증하므로 오인해도 403).
+  const isMine = !!(
+    user &&
+    (current?.user?.id ? current.user.id === user.userId : current?.user?.nickname && current.user.nickname === user.name)
+  )
 
   function handleEdit() {
     localStorage.setItem(LAST_TRIP_ID_KEY, current.id)
