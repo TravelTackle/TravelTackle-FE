@@ -1,4 +1,5 @@
 import client from './client'
+import { CART_CHANGED_EVENT } from './cart'
 
 export function getFeed(params) {
   return client.get('/feed', { params }).then((res) => res.data)
@@ -8,9 +9,22 @@ export function getFeedDetail(tripId) {
   return client.get(`/feed/${tripId}`).then((res) => res.data)
 }
 
-// 공개된 여행 계획에 참견(피드백) 남기기 — 로그인 필요
-export function createFeedback(tripId, content) {
-  return client.post(`/trips/${tripId}/feedback`, { content }).then((res) => res.data)
+// 공개된 여행 계획에 참견(피드백) 남기기 — 로그인 필요.
+// recommendations: 추천 장소 contentId 목록(선택). 응답의 recommendations엔 { id, contentId, title, imageUrl, areaCode }가 온다.
+export function createFeedback(tripId, content, { recommendations = [] } = {}) {
+  const body = { content }
+  if (recommendations.length) body.recommendations = recommendations.map((contentId) => ({ contentId }))
+  return client.post(`/trips/${tripId}/feedback`, body).then((res) => res.data)
+}
+
+// 참견에 붙은 추천 장소를 내 장바구니에 담기 — 계획 소유자만
+export function addRecommendationToCart(tripId, recommendationId) {
+  return client
+    .post(`/trips/${tripId}/feedback/recommendations/${recommendationId}/cart`)
+    .then((res) => {
+      window.dispatchEvent(new CustomEvent(CART_CHANGED_EVENT))
+      return res.data
+    })
 }
 
 // 특정 계획에 달린 참견 목록 (최신순, 비로그인도 조회 가능)
