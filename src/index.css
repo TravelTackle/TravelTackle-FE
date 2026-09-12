@@ -330,3 +330,13 @@ body {
   .flip-inner:not(.is-flipped) .flip-back { visibility: hidden; }
   .flip-back { transform: none; }
 }
+
+/* 피드 인기 지역 시상대 — 기둥이 바닥에서 위로 자라난다 */
+@keyframes podium-rise {
+  from { transform: scaleY(0); opacity: 0; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+.podium-rise {
+  transform-origin: bottom;
+  animation: podium-rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}

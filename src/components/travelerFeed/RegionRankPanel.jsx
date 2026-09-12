@@ -69,49 +69,18 @@ export default function RegionRankPanel({ stats, loading, active, onSelect, layo
       </div>
 
       {loading ? (
-        <ol className="mt-3 flex flex-col gap-1.5" role="status" aria-label="인기 지역을 집계하는 중">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <li key={i} className="flex items-center gap-2.5 px-1 py-1.5">
-              <Skeleton className="h-7 w-7 rounded-full" style={{ animationDelay: `${i * 90}ms` }} />
-              <Skeleton className="h-3.5 w-14" style={{ animationDelay: `${i * 90 + 50}ms` }} />
-              <Skeleton className="ml-auto h-3 w-8" style={{ animationDelay: `${i * 90 + 100}ms` }} />
-            </li>
+        <div className="mt-3 flex items-end justify-center gap-2 px-2" role="status" aria-label="인기 지역을 집계하는 중">
+          {[52, 76, 44].map((h, i) => (
+            <div key={i} className="flex w-full flex-col items-center gap-1.5">
+              <Skeleton className="h-3 w-10" style={{ animationDelay: `${i * 90}ms` }} />
+              <Skeleton className="w-full rounded-t-xl rounded-b-md" style={{ height: h, animationDelay: `${i * 90 + 60}ms` }} />
+            </div>
           ))}
-        </ol>
+        </div>
       ) : top.length === 0 ? (
         <p className="mt-3 text-[12px] text-slate-400">아직 지역별 게시물이 없어요.</p>
       ) : (
-        <ol className="mt-2 flex flex-col gap-0.5">
-          {top.map((r, i) => {
-            const isActive = active === r.region
-            return (
-              <li key={r.region} className="animate-slide-in" style={{ animationDelay: `${i * 70}ms` }}>
-                <button
-                  type="button"
-                  onClick={() => onSelect(isActive ? null : r.region)}
-                  aria-pressed={isActive}
-                  className={`group flex w-full items-center gap-2.5 rounded-xl px-1.5 py-1.5 text-left transition-colors ${
-                    isActive ? 'bg-brand-light' : 'hover:bg-slate-50'
-                  }`}
-                >
-                  <span
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-extrabold tabular-nums transition-transform duration-300 group-hover:scale-110 ${RANK_STYLE[i]}`}
-                    aria-label={`${i + 1}위`}
-                  >
-                    {i + 1}
-                  </span>
-                  <span className={`text-[13px] font-bold ${isActive ? 'text-brand-dark' : 'text-slate-800'}`}>{r.region}</span>
-                  <span className="ml-auto text-[11px] font-semibold tabular-nums text-slate-400">게시물 {r.count}</span>
-                  <Icon
-                    icon={isActive ? 'solar:check-circle-bold' : 'solar:alt-arrow-right-linear'}
-                    width={14}
-                    className={isActive ? 'text-brand' : 'text-slate-300 transition-transform group-hover:translate-x-0.5'}
-                  />
-                </button>
-              </li>
-            )
-          })}
-        </ol>
+        <Podium top={top} active={active} onSelect={onSelect} />
       )}
 
       <div className="mt-3 border-t border-slate-100 pt-3">
@@ -141,6 +110,49 @@ export default function RegionRankPanel({ stats, loading, active, onSelect, layo
         )}
       </div>
     </Card>
+  )
+}
+
+// 시상대 — 2위 · 1위 · 3위 순으로 세우고 1위가 가장 높다. 기둥을 누르면 그 지역으로 필터링
+const PODIUM = [
+  { rank: 2, height: 52, bar: 'bg-brand-light text-brand-dark', label: 'text-slate-500' },
+  { rank: 1, height: 76, bar: 'bg-gradient-to-t from-brand-dark to-brand-mid text-white shadow-float', label: 'text-slate-900' },
+  { rank: 3, height: 42, bar: 'bg-slate-100 text-slate-600', label: 'text-slate-500' },
+]
+
+function Podium({ top, active, onSelect }) {
+  return (
+    <div className="mt-3 flex items-end justify-center gap-2 px-1">
+      {PODIUM.map((col, i) => {
+        const r = top[col.rank - 1]
+        if (!r) return <div key={col.rank} className="w-full" />
+        const isActive = active === r.region
+        return (
+          <button
+            key={col.rank}
+            type="button"
+            onClick={() => onSelect(isActive ? null : r.region)}
+            aria-pressed={isActive}
+            aria-label={`${col.rank}위 ${r.region}, 게시물 ${r.count}개`}
+            className="group flex w-full flex-col items-center gap-1.5 rounded-xl px-0.5 pt-1 transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          >
+            {col.rank === 1 && (
+              <Icon icon="solar:crown-bold" width={16} className="ai-pop text-amber-400" style={{ animationDelay: '500ms' }} />
+            )}
+            <span className={`max-w-full truncate text-[12.5px] font-extrabold ${isActive ? 'text-brand-dark' : col.label}`}>{r.region}</span>
+            <div
+              className={`podium-rise flex w-full flex-col items-center justify-end rounded-t-xl rounded-b-md pb-1.5 transition-shadow ${col.bar} ${
+                isActive ? 'ring-2 ring-brand ring-offset-2' : ''
+              }`}
+              style={{ height: col.height, animationDelay: `${i * 110}ms` }}
+            >
+              <span className="text-[15px] font-black leading-none tabular-nums">{col.rank}</span>
+              <span className="mt-0.5 text-[10px] font-semibold opacity-80">{r.count}건</span>
+            </div>
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
