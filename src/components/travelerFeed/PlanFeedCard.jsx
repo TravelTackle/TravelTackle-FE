@@ -4,6 +4,26 @@ import Card from '../ui/Card'
 import { FeedUserHeader, FeedActionBar } from './FeedCardChrome'
 
 export default function PlanFeedCard({ item, onOpen }) {
+  return (
+    <Card
+      as="div"
+      role="button"
+      tabIndex={0}
+      shadow
+      onClick={() => onOpen(item)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') onOpen(item)
+      }}
+      className="cursor-pointer p-4 text-left"
+    >
+      <PlanCardBody item={item} />
+    </Card>
+  )
+}
+
+// 계획 카드 본문 — 작성자 · Day 넘기기 · 장소 스트립 · 제목. 기록 카드 뒷면에서도 그대로 쓴다.
+// headerRight: 작성자 헤더 오른쪽에 타입 칩 대신 넣을 요소(뒷면에서는 "기록으로" 버튼)
+export function PlanCardBody({ item, headerRight }) {
   const [dayIndex, setDayIndex] = useState(0)
   const day = item.days[dayIndex]
   const hasPrev = dayIndex > 0
@@ -54,18 +74,15 @@ export default function PlanFeedCard({ item, onOpen }) {
   }
 
   return (
-    <Card
-      as="div"
-      role="button"
-      tabIndex={0}
-      shadow
-      onClick={() => onOpen(item)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') onOpen(item)
-      }}
-      className="cursor-pointer p-4 text-left"
-    >
-      <FeedUserHeader item={item} />
+    <>
+      {headerRight ? (
+        <div className="flex items-center justify-between">
+          <FeedUserHeader item={item} showChip={false} />
+          {headerRight}
+        </div>
+      ) : (
+        <FeedUserHeader item={item} />
+      )}
 
       <div className="relative mt-3 flex items-center justify-between">
         <button
@@ -120,7 +137,7 @@ export default function PlanFeedCard({ item, onOpen }) {
       <div className="mt-3 text-[14px] font-bold text-slate-900">{item.title}</div>
       <div className="mt-1 text-[12px] text-slate-400">{item.duration} · {item.placeCount}개의 장소</div>
 
-      <FeedActionBar />
-    </Card>
+      <FeedActionBar item={item} />
+    </>
   )
 }

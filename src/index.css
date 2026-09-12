@@ -318,3 +318,42 @@ body {
   background: #e2e8f0;
   border-radius: 3px;
 }
+
+/* 피드 기록 카드 뒤집기 — 앞면(기록) ↔ 뒷면(그 기록의 계획). 높이는 보이는 면에 맞춰 함께 움직인다 */
+.flip-scene {
+  perspective: 1400px;
+}
+.flip-inner {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), height 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.flip-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+.flip-face {
+  position: absolute;
+  inset: 0 0 auto 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.flip-back {
+  transform: rotateY(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .flip-inner { transition: height 0.2s ease; }
+  .flip-inner.is-flipped { transform: none; }
+  .flip-inner.is-flipped .flip-face:not(.flip-back) { visibility: hidden; }
+  .flip-inner:not(.is-flipped) .flip-back { visibility: hidden; }
+  .flip-back { transform: none; }
+}
+
+/* 피드 인기 지역 시상대 — 기둥이 바닥에서 위로 자라난다 */
+@keyframes podium-rise {
+  from { transform: scaleY(0); opacity: 0; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+.podium-rise {
+  transform-origin: bottom;
+  animation: podium-rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
