@@ -45,7 +45,9 @@ export function FeedActionBar({ item, bordered = true, size = 20 }) {
         type="button"
         onClick={(e) => { e.stopPropagation(); if (item) openFeedback(item) }}
         aria-label={feedbackCount ? `참견 ${feedbackCount}개 보기` : '참견 남기기'}
-        className="group/act flex items-center gap-1.5 rounded-full py-1 pr-2 text-slate-400 transition-colors hover:text-brand"
+        className={`group/act flex items-center gap-1.5 rounded-full py-1 pr-2 transition-colors hover:text-rose-500 ${
+          feedbackCount ? 'text-rose-500' : 'text-slate-400'
+        }`}
       >
         <Icon icon="mdi:comment-outline" width={size} className="transition-transform group-hover/act:-rotate-6" />
         {feedbackCount != null && <span className="text-[12px] font-bold tabular-nums">{feedbackCount}</span>}
@@ -58,12 +60,12 @@ export function FeedActionBar({ item, bordered = true, size = 20 }) {
         aria-label={isMine ? '내 계획은 스크랩할 수 없어요' : saved ? '스크랩 해제' : '스크랩'}
         title={isMine ? '내 계획은 스크랩할 수 없어요' : undefined}
         className={`group/act flex items-center gap-1.5 rounded-full py-1 pl-2 transition-colors ${
-          isMine ? 'cursor-not-allowed text-slate-300' : pending ? 'cursor-wait' : saved ? 'text-brand' : 'text-slate-400 hover:text-brand'
+          isMine ? 'cursor-not-allowed text-slate-300' : pending ? 'cursor-wait' : saved ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'
         }`}
       >
         {saveCount != null && <span className="text-[12px] font-bold tabular-nums">{saveCount}</span>}
         {pending ? (
-          <Icon icon="mdi:loading" width={size} className="animate-spin text-brand" />
+          <Icon icon="mdi:loading" width={size} className="animate-spin text-amber-500" />
         ) : (
           <Icon
             key={saved ? 'on' : 'off'}

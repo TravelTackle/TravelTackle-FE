@@ -97,7 +97,7 @@ export default function FeedbackDrawer({ target, onClose, onPosted }) {
                   {state.loading ? (
                     <Skeleton className="h-4 w-8 rounded-md" />
                   ) : (
-                    <span key={count} className="ai-pop rounded-full bg-brand-light px-2 py-0.5 text-[11px] font-bold text-brand-dark">
+                    <span key={count} className="ai-pop rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-500">
                       {count}
                     </span>
                   )}
@@ -116,7 +116,7 @@ export default function FeedbackDrawer({ target, onClose, onPosted }) {
                 <div className="py-16 text-center text-[13px] text-rose-500">참견을 불러오지 못했어요.</div>
               ) : state.items.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 py-16 text-center">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-light text-brand">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-rose-50 text-rose-500">
                     <Icon icon="mdi:comment-text-outline" width={22} />
                   </span>
                   <p className="text-[13px] font-semibold text-slate-700">아직 참견이 없어요</p>
@@ -163,7 +163,7 @@ export default function FeedbackDrawer({ target, onClose, onPosted }) {
                 <>
                   <div
                     className={`rounded-2xl border bg-white transition-colors ${
-                      submitting ? 'border-slate-200' : 'border-slate-200 focus-within:border-brand focus-within:ring-4 focus-within:ring-brand/10'
+                      submitting ? 'border-slate-200' : 'border-slate-200 focus-within:border-rose-400 focus-within:ring-4 focus-within:ring-rose-500/10'
                     }`}
                   >
                     <textarea
@@ -184,7 +184,7 @@ export default function FeedbackDrawer({ target, onClose, onPosted }) {
                         type="button"
                         onClick={handleSubmit}
                         disabled={!draft.trim() || submitting}
-                        className="flex items-center gap-1.5 rounded-full bg-brand px-3.5 py-1.5 text-[12px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                        className="flex items-center gap-1.5 rounded-full bg-rose-500 px-3.5 py-1.5 text-[12px] font-bold text-white transition-colors hover:bg-rose-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                       >
                         {submitting ? <Icon icon="mdi:loading" width={14} className="animate-spin" /> : <Icon icon="solar:chat-round-dots-bold" width={14} />}
                         {submitting ? '남기는 중' : '참견 남기기'}

@@ -80,7 +80,9 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan }) {
                   onClick={() => onSavePlan(current)}
                   disabled={pendingIds.has(targetTripId(current))}
                   variant={savedIds.has(targetTripId(current)) ? 'light' : 'solid'}
-                  className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-bold disabled:cursor-wait disabled:opacity-70"
+                  className={`flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-bold disabled:cursor-wait disabled:opacity-70 ${
+                    savedIds.has(targetTripId(current)) ? '!bg-amber-50 !text-amber-600 hover:!bg-amber-100' : ''
+                  }`}
                 >
                   {pendingIds.has(targetTripId(current)) ? (
                     <Icon icon="mdi:loading" width={14} className="animate-spin" />
