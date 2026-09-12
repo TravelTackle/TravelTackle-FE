@@ -12,10 +12,19 @@ import Skeleton from './ui/Skeleton'
 const NAV = [
   { label: '여행지 탐색', to: '/explore', icon: 'solar:map-point-linear' },
   { label: '여행자 피드', to: '/feed', icon: 'solar:gallery-wide-linear' },
-  { label: '나의 여행', to: '/trips', icon: 'solar:suitcase-tag-linear' },
+  {
+    label: '나의 여행',
+    icon: 'solar:suitcase-tag-linear',
+    match: (p) => p === '/trips' || p === '/trips/saved',
+    children: [
+      { label: '나의 계획', to: '/trips', icon: 'solar:suitcase-tag-linear' },
+      { label: '보관함', to: '/trips/saved', icon: 'solar:bookmark-linear' },
+    ],
+  },
 ]
 
-const POPOVER = 'nav-pop absolute right-0 mt-2 z-50 rounded-2xl border border-slate-100 bg-white shadow-popup ring-1 ring-black/5'
+const POPOVER_BASE = 'nav-pop z-50 rounded-2xl border border-slate-100 bg-white shadow-popup ring-1 ring-black/5'
+const POPOVER = `${POPOVER_BASE} absolute right-0 mt-2`
 
 function initialOf(user) {
   const source = user?.name || user?.email || ''
@@ -40,21 +49,61 @@ function DesktopNav({ pathname }) {
   const itemRefs = useRef([])
   const [hover, setHover] = useState(null)
   const [pill, setPill] = useState({ left: 0, width: 0, visible: false })
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef(null)
 
-  const activeIdx = NAV.findIndex((n) => n.to === pathname)
+  const activeIdx = NAV.findIndex((n) => (n.match ? n.match(pathname) : n.to === pathname))
   const target = hover ?? (activeIdx >= 0 ? activeIdx : null)
   const trackRef = useRef(null)
 
+  // 드롭다운(나의 계획/보관함) 안에서도 위쪽 3개 메뉴와 같은 슬라이딩 알약을 쓴다 — 세로 버전.
+  // 항목 높이가 h-9(36px)로 고정돼 있어 DOM 측정 없이 인덱스만으로 위치를 계산한다.
+  // 알약을 담는 ul 자체에는 패딩을 주지 않는다(패딩은 바깥 래퍼로 옮김) — ul에 패딩이 있으면
+  // absolute 자식의 top:0 기준이 "패딩 바깥쪽 padding box"가 되어, 실제 li가 시작하는
+  // content box 위치와 안 맞아 알약이 어긋나 보이는 문제가 있었다.
+  const DROPDOWN_ITEM_HEIGHT = 36
+  const DROPDOWN_ITEM_GAP = 4
+  const dropdownGroup = NAV.find((n) => n.children)
+  const [childHover, setChildHover] = useState(null)
+  const childActiveIdx = dropdownGroup ? dropdownGroup.children.findIndex((c) => c.to === pathname) : -1
+  const childTarget = childHover ?? (childActiveIdx >= 0 ? childActiveIdx : null)
+
+  useEffect(() => {
+    if (!dropdownOpen) setChildHover(null)
+  }, [dropdownOpen])
+
+  // 나의 여행 드롭다운 — 바깥 클릭/Esc로 닫고, 페이지가 바뀌면 자동으로 닫는다
+  useEffect(() => {
+    function onClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false)
+    }
+    function onEscape(e) {
+      if (e.key === 'Escape') setDropdownOpen(false)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    document.addEventListener('keydown', onEscape)
+    return () => {
+      document.removeEventListener('mousedown', onClickOutside)
+      document.removeEventListener('keydown', onEscape)
+    }
+  }, [])
+  useEffect(() => setDropdownOpen(false), [pathname])
+
   // 알약 위치는 항목의 실제 크기로 잰다. 아이콘(Iconify)과 웹폰트가 늦게 로드되면 항목 너비가 뒤늦게 바뀌므로
   // ResizeObserver로 항목 크기 변화를 지켜보다가 다시 잰다 — 페이지를 옮겼을 때 알약이 어긋나던 원인.
+  // offsetLeft 대신 getBoundingClientRect 차이로 잰다 — "나의 여행" 항목은 드롭다운 때문에 감싸는
+  // position:relative div가 하나 더 있어서, offsetLeft 기준으로는 그 div가 offsetParent가 되어
+  // trackRef 기준 위치가 아니라 엉뚱한(거의 0에 가까운) 값이 나왔던 것이 원인.
   useLayoutEffect(() => {
     const measure = () => {
       const el = target != null ? itemRefs.current[target] : null
-      if (!el) {
+      if (!el || !trackRef.current) {
         setPill((p) => ({ ...p, visible: false }))
         return
       }
-      setPill({ left: el.offsetLeft, width: el.offsetWidth, visible: true })
+      const trackRect = trackRef.current.getBoundingClientRect()
+      const elRect = el.getBoundingClientRect()
+      setPill({ left: elRect.left - trackRect.left, width: elRect.width, visible: true })
     }
     measure()
     const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null
@@ -86,6 +135,90 @@ function DesktopNav({ pathname }) {
       />
       {NAV.map((n, i) => {
         const active = i === activeIdx
+        const itemClass = `relative z-10 flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-[13.5px] font-bold transition-colors duration-200 ${
+          active ? 'text-brand' : 'text-slate-600 hover:text-slate-900'
+        }`
+
+        if (n.children) {
+          return (
+            <div
+              key={n.label}
+              className="relative"
+              ref={dropdownRef}
+              onMouseEnter={() => {
+                setHover(i)
+                setDropdownOpen(true)
+              }}
+              onMouseLeave={() => setDropdownOpen(false)}
+            >
+              <Link
+                to="/trips"
+                ref={(el) => {
+                  itemRefs.current[i] = el
+                }}
+                aria-current={active ? 'page' : undefined}
+                aria-haspopup="menu"
+                aria-expanded={dropdownOpen}
+                className={`relative z-10 flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-[13.5px] font-bold transition-colors duration-200 ${
+                  active ? 'text-brand' : dropdownOpen ? 'text-slate-900' : 'text-slate-600'
+                }`}
+              >
+                <Icon icon={n.icon} width={15} className={active ? 'text-brand' : 'text-slate-400'} />
+                {n.label}
+                <Icon
+                  icon="solar:alt-arrow-down-linear"
+                  width={10}
+                  className={`text-slate-400 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`}
+                />
+              </Link>
+
+              {/* 트리거 바로 아래를 빈틈없이 채워서, 포인터가 버튼→메뉴로 내려가는 동안 hover가 끊기지 않게 함.
+                  nav-pop은 다른 팝오버(프로필/언어/알림)에서 이미 쓰는 등장 애니메이션 재사용 —
+                  거긴 우측 정렬이라 top right가 기준점이지만 여긴 가운데 정렬이라 top center로 바꿔 쓴다 */}
+              {dropdownOpen && (
+                <div
+                  className="nav-pop absolute left-1/2 top-full z-50 -translate-x-1/2 pt-2"
+                  style={{ transformOrigin: 'top center' }}
+                >
+                  {/* 패딩은 여기(바깥 래퍼)에 — 안쪽 ul은 패딩 0이라 top:0이 li가 시작하는 위치와 정확히 같다 */}
+                  <div className="w-36 rounded-2xl bg-white/90 p-1.5 backdrop-blur-sm">
+                    <ul role="menu" className="relative flex flex-col gap-1">
+                      <span
+                        aria-hidden="true"
+                        className={`nav-pill pointer-events-none absolute inset-x-0 top-0 h-9 rounded-full bg-brand-light shadow-card ${
+                          childTarget != null ? 'opacity-100' : 'opacity-0'
+                        }`}
+                        style={{
+                          transform: `translateY(${(childTarget ?? 0) * (DROPDOWN_ITEM_HEIGHT + DROPDOWN_ITEM_GAP)}px)`,
+                        }}
+                      />
+                      {n.children.map((c, ci) => {
+                        const childHighlighted = ci === childTarget
+                        return (
+                          <li key={c.to}>
+                            <Link
+                              to={c.to}
+                              role="menuitem"
+                              onMouseEnter={() => setChildHover(ci)}
+                              onClick={() => setDropdownOpen(false)}
+                              className={`relative z-10 flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full px-4 text-[13.5px] font-bold transition-colors duration-200 ${
+                                childHighlighted ? 'text-brand' : 'text-slate-600'
+                              }`}
+                            >
+                              <Icon icon={c.icon} width={14} className={childHighlighted ? 'text-brand' : 'text-slate-400'} />
+                              {c.label}
+                            </Link>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        }
+
         return (
           <Link
             key={n.to}
@@ -97,9 +230,7 @@ function DesktopNav({ pathname }) {
             onFocus={() => setHover(i)}
             onBlur={() => setHover(null)}
             aria-current={active ? 'page' : undefined}
-            className={`relative z-10 flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-[13.5px] font-bold transition-colors duration-200 ${
-              active ? 'text-brand' : 'text-slate-600 hover:text-slate-900'
-            }`}
+            className={itemClass}
           >
             <Icon icon={n.icon} width={15} className={active ? 'text-brand' : 'text-slate-400'} />
             {n.label}
@@ -449,7 +580,7 @@ export default function Navbar() {
       {menuOpen && (
         <div className="nav-sheet border-t border-slate-100 bg-white px-4 pb-4 pt-2 md:hidden">
           <div className="flex flex-col">
-            {NAV.map((n) => {
+            {NAV.flatMap((n) => (n.children ? n.children : [n])).map((n) => {
               const active = location.pathname === n.to
               return (
                 <Link

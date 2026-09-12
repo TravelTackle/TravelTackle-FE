@@ -143,7 +143,9 @@ export default function TravelerFeedPage() {
         setSaveDelta((d) => ({ ...d, [tripId]: (d[tripId] ?? 0) - 1 }))
         showToast('스크랩을 해제했어요')
       } else {
-        await saveTrip(tripId)
+        // sourceType: 기록에서 스크랩했으면 'RECORD', 계획에서 했으면 'PLAN' — 보관함에서 그 형태
+        // 그대로 카드를 보여주는 데 쓰인다.
+        await saveTrip(tripId, item.type === 'record' ? 'RECORD' : 'PLAN')
         // 방금 저장한 항목의 savedTripId를 알기 위해 목록을 다시 받는다(응답은 복사된 계획만 돌려준다)
         const list = await getSavedTrips().catch(() => [])
         setSavedIds(new Map(list.map((t) => [t.originalTripId, t.savedTripId])))

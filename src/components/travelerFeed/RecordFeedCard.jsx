@@ -29,7 +29,8 @@ function loadPlan(planId, findPlan) {
 
 // 기록 카드 — 앞면은 기록, 헤더의 기록|계획 스위치를 누르면 카드가 뒤집혀 뒷면에 그 기록의 여행 계획이 나온다.
 // findPlan(planId): 피드 목록에 이미 있는 계획을 돌려주면 조회 없이 바로 뒤집힌다.
-export default function RecordFeedCard({ item, onOpen, findPlan }) {
+// extra: 카드 하단에 덧붙일 요소 — 보관함에서 "나의 계획으로 복사하기" 버튼을 붙이는 데 쓴다.
+export default function RecordFeedCard({ item, onOpen, findPlan, extra }) {
   const [flipped, setFlipped] = useState(false)
   const [plan, setPlan] = useState(() => findPlan?.(item.planId) ?? null)
   const [planError, setPlanError] = useState(false)
@@ -152,6 +153,7 @@ export default function RecordFeedCard({ item, onOpen, findPlan }) {
           )}
         </div>
       </div>
+      {extra && <div className="px-4 pb-4">{extra}</div>}
     </Card>
   )
 }

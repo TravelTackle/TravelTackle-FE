@@ -78,17 +78,23 @@ export function unpublishTrip(tripId) {
   return client.patch(`/trips/${tripId}/unpublish`).then((res) => res.data)
 }
 
-// 다른 사용자의 공개 계획을 내 여행으로 복사해 저장 (로그인 필요)
-export function saveTrip(tripId) {
-  return client.post('/saved-trips', { tripId }).then((res) => res.data)
+// 다른 사용자의 공개 계획을 스크랩(찜) — 복사는 아직 안 됨, 보관함에서 copySavedTrip을 따로 호출해야 내 계획이 된다.
+// sourceType: 어느 카드에서 스크랩했는지('PLAN' | 'RECORD') — 보관함에서 그 형태 그대로 카드를 보여주는 데 쓴다.
+export function saveTrip(tripId, sourceType = 'PLAN') {
+  return client.post('/saved-trips', { tripId, sourceType }).then((res) => res.data)
 }
 
-// 내가 저장(스크랩)한 여행 목록 — [{ savedTripId, originalTripId, originalTitle, ownerName, savedAt }]
+// 스크랩 해제 — 이미 복사해서 만든 내 계획(Trip)은 그대로 남는다
+export function unsaveTrip(savedTripId) {
+  return client.delete(`/saved-trips/${savedTripId}`)
+}
+
+// 내가 스크랩한 여행 목록 (보관함)
 export function getSavedTrips() {
   return client.get('/saved-trips').then((res) => (Array.isArray(res.data) ? res.data : []))
 }
 
-// 스크랩 해제 — 복사된 내 계획은 유지되고 저장 기록만 지운다
-export function unsaveTrip(savedTripId) {
-  return client.delete(`/saved-trips/${savedTripId}`)
+// 보관함에 스크랩해둔 여행을 실제로 내 계획으로 복사
+export function copySavedTrip(savedTripId) {
+  return client.post(`/saved-trips/${savedTripId}/copy`).then((res) => res.data)
 }
