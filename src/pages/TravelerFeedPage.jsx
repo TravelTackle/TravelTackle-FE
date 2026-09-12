@@ -43,11 +43,13 @@ export default function TravelerFeedPage() {
 
   // 실 데이터를 목업 앞에 붙여서 표시 — 목업은 항상 맨 아래 유지. sort는 사용자가 고른 값을 그대로 보내고,
   // relevance인데 keyword가 없으면 서버가 알아서 latest로 대체해준다.
+  // reloadKey: 기록 업로드 뒤 같은 조건으로 목록을 다시 불러오기 위한 트리거
+  const [reloadKey, setReloadKey] = useState(0)
   useEffect(() => {
     getFeed({ size: 50, keyword: searchKeyword || undefined, sort: sortOption })
       .then((page) => setRealItems(page.content.map(adaptFeedItem)))
       .catch(() => setRealItems([]))
-  }, [searchKeyword, sortOption])
+  }, [searchKeyword, sortOption, reloadKey])
 
   // 입력을 멈춘 뒤에만 검색
   useEffect(() => {
@@ -262,7 +264,15 @@ export default function TravelerFeedPage() {
         onSavePlan={() => showToast('내 여행 계획으로 저장했어요')}
       />
 
-      <RecordUploadModal open={uploadOpen} onClose={() => setUploadOpen(false)} />
+      <RecordUploadModal
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        onUploaded={(_, trip) => {
+          setReloadKey((k) => k + 1)
+          // 피드엔 공개 계획의 기록만 올라온다 — 비공개면 저장만 됐다고 알려준다
+          showToast(trip?.published ? '기록을 올렸어요' : '기록을 저장했어요 · 계획을 공개하면 피드에 보여요')
+        }}
+      />
 
       <div
         className={`fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-slate-900/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
