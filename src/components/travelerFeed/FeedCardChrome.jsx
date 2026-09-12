@@ -26,22 +26,14 @@ export function FeedUserHeader({ item, showChip = true }) {
   )
 }
 
-// 카드/상세 사이드바 하단 공통 액션바 (좋아요/댓글/공유 + 북마크)
+// 카드/상세 사이드바 하단 공통 액션바 — 참견(말풍선)과 스크랩(북마크) 둘만. 좋아요·공유는 기능 계획이 없어 뺐다.
 export function FeedActionBar({ bordered = true, size = 20 }) {
   return (
     <div className={`mt-3 flex items-center justify-between ${bordered ? 'border-t border-slate-100 pt-3' : ''}`}>
-      <div className="flex items-center gap-3 text-slate-400">
-        <button type="button" onClick={(e) => e.stopPropagation()} aria-label="좋아요" className="hover:text-rose-500 transition-colors">
-          <Icon icon="mdi:heart-outline" width={size} />
-        </button>
-        <button type="button" onClick={(e) => e.stopPropagation()} aria-label="댓글" className="hover:text-brand transition-colors">
-          <Icon icon="mdi:comment-outline" width={size} />
-        </button>
-        <button type="button" onClick={(e) => e.stopPropagation()} aria-label="공유" className="hover:text-brand transition-colors">
-          <Icon icon="mdi:share-variant-outline" width={size} />
-        </button>
-      </div>
-      <button type="button" onClick={(e) => e.stopPropagation()} aria-label="북마크" className="text-slate-400 hover:text-brand transition-colors">
+      <button type="button" onClick={(e) => e.stopPropagation()} aria-label="참견" className="text-slate-400 hover:text-brand transition-colors">
+        <Icon icon="mdi:comment-outline" width={size} />
+      </button>
+      <button type="button" onClick={(e) => e.stopPropagation()} aria-label="스크랩" className="text-slate-400 hover:text-brand transition-colors">
         <Icon icon="mdi:bookmark-outline" width={size} />
       </button>
     </div>
