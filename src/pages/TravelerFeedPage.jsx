@@ -6,9 +6,9 @@ import Footer from '../components/Footer'
 import ChatbotWidget from '../components/ChatbotWidget'
 import FloatingCart from '../components/FloatingCart'
 import Section from '../components/ui/Section'
-import Card from '../components/ui/Card'
 import FeedFilterBar from '../components/travelerFeed/FeedFilterBar'
-import RegionChipRow from '../components/travelerFeed/RegionChipRow'
+import RegionRankPanel, { useRegionStats } from '../components/travelerFeed/RegionRankPanel'
+import Skeleton from '../components/ui/Skeleton'
 import PopularPlansTop5 from '../components/travelerFeed/PopularPlansTop5'
 import PlanFeedCard from '../components/travelerFeed/PlanFeedCard'
 import RecordFeedCard from '../components/travelerFeed/RecordFeedCard'
@@ -18,7 +18,6 @@ import FeedbackDrawer from '../components/travelerFeed/FeedbackDrawer'
 import { FeedActionsProvider, targetTripId } from '../components/travelerFeed/FeedActionsContext'
 import { useAuth } from '../context/AuthContext'
 import { getSavedTrips, saveTrip, unsaveTrip } from '../api/trip'
-import { FEED_REGIONS, MOCK_FEED_ITEMS, MOCK_GALLERY_ITEMS, MOCK_TOP5_PLANS } from '../data/feed'
 import { getFeed } from '../api/feed'
 import { adaptFeedItem } from '../data/feedAdapter'
 
@@ -33,6 +32,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export default function TravelerFeedPage() {
   const { user } = useAuth()
   const [realItems, setRealItems] = useState([])
+  const [feedLoading, setFeedLoading] = useState(true)
   const [searchInput, setSearchInput] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
@@ -48,14 +48,17 @@ export default function TravelerFeedPage() {
     return () => document.removeEventListener('mousedown', onClickOutside)
   }, [])
 
-  // 실 데이터를 목업 앞에 붙여서 표시 — 목업은 항상 맨 아래 유지. sort는 사용자가 고른 값을 그대로 보내고,
-  // relevance인데 keyword가 없으면 서버가 알아서 latest로 대체해준다.
+  // sort는 사용자가 고른 값을 그대로 보내고, relevance인데 keyword가 없으면 서버가 알아서 latest로 대체해준다.
   // reloadKey: 기록 업로드 뒤 같은 조건으로 목록을 다시 불러오기 위한 트리거
   const [reloadKey, setReloadKey] = useState(0)
   useEffect(() => {
+    let ignore = false
+    setFeedLoading(true)
     getFeed({ size: 50, keyword: searchKeyword || undefined, sort: sortOption })
-      .then((page) => setRealItems(page.content.map(adaptFeedItem)))
-      .catch(() => setRealItems([]))
+      .then((page) => { if (!ignore) setRealItems(page.content.map(adaptFeedItem)) })
+      .catch(() => { if (!ignore) setRealItems([]) })
+      .finally(() => { if (!ignore) setFeedLoading(false) })
+    return () => { ignore = true }
   }, [searchKeyword, sortOption, reloadKey])
 
   // 입력을 멈춘 뒤에만 검색
@@ -76,7 +79,7 @@ export default function TravelerFeedPage() {
 
   useEffect(() => {
     if (!openId) return
-    const target = [...realItems, ...MOCK_FEED_ITEMS].find((i) => i.id === openId)
+    const target = realItems.find((i) => i.id === openId)
     if (!target) return
     setDrawerItem(target)
     // 한 번 열었으면 주소에서 지워 새로고침·뒤로가기 때 다시 열리지 않게
@@ -198,24 +201,17 @@ export default function TravelerFeedPage() {
     return true
   }
 
-  // 실 데이터는 이미 서버가 keyword로 걸러서 준 결과라 그대로 믿고, 목업은 항상 섞여 나오니
-  // 검색 중엔 목업 쪽만 클라이언트에서 같은 keyword로 한 번 더 걸러서 엉뚱한 목업이 안 섞이게 한다.
-  const q = searchKeyword.trim().toLowerCase()
-  function matchesMockKeyword(item) {
-    if (!q) return true
-    return item.title?.toLowerCase().includes(q) || item.comment?.toLowerCase().includes(q)
-  }
-
-  const allItems = [...realItems, ...MOCK_FEED_ITEMS.filter(matchesMockKeyword)]
+  // 실 데이터는 이미 서버가 keyword로 걸러서 준 결과라 그대로 믿는다
+  const allItems = realItems
   const allItemsRef = useRef(allItems)
   allItemsRef.current = allItems
   const items = allItems.filter(matchesFilters)
-  // 갤러리형은 계획→기록→기록→계획 Z자 순서로 보이도록 별도 배치 데이터 사용.
-  // grid는 행 높이가 좌우 중 큰 쪽에 맞춰져 짧은 카드 아래 빈 공간이 생기므로,
+  // 지역 순위·칩은 받아온 피드의 region으로 센다(백엔드 지역 집계 API 없음)
+  const regionStats = useRegionStats(allItems)
+  // 갤러리는 grid 행 높이가 좌우 중 큰 쪽에 맞춰져 짧은 카드 아래 빈 공간이 생기므로,
   // 좌/우 컬럼을 독립된 세로 스택 두 개로 나눠 각자 빈틈없이 붙게 렌더링한다.
-  const galleryItems = [...realItems, ...MOCK_GALLERY_ITEMS.filter(matchesMockKeyword)].filter(matchesFilters)
-  const galleryLeft = galleryItems.filter((_, i) => i % 2 === 0)
-  const galleryRight = galleryItems.filter((_, i) => i % 2 === 1)
+  const galleryLeft = items.filter((_, i) => i % 2 === 0)
+  const galleryRight = items.filter((_, i) => i % 2 === 1)
 
   // 기록 카드가 뒤집힐 때 그 계획이 이미 목록에 있으면 조회 없이 바로 보여준다
   function findPlan(planId) {
@@ -249,7 +245,7 @@ export default function TravelerFeedPage() {
 
         {/* 인기 지역은 필터탭과 달리 스크롤하면 같이 흘러가도록 sticky 래퍼 밖에 둠 */}
         {view === 'gallery' && (
-          <RegionChipRow regions={FEED_REGIONS} active={region} onSelect={setRegion} layout="scroll" title="인기 지역" />
+          <RegionRankPanel stats={regionStats} loading={feedLoading} active={region} onSelect={setRegion} layout="row" />
         )}
 
         {view === 'list' ? (
@@ -291,7 +287,9 @@ export default function TravelerFeedPage() {
                   )}
                 </div>
               )}
-              {items.length === 0 ? (
+              {feedLoading ? (
+                <FeedCardSkeletons count={3} />
+              ) : items.length === 0 ? (
                 <div className="py-20 text-center text-[13px] text-slate-400">해당하는 피드가 없어요.</div>
               ) : (
                 items.map(renderCard)
@@ -334,14 +332,17 @@ export default function TravelerFeedPage() {
                 )}
               </div>
 
-              <Card className="p-4">
-                <RegionChipRow regions={FEED_REGIONS} active={region} onSelect={setRegion} layout="grid" title="인기 지역" />
-              </Card>
-              <PopularPlansTop5 plans={MOCK_TOP5_PLANS} onOpen={setDrawerItem} />
+              <RegionRankPanel stats={regionStats} loading={feedLoading} active={region} onSelect={setRegion} />
+              <PopularPlansTop5 onOpen={setDrawerItem} />
             </aside>
           </div>
         ) : (
-          galleryItems.length === 0 ? (
+          feedLoading ? (
+            <div className="flex gap-6">
+              <div className="flex min-w-0 flex-1 flex-col gap-5"><FeedCardSkeletons count={2} /></div>
+              <div className="flex min-w-0 flex-1 flex-col gap-5"><FeedCardSkeletons count={2} /></div>
+            </div>
+          ) : items.length === 0 ? (
             <div className="py-20 text-center text-[13px] text-slate-400">해당하는 피드가 없어요.</div>
           ) : (
             <div className="flex gap-6">
@@ -388,5 +389,34 @@ export default function TravelerFeedPage() {
         {toast}
       </div>
     </div>
+  )
+}
+
+// 피드 카드 골격 — 작성자 줄, 사진 영역, 제목·메타, 액션바. 계획/기록 공통으로 쓰는 단순한 형태
+function FeedCardSkeletons({ count }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="rounded-2xl border border-slate-100 bg-white p-4" role="status" aria-label="피드를 불러오는 중">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-8 w-8 rounded-full" style={{ animationDelay: `${i * 120}ms` }} />
+              <div>
+                <Skeleton className="h-3 w-16" style={{ animationDelay: `${i * 120 + 40}ms` }} />
+                <Skeleton className="mt-1.5 h-2.5 w-10" style={{ animationDelay: `${i * 120 + 80}ms` }} />
+              </div>
+            </div>
+            <Skeleton className="h-6 w-16 rounded-full" style={{ animationDelay: `${i * 120 + 100}ms` }} />
+          </div>
+          <Skeleton className="mt-3 aspect-[4/3] w-full rounded-2xl" style={{ animationDelay: `${i * 120 + 140}ms` }} />
+          <Skeleton className="mt-3 h-4 w-2/3" style={{ animationDelay: `${i * 120 + 200}ms` }} />
+          <Skeleton className="mt-2 h-3 w-1/3" style={{ animationDelay: `${i * 120 + 240}ms` }} />
+          <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
+            <Skeleton className="h-5 w-10 rounded-md" />
+            <Skeleton className="h-5 w-10 rounded-md" />
+          </div>
+        </div>
+      ))}
+    </>
   )
 }

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Icon } from '@iconify/react'
 import Button from '../ui/Button'
 import { FeedUserHeader, FeedActionBar } from './FeedCardChrome'
-import { MOCK_FEED_ITEMS } from '../../data/feed'
 import { adaptPlanDetail } from '../../data/feedAdapter'
 import { getFeedDetail } from '../../api/feed'
 import { targetTripId, useFeedActions } from './FeedActionsContext'
@@ -35,7 +34,7 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan }) {
   }, [open, stack])
 
   async function handleViewPlan() {
-    const loaded = (items || MOCK_FEED_ITEMS).find((i) => i.id === current.planId)
+    const loaded = (items || []).find((i) => i.id === current.planId)
     if (loaded) {
       setStack((s) => [...s, loaded])
       return
