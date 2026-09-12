@@ -260,7 +260,7 @@ export default function TravelerFeedPage() {
         item={drawerItem}
         items={allItems}
         onClose={() => setDrawerItem(null)}
-        onSavePlan={() => showToast('내 여행 계획으로 저장했어요')}
+        onSaved={(justSaved) => showToast(justSaved ? '보관함에 저장했어요' : '보관함에서 지웠어요')}
       />
 
       <RecordUploadModal

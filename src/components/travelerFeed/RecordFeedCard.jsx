@@ -30,7 +30,7 @@ export default function RecordFeedCard({ item, onOpen }) {
       <div className="mt-3 text-[14px] font-bold text-slate-900">{item.title}</div>
       <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-slate-500">{item.comment}</p>
 
-      <FeedActionBar />
+      <FeedActionBar tripId={item.planId} initialSavedTripId={item.savedTripId} />
     </Card>
   )
 }

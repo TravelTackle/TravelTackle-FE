@@ -12,6 +12,7 @@ import WelcomePage from './pages/onboarding/WelcomePage'
 import PreferenceWizard from './pages/onboarding/PreferenceWizard'
 import CompletePage from './pages/onboarding/CompletePage'
 import TripPlannerPage from './pages/TripPlannerPage'
+import SavedTripsPage from './pages/SavedTripsPage'
 import MyPageSettings from './pages/MyPageSettings'
 
 function App() {
@@ -31,6 +32,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <TripPlannerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/trips/saved"
+            element={
+              <ProtectedRoute>
+                <SavedTripsPage />
               </ProtectedRoute>
             }
           />

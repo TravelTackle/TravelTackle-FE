@@ -5,8 +5,9 @@ import { FeedUserHeader, FeedActionBar } from './FeedCardChrome'
 import { MOCK_FEED_ITEMS } from '../../data/feed'
 import { adaptPlanDetail } from '../../data/feedAdapter'
 import { getFeedDetail } from '../../api/feed'
+import useScrapToggle from '../../hooks/useScrapToggle'
 
-export default function FeedDetailDrawer({ item, items, onClose, onSavePlan }) {
+export default function FeedDetailDrawer({ item, items, onClose, onSaved }) {
   const [stack, setStack] = useState([])
   const open = !!item
 
@@ -15,6 +16,15 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan }) {
   }, [item])
 
   const current = stack[stack.length - 1]
+  // 기록(record)은 자신이 가리키는 계획(planId) 기준으로 스크랩한다 — 계획(plan)이면 자기 자신(id).
+  const scrapTripId = current?.type === 'record' ? current?.planId : current?.id
+  const scrap = useScrapToggle(scrapTripId, current?.savedTripId)
+
+  async function handleToggleSave() {
+    const wasSaved = scrap.saved
+    const ok = await scrap.toggle()
+    if (ok) onSaved?.(!wasSaved)
+  }
 
   function handleBack() {
     if (stack.length > 1) setStack((s) => s.slice(0, -1))
@@ -75,17 +85,22 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan }) {
                 </Button>
               ) : (
                 <Button
-                  onClick={() => onSavePlan(current)}
-                  className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-bold"
+                  onClick={handleToggleSave}
+                  disabled={scrap.pending}
+                  className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-bold disabled:opacity-60"
                 >
-                  <Icon icon="mdi:content-save-outline" width={14} />
-                  이 계획 저장하기
+                  <Icon icon={scrap.saved ? 'mdi:bookmark' : 'mdi:bookmark-outline'} width={14} />
+                  {scrap.saved ? '보관함에 저장됨' : '보관함에 저장'}
                 </Button>
               )}
             </div>
 
             <div className="pl-[22px] pr-4 pb-6">
-              {current.type === 'record' ? <RecordDetail item={current} /> : <PlanDetail item={current} />}
+              {current.type === 'record' ? (
+                <RecordDetail item={current} scrap={scrap} />
+              ) : (
+                <PlanDetail item={current} scrap={scrap} />
+              )}
             </div>
           </>
         )}
@@ -94,7 +109,7 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan }) {
   )
 }
 
-function RecordDetail({ item }) {
+function RecordDetail({ item, scrap }) {
   return (
     <>
       <div className="relative h-[320px] w-full overflow-hidden rounded-2xl bg-slate-200">
@@ -106,13 +121,13 @@ function RecordDetail({ item }) {
         <FeedUserHeader item={item} showChip={false} />
         <div className="mt-3 text-[17px] font-bold text-slate-900">{item.title}</div>
         <p className="mt-2 text-[13px] leading-relaxed text-slate-600">{item.comment}</p>
-        <FeedActionBar size={22} />
+        <FeedActionBar size={22} saved={scrap.saved} pending={scrap.pending} onToggle={scrap.toggle} />
       </div>
     </>
   )
 }
 
-function PlanDetail({ item }) {
+function PlanDetail({ item, scrap }) {
   return (
     <>
       <FeedUserHeader item={item} showChip={false} />
@@ -158,7 +173,7 @@ function PlanDetail({ item }) {
         ))}
       </div>
 
-      <FeedActionBar size={22} />
+      <FeedActionBar size={22} saved={scrap.saved} pending={scrap.pending} onToggle={scrap.toggle} />
     </>
   )
 }

@@ -3,7 +3,7 @@ import { Icon } from '@iconify/react'
 import Card from '../ui/Card'
 import { FeedUserHeader, FeedActionBar } from './FeedCardChrome'
 
-export default function PlanFeedCard({ item, onOpen }) {
+export default function PlanFeedCard({ item, onOpen, extra }) {
   const [dayIndex, setDayIndex] = useState(0)
   const day = item.days[dayIndex]
   const hasPrev = dayIndex > 0
@@ -120,7 +120,8 @@ export default function PlanFeedCard({ item, onOpen }) {
       <div className="mt-3 text-[14px] font-bold text-slate-900">{item.title}</div>
       <div className="mt-1 text-[12px] text-slate-400">{item.duration} · {item.placeCount}개의 장소</div>
 
-      <FeedActionBar />
+      <FeedActionBar tripId={item.id} initialSavedTripId={item.savedTripId} />
+      {extra}
     </Card>
   )
 }
