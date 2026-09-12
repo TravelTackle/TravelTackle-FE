@@ -111,7 +111,8 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
             </span>
           ))}
         </h2>
-        <div className="ai-word flex items-center gap-1.5 text-[12.5px] text-slate-500" style={{ animationDelay: '260ms' }}>
+        <div className="ai-word" style={{ animationDelay: '260ms' }}>
+        <div className="flex items-center gap-1.5 text-[12.5px] text-slate-500">
           <span className="truncate">{rangeLabel}</span>
           <span className="text-slate-300">·</span>
           {loading ? (
@@ -122,15 +123,17 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
             </span>
           )}
         </div>
+        </div>
       </div>
 
-      {/* 프리셋 세그먼트 — 흰 썸이 선택 쪽으로 미끄러진다. 직접 선택 중엔 썸이 사라진다 */}
+      {/* 프리셋 세그먼트 — 흰 썸이 선택 쪽으로 미끄러진다. 직접 선택 중엔 썸이 사라진다.
+          ai-word는 display:inline-block을 강제하므로 flex 트랙이 아니라 바깥 래퍼에 건다 */}
+      <div className="ai-word ml-auto min-w-0 max-w-full" style={{ animationDelay: '320ms' }}>
       <div
         ref={trackRef}
         role="tablist"
         aria-label="기간 프리셋"
-        className="ai-word relative ml-auto flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full bg-slate-100 p-1 scrollbar-hide"
-        style={{ animationDelay: '320ms' }}
+        className="relative flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full bg-slate-100 p-1 scrollbar-hide"
       >
         <span
           aria-hidden="true"
@@ -162,6 +165,7 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
             </button>
           )
         })}
+      </div>
       </div>
 
       {/* 날짜 직접 선택 — 바 높이를 늘리지 않고 아래로 뜨는 팝오버 */}

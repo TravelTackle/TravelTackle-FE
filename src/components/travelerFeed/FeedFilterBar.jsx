@@ -1,10 +1,12 @@
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
 import Button from '../ui/Button'
+import Skeleton from '../ui/Skeleton'
 
 const FILTERS = [
   { value: 'all', label: '전체', icon: 'mdi:shuffle-variant' },
-  { value: 'plan', label: '계획만 보기', icon: 'mdi:calendar-blank-outline' },
-  { value: 'record', label: '기록만 보기', icon: 'mdi:camera-outline' },
+  { value: 'plan', label: '계획만', icon: 'mdi:calendar-blank-outline' },
+  { value: 'record', label: '기록만', icon: 'mdi:camera-outline' },
 ]
 
 const VIEWS = [
@@ -12,10 +14,77 @@ const VIEWS = [
   { value: 'gallery', icon: 'mdi:view-grid', label: '갤러리 보기' },
 ]
 
+// 첫 진입에만 스켈레톤 → 드러나기 모션. 필터를 오갈 때마다 반복되면 새로고침처럼 느껴진다.
+let revealedOnce = false
+const MIN_SKELETON_MS = 550
+
 export default function FeedFilterBar({ filter, onFilterChange, view, onViewChange, onUploadClick }) {
+  const [revealed, setRevealed] = useState(revealedOnce)
+  const trackRef = useRef(null)
+  const [thumb, setThumb] = useState(null) // { x, w } — 활성 필터 버튼 위치
+
+  useEffect(() => {
+    if (revealed) return
+    const t = setTimeout(() => {
+      revealedOnce = true
+      setRevealed(true)
+    }, MIN_SKELETON_MS)
+    return () => clearTimeout(t)
+  }, [revealed])
+
+  // 라벨 폭이 달라 활성 버튼을 재서 썸을 옮긴다. 웹폰트가 늦게 오면 폭이 바뀌므로 한 번 더 잰다.
+  useLayoutEffect(() => {
+    if (!revealed) return
+    function measure() {
+      const active = trackRef.current?.querySelector('[aria-pressed="true"]')
+      if (!active) return
+      setThumb({ x: active.offsetLeft, w: active.offsetWidth })
+    }
+    measure()
+    const t = setTimeout(measure, 300)
+    window.addEventListener('resize', measure)
+    return () => {
+      clearTimeout(t)
+      window.removeEventListener('resize', measure)
+    }
+  }, [revealed, filter])
+
+  if (!revealed) {
+    return (
+      <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2.5" role="status" aria-label="피드 필터를 준비하는 중">
+        <div className="flex items-center gap-1 rounded-full bg-slate-50 p-1">
+          {[64, 76, 76].map((w, i) => (
+            <Skeleton key={i} className="h-8 rounded-full" style={{ width: w, animationDelay: `${i * 70}ms` }} />
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="hidden h-9 w-[76px] rounded-xl sm:block" style={{ animationDelay: '220ms' }} />
+          <Skeleton className="h-9 w-[112px] rounded-full" style={{ animationDelay: '300ms' }} />
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2">
-      <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2.5">
+      {/* 필터 세그먼트 — 흰 썸이 선택 쪽으로 미끄러지고, 활성 라벨만 브랜드 색.
+          ai-word는 display:inline-block을 강제하므로 flex 트랙이 아니라 바깥 래퍼에 건다 */}
+      <div className="ai-word">
+      <div
+        ref={trackRef}
+        role="group"
+        aria-label="피드 종류"
+        className="relative flex items-center gap-0.5 rounded-full bg-slate-100 p-1"
+      >
+        <span
+          aria-hidden="true"
+          className="mode-thumb pointer-events-none absolute inset-y-1 left-0 rounded-full bg-white shadow-card"
+          style={{
+            width: thumb ? thumb.w : 0,
+            transform: `translateX(${thumb ? thumb.x : 0}px)`,
+            opacity: thumb ? 1 : 0,
+          }}
+        />
         {FILTERS.map((f) => {
           const active = filter === f.value
           return (
@@ -24,23 +93,25 @@ export default function FeedFilterBar({ filter, onFilterChange, view, onViewChan
               type="button"
               onClick={() => onFilterChange(f.value)}
               aria-pressed={active}
-              className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold shadow-[0_1px_2px_rgba(0,0,0,0.15)] transition-all ${
-                active ? 'border-brand bg-brand text-white' : 'border-[#5C5C5C] bg-white text-slate-700 hover:bg-slate-50'
+              className={`relative z-10 flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12.5px] font-bold whitespace-nowrap transition-colors duration-300 ${
+                active ? 'text-brand-dark' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <Icon icon={f.icon} width={14} />
+              <Icon icon={f.icon} width={14} className={`transition-colors duration-300 ${active ? 'text-brand' : 'text-slate-400'}`} />
               {f.label}
             </button>
           )
         })}
       </div>
+      </div>
 
+      <div className="ai-word" style={{ animationDelay: '120ms' }}>
       <div className="flex items-center gap-2">
-        <div className="relative hidden items-center gap-1 rounded-xl bg-slate-100 p-1 sm:flex">
+        <div className="relative hidden items-center gap-1 rounded-xl bg-slate-100 p-1 sm:flex" role="group" aria-label="보기 방식">
           {/* 선택된 아이콘 뒤에서 슬라이드로 이동하는 흰색 배경 */}
           <div
             aria-hidden="true"
-            className="absolute left-1 top-1 h-7 w-7 rounded-lg bg-white shadow-[0_1px_2px_rgba(0,0,0,0.15)] transition-transform duration-200 ease-out"
+            className="mode-thumb absolute left-1 top-1 h-7 w-7 rounded-lg bg-white shadow-card"
             style={{ transform: `translateX(calc(${VIEWS.findIndex((v) => v.value === view)} * (100% + 0.25rem)))` }}
           />
           {VIEWS.map((v) => {
@@ -52,8 +123,8 @@ export default function FeedFilterBar({ filter, onFilterChange, view, onViewChan
                 onClick={() => onViewChange(v.value)}
                 aria-label={v.label}
                 aria-pressed={active}
-                className={`relative z-10 flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
-                  active ? 'text-slate-800' : 'text-slate-500 hover:text-slate-700'
+                className={`relative z-10 flex h-7 w-7 items-center justify-center rounded-lg transition-colors duration-300 ${
+                  active ? 'text-brand-dark' : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
                 <Icon icon={v.icon} width={17} />
@@ -64,11 +135,12 @@ export default function FeedFilterBar({ filter, onFilterChange, view, onViewChan
 
         <Button
           onClick={onUploadClick}
-          className="flex items-center gap-1.5 rounded-full border-2 border-white px-4 py-2 text-[12.5px] font-bold shadow-[0_1px_2px_rgba(0,0,0,0.15)]"
+          className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12.5px] font-bold shadow-card hover:shadow-card-hover"
         >
           <Icon icon="mdi:cloud-upload-outline" width={16} />
           기록 업로드
         </Button>
+      </div>
       </div>
     </div>
   )
