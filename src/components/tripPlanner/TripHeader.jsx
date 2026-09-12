@@ -23,7 +23,10 @@ export default function TripHeader({
   onUpdateDates,
   onTogglePublish,
   onDeleteTrip,
+  publishBlockedDays = [], // 일정이 없는 일차 번호 — 하나라도 있으면 전체공개 불가(백엔드 TRIP_022)
 }) {
+  const publishBlocked = !trip.published && publishBlockedDays.length > 0
+  const blockedLabel = publishBlockedDays.map((n) => `Day ${n}`).join(', ')
   const [menuOpen, setMenuOpen] = useState(false)
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState(trip.title)
@@ -120,6 +123,7 @@ export default function TripHeader({
   }
 
   function handleDateChange(nextStart, nextEnd) {
+    if (trip.published) return // 공개 중엔 날짜 변경 불가(TRIP_024) — DatePill도 잠겨 있지만 이중으로 막는다
     const hasItems = trip.days.some((d) => d.items.length > 0)
     if (hasItems && !window.confirm('기간을 바꾸면 지금까지 배치한 일정이 모두 초기화돼요. 계속할까요?')) return
     onUpdateDates(nextStart, nextEnd)
@@ -243,10 +247,17 @@ export default function TripHeader({
           <button
             type="button"
             onClick={onTogglePublish}
-            title={trip.published ? '눌러서 나만 보기로 전환' : '눌러서 전체공개로 전환'}
+            aria-disabled={publishBlocked}
+            title={
+              trip.published
+                ? '눌러서 나만 보기로 전환'
+                : publishBlocked
+                  ? `${blockedLabel}에 일정을 넣어야 전체공개할 수 있어요`
+                  : '눌러서 전체공개로 전환'
+            }
             style={{ display: 'grid' }}
             className={`shrink-0 overflow-hidden rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors duration-150 ${
-              trip.published ? 'bg-brand-light text-brand' : 'bg-rose-50 text-rose-600'
+              trip.published ? 'bg-brand-light text-brand' : publishBlocked ? 'bg-slate-100 text-slate-500' : 'bg-rose-50 text-rose-600'
             }`}
           >
             {/* 두 라벨을 같은 grid 셀에 겹쳐서 버튼 폭은 둘 중 넓은 쪽에 고정, 위아래로 슬라이드+페이드하며 전환 */}
@@ -262,6 +273,7 @@ export default function TripHeader({
                 trip.published ? 'translate-y-1 opacity-0' : 'translate-y-0 opacity-100'
               }`}
             >
+              {publishBlocked && <Icon icon="solar:lock-keyhole-minimalistic-bold" width={11} className="mr-1" aria-hidden="true" />}
               나만 보기
             </span>
           </button>
@@ -273,7 +285,7 @@ export default function TripHeader({
               }`}
             >
               <span aria-hidden="true" className="absolute -top-1 left-4 h-2 w-2 rotate-45 bg-slate-900/90" />
-              눌러서 전체공개로 바꿔보세요
+              {publishBlocked ? `${blockedLabel}에 일정을 넣으면 전체공개할 수 있어요` : '눌러서 전체공개로 바꿔보세요'}
               <button
                 type="button"
                 onClick={dismissPublishHint}
@@ -289,8 +301,17 @@ export default function TripHeader({
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
-          <DatePill label="출발일" value={trip.startDate} max={trip.endDate} onChange={(v) => handleDateChange(v, trip.endDate)} />
-          <DatePill label="종료일" value={trip.endDate} min={trip.startDate} onChange={(v) => handleDateChange(trip.startDate, v)} />
+          <DatePill label="출발일" value={trip.startDate} max={trip.endDate} onChange={(v) => handleDateChange(v, trip.endDate)} disabled={trip.published} />
+          <DatePill label="종료일" value={trip.endDate} min={trip.startDate} onChange={(v) => handleDateChange(trip.startDate, v)} disabled={trip.published} />
+          {trip.published && (
+            <span
+              className="flex items-center gap-1 text-[11px] font-semibold text-slate-400"
+              title="공개 중인 계획은 날짜를 바꿀 수 없어요. 나만 보기로 전환한 뒤 바꿔주세요."
+            >
+              <Icon icon="solar:lock-keyhole-minimalistic-bold" width={11} aria-hidden="true" />
+              공개 중엔 날짜 고정
+            </span>
+          )}
         </div>
 
         <div ref={toggleTrackRef} className="relative flex items-center gap-1 rounded-xl bg-slate-100 p-1 text-[12.5px] font-bold">
