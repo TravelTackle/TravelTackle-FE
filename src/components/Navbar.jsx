@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { useLanguage, LANGUAGES } from '../i18n'
 import logoHorizontal from '../assets/logo-horizontal.svg'
 import { getReceivedFeedback } from '../api/feed'
+import { updateProfile } from '../api/auth'
 import { formatDate } from '../lib/homeFormat'
 import Skeleton from './ui/Skeleton'
 
@@ -21,8 +22,8 @@ function initialOf(user) {
   return source.trim().charAt(0).toUpperCase() || '·'
 }
 
-// 아바타 — 이름 첫 글자를 브랜드 그라디언트 원 안에
-function Avatar({ user, size = 28 }) {
+// 아바타 — 이름 첫 글자를 브랜드 그라디언트 원 안에 (마이페이지 등에서도 재사용)
+export function Avatar({ user, size = 28 }) {
   return (
     <span
       className="flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-mid font-extrabold text-white ring-2 ring-white"
@@ -116,7 +117,7 @@ export default function Navbar() {
   const [notiOpen, setNotiOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [received, setReceived] = useState({ items: [], loading: false, error: false })
-  const { user, loading: authLoading, logout } = useAuth()
+  const { user, loading: authLoading, logout, setUser } = useAuth()
   const { language, setLanguage } = useLanguage()
   const profileRef = useRef(null)
   const location = useLocation()
@@ -181,6 +182,17 @@ export default function Navbar() {
       /* 무시 */
     }
     setProfileOpen(false)
+  }
+
+  // 로컬(챗봇 등에 즉시 반영)은 그대로 두고, 로그인 상태면 계정에도 저장 — 마이페이지 언어 변경과 동일한 API
+  function handleLanguageSelect(code) {
+    setLanguage(code)
+    if (!user) return
+    updateProfile({ preferredLanguage: code })
+      .then(setUser)
+      .catch(() => {
+        /* 조용히 실패 — 로컬 언어는 이미 바뀐 상태라 마이페이지에서 다시 저장할 수 있다 */
+      })
   }
 
   const iconButton =
@@ -324,7 +336,7 @@ export default function Navbar() {
                             role="option"
                             aria-selected={active}
                             onClick={() => {
-                              setLanguage(lang.code)
+                              handleLanguageSelect(lang.code)
                               setLangOpen(false)
                             }}
                             className={`flex w-full items-center justify-between gap-2 px-3.5 py-2 text-[13px] transition-colors ${
@@ -473,7 +485,7 @@ export default function Navbar() {
                     role="option"
                     aria-selected={active}
                     onClick={() => {
-                      setLanguage(lang.code)
+                      handleLanguageSelect(lang.code)
                       setMenuOpen(false)
                     }}
                     className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${

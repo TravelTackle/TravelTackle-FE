@@ -12,6 +12,7 @@ import WelcomePage from './pages/onboarding/WelcomePage'
 import PreferenceWizard from './pages/onboarding/PreferenceWizard'
 import CompletePage from './pages/onboarding/CompletePage'
 import TripPlannerPage from './pages/TripPlannerPage'
+import MyPageSettings from './pages/MyPageSettings'
 
 function App() {
   return (
@@ -30,6 +31,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <TripPlannerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/mypage"
+            element={
+              <ProtectedRoute>
+                <MyPageSettings />
               </ProtectedRoute>
             }
           />
