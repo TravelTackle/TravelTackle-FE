@@ -67,12 +67,19 @@ export default function PopularPlansTop5({ onOpen }) {
                     <ScrollingTitle text={p.title} />
                     <div className="truncate text-[10.5px] text-slate-400">{p.user.nickname} · {p.duration}</div>
                   </div>
-                  {typeof p.saveCount === 'number' && (
-                    <div className="flex shrink-0 items-center gap-1 text-[11px] font-semibold tabular-nums text-amber-500">
-                      <Icon icon="solar:bookmark-bold" width={11} />
-                      {p.saveCount}
-                    </div>
-                  )}
+                  {/* 인기 점수 = 참견 수 + 스크랩 수 — 두 값을 나란히 보여준다 */}
+                  <div className="flex shrink-0 items-center gap-2 text-[11px] font-semibold tabular-nums">
+                    <span className="flex items-center gap-0.5 text-rose-500" aria-label={`참견 ${p.feedbackCount ?? 0}개`}>
+                      <Icon icon="mdi:comment" width={11} />
+                      {p.feedbackCount ?? 0}
+                    </span>
+                    {typeof p.saveCount === 'number' && (
+                      <span className="flex items-center gap-0.5 text-amber-500" aria-label={`스크랩 ${p.saveCount}개`}>
+                        <Icon icon="solar:bookmark-bold" width={11} />
+                        {p.saveCount}
+                      </span>
+                    )}
+                  </div>
                 </button>
               </li>
             )
