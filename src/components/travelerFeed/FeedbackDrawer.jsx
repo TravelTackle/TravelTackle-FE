@@ -3,7 +3,7 @@ import { Icon } from '@iconify/react'
 import { Link } from 'react-router-dom'
 import Skeleton from '../ui/Skeleton'
 import { useAuth } from '../../context/AuthContext'
-import { addRecommendationToCart, createFeedback, getTripFeedback } from '../../api/feed'
+import { addRecommendationToCart, createFeedback, deleteFeedback, getTripFeedback, updateFeedback } from '../../api/feed'
 import { getTourContents } from '../../api/tour'
 import { getCartItems } from '../../api/cart'
 import { formatDate, shortRegion } from '../../lib/homeFormat'
@@ -12,9 +12,94 @@ const MAX_LENGTH = 2000
 const PAGE_SIZE = 30
 const MAX_RECOMMENDATIONS = 5
 
+// 참견 항목 우측 위 점 세개 메뉴 — 수정하기/삭제하기. FeedDetailDrawer의 CardMenu와 같은 패턴.
+function FeedbackItemMenu({ onEdit, onDelete }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onClickOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [open])
+
+  return (
+    <div className="relative ml-auto shrink-0" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="더보기"
+        className="flex h-6 w-6 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100"
+      >
+        <Icon icon="mdi:dots-vertical" width={15} />
+      </button>
+      {open && (
+        <div className="nav-pop absolute right-0 top-full z-30 mt-1 w-28 overflow-hidden rounded-xl border border-slate-100 bg-white py-1 shadow-popup">
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false)
+              onEdit()
+            }}
+            className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-[12px] font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+          >
+            <Icon icon="mdi:pencil-outline" width={13} />
+            수정하기
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false)
+              onDelete()
+            }}
+            className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-[12px] font-semibold text-rose-500 transition-colors hover:bg-rose-50"
+          >
+            <Icon icon="mdi:trash-can-outline" width={13} />
+            삭제하기
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// FeedDetailDrawer의 DeleteConfirmDialog와 같은 오버레이+흰 카드+버튼 2개 패턴
+function DeleteFeedbackDialog({ deleting, error, onCancel, onConfirm }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 p-4">
+      <div className="w-full max-w-[320px] rounded-2xl bg-white p-5 shadow-popup">
+        <h3 className="text-[15px] font-bold text-slate-900">이 참견을 삭제하시겠어요?</h3>
+        <p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-500">삭제하면 되돌릴 수 없어요.</p>
+        {error && <p className="mt-2 text-[12px] text-rose-500">{error}</p>}
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={deleting}
+            className="flex-1 rounded-full border border-slate-200 py-2 text-[12.5px] font-bold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-60"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={deleting}
+            className="flex-1 rounded-full bg-rose-500 py-2 text-[12.5px] font-bold text-white transition-colors hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {deleting ? '삭제 중…' : '삭제하기'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // 참견 사이드 패널 — 카드의 참견 아이콘을 누르면 오른쪽에서 열린다. 목록(스켈레톤 → 참견들) + 아래 고정 작성란.
 // target: { tripId, title, ownerName } — 기록 카드에서 열면 그 기록의 계획이 대상이다.
-export default function FeedbackDrawer({ target, onClose, onPosted }) {
+export default function FeedbackDrawer({ target, onClose, onPosted, onDeleted }) {
   const { user, loading: authLoading } = useAuth()
   const open = !!target
   const tripId = target?.tripId
@@ -28,6 +113,77 @@ export default function FeedbackDrawer({ target, onClose, onPosted }) {
   const listRef = useRef(null)
   const textareaRef = useRef(null)
 
+  // 참견 수정 — 본인 글에만 점 세개 메뉴로 진입. 한 번에 하나만 수정 상태로 둔다.
+  // editPlaces: 작성 때와 같은 PlacePicker를 재사용해 추천 장소도 같이 수정한다.
+  const [editingId, setEditingId] = useState(null)
+  const [editDraft, setEditDraft] = useState('')
+  const [editPlaces, setEditPlaces] = useState([])
+  const [editPickerOpen, setEditPickerOpen] = useState(false)
+  const [editSubmitting, setEditSubmitting] = useState(false)
+  const [editError, setEditError] = useState('')
+
+  function startEdit(f) {
+    setEditingId(f.id)
+    setEditDraft(f.content)
+    setEditPlaces((f.recommendations || []).map((r) => ({ contentId: r.contentId, title: r.title, imageUrl: r.imageUrl })))
+    setEditPickerOpen(false)
+    setEditError('')
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditDraft('')
+    setEditPlaces([])
+    setEditPickerOpen(false)
+    setEditError('')
+  }
+
+  function addEditPlace(place) {
+    setEditPlaces((prev) => {
+      if (prev.some((p) => p.contentId === place.contentId) || prev.length >= MAX_RECOMMENDATIONS) return prev
+      return [...prev, place]
+    })
+  }
+
+  async function handleUpdate(f) {
+    const content = editDraft.trim()
+    if (!content || editSubmitting) return
+    setEditSubmitting(true)
+    setEditError('')
+    try {
+      const updated = await updateFeedback(tripId, f.id, content, {
+        recommendations: editPlaces.map((p) => p.contentId),
+      })
+      setState((s) => ({ ...s, items: s.items.map((it) => (it.id === f.id ? updated : it)) }))
+      cancelEdit()
+    } catch (err) {
+      setEditError(err?.response?.data?.message || '수정하지 못했어요. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setEditSubmitting(false)
+    }
+  }
+
+  // 참견 삭제 — 지금은 작성자 본인만(계획 소유자 삭제는 아직 안 함)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+
+  async function handleDelete() {
+    if (deleting) return
+    setDeleting(true)
+    setDeleteError('')
+    try {
+      await deleteFeedback(tripId, deleteTarget.id)
+      setState((s) => ({ ...s, items: s.items.filter((it) => it.id !== deleteTarget.id) }))
+      onDeleted?.(tripId)
+      setDeleteTarget(null)
+    } catch (err) {
+      setDeleteError(err?.response?.data?.message || '삭제하지 못했어요. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   useEffect(() => {
     if (!tripId) return
     let ignore = false
@@ -36,6 +192,13 @@ export default function FeedbackDrawer({ target, onClose, onPosted }) {
     setSubmitError('')
     setPlaces([])
     setPickerOpen(false)
+    setEditingId(null)
+    setEditDraft('')
+    setEditPlaces([])
+    setEditPickerOpen(false)
+    setEditError('')
+    setDeleteTarget(null)
+    setDeleteError('')
     getTripFeedback(tripId, { page: 0, size: PAGE_SIZE })
       .then((page) => {
         if (ignore) return
@@ -151,7 +314,10 @@ export default function FeedbackDrawer({ target, onClose, onPosted }) {
                 </div>
               ) : (
                 <ul className="flex flex-col gap-3">
-                  {state.items.map((f, i) => (
+                  {state.items.map((f, i) => {
+                    const isAuthor = !!(user && f.author?.id && f.author.id === user.userId)
+                    const editing = editingId === f.id
+                    return (
                     <li
                       key={f.id ?? i}
                       className="animate-slide-in rounded-2xl border border-slate-100 bg-white p-3.5 shadow-card"
@@ -162,42 +328,128 @@ export default function FeedbackDrawer({ target, onClose, onPosted }) {
                           {(f.author?.name || '여').slice(0, 1)}
                         </span>
                         <span className="truncate text-[12.5px] font-bold text-slate-800">{f.author?.name || '여행자'}</span>
-                        <span className="ml-auto shrink-0 text-[11px] text-slate-400">{formatDate(f.createdAt)}</span>
+                        <span className={`shrink-0 text-[11px] text-slate-400 ${isAuthor && !editing ? '' : 'ml-auto'}`}>{formatDate(f.createdAt)}</span>
+                        {/* 본인 글일 때만 수정 메뉴 — 지금은 삭제는 없이 수정만 */}
+                        {isAuthor && !editing && (
+                          <FeedbackItemMenu onEdit={() => startEdit(f)} onDelete={() => setDeleteTarget(f)} />
+                        )}
                       </div>
-                      <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-slate-700">{f.content}</p>
-                      {f.recommendations?.length > 0 && (
-                        <ul className="mt-3 flex flex-col gap-1.5" aria-label="추천 장소">
-                          {f.recommendations.map((rec) => (
-                            <li key={rec.id} className="flex items-center gap-2.5 rounded-xl bg-rose-50/60 p-1.5 pr-2">
-                              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-slate-200">
-                                {rec.imageUrl && <img src={rec.imageUrl} alt="" className="h-full w-full object-cover" />}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-1 text-[10.5px] font-bold text-rose-500">
-                                  <Icon icon="solar:map-point-bold" width={11} />
-                                  추천 장소
+                      {editing ? (
+                        <div className="mt-2">
+                          {/* 작성란과 같은 PlacePicker 재사용 — 새로 추가만 여기서, 기존 추천 삭제는 아래 "추천 장소" 카드에서 */}
+                          {editPickerOpen && (
+                            <PlacePicker user={user} selected={editPlaces} onPick={addEditPlace} onClose={() => setEditPickerOpen(false)} />
+                          )}
+                          <textarea
+                            autoFocus
+                            value={editDraft}
+                            onChange={(e) => setEditDraft(e.target.value.slice(0, MAX_LENGTH))}
+                            disabled={editSubmitting}
+                            rows={3}
+                            className="w-full resize-none rounded-xl border border-slate-200 bg-white p-2.5 text-[13px] text-slate-800 outline-none focus:border-brand disabled:text-slate-400"
+                          />
+                          {editError && <p className="mt-1.5 text-[12px] font-semibold text-rose-500">{editError}</p>}
+                          <div className="mt-1.5 flex items-center justify-between gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditPickerOpen((v) => !v)}
+                              aria-expanded={editPickerOpen}
+                              disabled={editSubmitting}
+                              className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11.5px] font-bold transition-colors ${
+                                editPickerOpen || editPlaces.length
+                                  ? 'border-rose-200 bg-rose-50 text-rose-600'
+                                  : 'border-slate-200 text-slate-500 hover:border-rose-200 hover:text-rose-500'
+                              }`}
+                            >
+                              <Icon icon="solar:map-point-add-linear" width={13} />
+                              장소 추천하기{editPlaces.length ? ` ${editPlaces.length}` : ''}
+                            </button>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={cancelEdit}
+                                disabled={editSubmitting}
+                                className="rounded-full bg-slate-100 px-3 py-1.5 text-[11.5px] font-bold text-slate-500 transition-colors hover:bg-slate-200 disabled:opacity-60"
+                              >
+                                취소
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdate(f)}
+                                disabled={!editDraft.trim() || editSubmitting}
+                                className="rounded-full bg-brand px-3 py-1.5 text-[11.5px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {editSubmitting ? '저장 중…' : '저장'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-slate-700">{f.content}</p>
+                      )}
+                      {editing ? (
+                        // 수정 중엔 추천 장소 카드 자체가 편집 대상 — 담기 버튼 대신 삭제(X) 버튼을 보여준다
+                        editPlaces.length > 0 && (
+                          <ul className="mt-3 flex flex-col gap-1.5" aria-label="추천 장소">
+                            {editPlaces.map((p) => (
+                              <li key={p.contentId} className="flex items-center gap-2.5 rounded-xl bg-rose-50/60 p-1.5 pr-2">
+                                <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-slate-200">
+                                  {p.imageUrl && <img src={p.imageUrl} alt="" className="h-full w-full object-cover" />}
                                 </div>
-                                <div className="truncate text-[12.5px] font-bold text-slate-800">{rec.title}</div>
-                              </div>
-                              {isMine && (
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1 text-[10.5px] font-bold text-rose-500">
+                                    <Icon icon="solar:map-point-bold" width={11} />
+                                    추천 장소
+                                  </div>
+                                  <div className="truncate text-[12.5px] font-bold text-slate-800">{p.title}</div>
+                                </div>
                                 <button
                                   type="button"
-                                  onClick={() => handleCart(rec)}
-                                  disabled={carted.has(rec.id)}
-                                  className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
-                                    carted.has(rec.id) ? 'bg-emerald-50 text-emerald-600' : 'bg-white text-brand-dark shadow-card hover:bg-brand-light'
-                                  }`}
+                                  onClick={() => setEditPlaces((prev) => prev.filter((x) => x.contentId !== p.contentId))}
+                                  aria-label={`${p.title} 추천에서 빼기`}
+                                  className="shrink-0 rounded-full p-1 text-rose-300 transition-colors hover:text-rose-500"
                                 >
-                                  <Icon icon={carted.has(rec.id) ? 'solar:cart-check-bold' : 'solar:cart-large-2-linear'} width={13} />
-                                  {carted.has(rec.id) ? '담음' : '담기'}
+                                  <Icon icon="mdi:close-circle" width={18} />
                                 </button>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
+                              </li>
+                            ))}
+                          </ul>
+                        )
+                      ) : (
+                        f.recommendations?.length > 0 && (
+                          <ul className="mt-3 flex flex-col gap-1.5" aria-label="추천 장소">
+                            {f.recommendations.map((rec) => (
+                              <li key={rec.id} className="flex items-center gap-2.5 rounded-xl bg-rose-50/60 p-1.5 pr-2">
+                                <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-slate-200">
+                                  {rec.imageUrl && <img src={rec.imageUrl} alt="" className="h-full w-full object-cover" />}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1 text-[10.5px] font-bold text-rose-500">
+                                    <Icon icon="solar:map-point-bold" width={11} />
+                                    추천 장소
+                                  </div>
+                                  <div className="truncate text-[12.5px] font-bold text-slate-800">{rec.title}</div>
+                                </div>
+                                {isMine && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCart(rec)}
+                                    disabled={carted.has(rec.id)}
+                                    className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                                      carted.has(rec.id) ? 'bg-emerald-50 text-emerald-600' : 'bg-white text-brand-dark shadow-card hover:bg-brand-light'
+                                    }`}
+                                  >
+                                    <Icon icon={carted.has(rec.id) ? 'solar:cart-check-bold' : 'solar:cart-large-2-linear'} width={13} />
+                                    {carted.has(rec.id) ? '담음' : '담기'}
+                                  </button>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        )
                       )}
                     </li>
-                  ))}
+                  )})}
                 </ul>
               )}
             </div>
@@ -300,6 +552,18 @@ export default function FeedbackDrawer({ target, onClose, onPosted }) {
           </>
         )}
       </aside>
+
+      {deleteTarget && (
+        <DeleteFeedbackDialog
+          deleting={deleting}
+          error={deleteError}
+          onCancel={() => {
+            setDeleteTarget(null)
+            setDeleteError('')
+          }}
+          onConfirm={handleDelete}
+        />
+      )}
     </>
   )
 }

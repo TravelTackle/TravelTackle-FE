@@ -17,6 +17,18 @@ export function createFeedback(tripId, content, { recommendations = [] } = {}) {
   return client.post(`/trips/${tripId}/feedback`, body).then((res) => res.data)
 }
 
+// 참견 수정 — 본인만 가능(서버가 최종 검증). recommendations를 안 보내면 서버가 기존 추천을 전부 지워버리므로
+// (PATCH는 "추천 전체 교체" 방식) 손대지 않을 거면 기존 값을 그대로 다시 넣어 보내야 한다.
+export function updateFeedback(tripId, feedbackId, content, { recommendations = [] } = {}) {
+  const body = { content, recommendations: recommendations.map((contentId) => ({ contentId })) }
+  return client.patch(`/trips/${tripId}/feedback/${feedbackId}`, body).then((res) => res.data)
+}
+
+// 참견 삭제 — 본인 또는 계획 소유자가 가능(서버가 최종 검증). 지금 프론트는 작성자 본인 삭제만 노출한다.
+export function deleteFeedback(tripId, feedbackId) {
+  return client.delete(`/trips/${tripId}/feedback/${feedbackId}`)
+}
+
 // 참견에 붙은 추천 장소를 내 장바구니에 담기 — 계획 소유자만
 export function addRecommendationToCart(tripId, recommendationId) {
   return client
