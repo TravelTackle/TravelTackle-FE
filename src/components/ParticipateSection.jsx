@@ -23,7 +23,7 @@ function formatRange(start, end) {
 function DayCard({ day }) {
   const extra = day.places.length - PLACES_PER_DAY
   return (
-    <div className="bg-white border border-slate-100 rounded-2xl p-2.5 min-w-0 sm:flex-1">
+    <div className="bg-surface border border-slate-100 rounded-2xl p-2.5 min-w-0 sm:flex-1">
       <div className="text-[10px] font-bold text-slate-400">Day {day.day}</div>
       <div className="text-[12px] font-bold text-slate-700 mb-2 truncate">{formatDay(day.date) || ' '}</div>
       <div className="flex flex-col gap-1">
@@ -42,7 +42,7 @@ function DayCard({ day }) {
 
 function PanelSkeleton({ composer }) {
   return (
-    <div className="min-w-0 bg-[#F8FAFC] border border-slate-100 rounded-3xl p-4 sm:p-6">
+    <div className="min-w-0 bg-slate-50 border border-slate-100 rounded-3xl p-4 sm:p-6">
       <Skeleton className="h-4 w-40" />
       <Skeleton className="mt-2 h-3 w-56" />
       {composer ? (
@@ -61,7 +61,7 @@ function PanelSkeleton({ composer }) {
       ) : (
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
           {Array.from({ length: DAYS_PER_VIEW }).map((_, i) => (
-            <div key={i} className="bg-white border border-slate-100 rounded-2xl p-2.5">
+            <div key={i} className="bg-surface border border-slate-100 rounded-2xl p-2.5">
               <Skeleton className="h-2.5 w-10" />
               <Skeleton className="mt-1.5 h-3 w-16" />
               <Skeleton className="mt-3 h-6 w-full rounded-md" />
@@ -84,7 +84,7 @@ function TalkBadge({ loading }) {
       <span className="talk-ping absolute inset-1 rounded-[14px] bg-brand/30" />
       <span className="talk-pop relative flex h-8 w-10 items-center justify-center gap-[3px] rounded-[14px] rounded-bl-[4px] bg-gradient-to-br from-brand-mid to-brand shadow-[0_6px_14px_rgba(37,99,235,0.35)]">
         {[0, 1, 2].map((i) => (
-          <span key={i} className="talk-dot h-1.5 w-1.5 rounded-full bg-white" style={{ animationDelay: `${i * 160}ms` }} />
+          <span key={i} className="talk-dot h-1.5 w-1.5 rounded-full bg-surface" style={{ animationDelay: `${i * 160}ms` }} />
         ))}
       </span>
     </span>
@@ -213,7 +213,7 @@ export default function ParticipateSection({ feed }) {
           type="button"
           onClick={showNextPlan}
           disabled={feed.loading || plans.length < 2}
-          className="shrink-0 flex items-center gap-1.5 bg-white border border-slate-200 rounded-full px-3.5 py-2 text-[12px] font-bold text-slate-600 hover:bg-slate-50 transition-all disabled:opacity-40 disabled:hover:bg-white"
+          className="shrink-0 flex items-center gap-1.5 bg-surface border border-slate-200 rounded-full px-3.5 py-2 text-[12px] font-bold text-slate-600 hover:bg-slate-50 transition-all disabled:opacity-40 disabled:hover:bg-surface"
         >
           <Icon icon="solar:refresh-linear" width={14} /> 다른 계획 보기
         </button>
@@ -225,8 +225,8 @@ export default function ParticipateSection({ feed }) {
           <PanelSkeleton composer />
         </div>
       ) : plans.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-3xl border border-slate-100 bg-[#F8FAFC] px-6 py-16 text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-300 shadow-card">
+        <div className="flex flex-col items-center gap-3 rounded-3xl border border-slate-100 bg-slate-50 px-6 py-16 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-slate-300 shadow-card">
             <Icon icon="solar:chat-round-dots-linear" width={24} />
           </span>
           <p className="text-[14px] font-bold text-slate-600">아직 참견을 남길 수 있는 계획이 없어요</p>
@@ -236,7 +236,7 @@ export default function ParticipateSection({ feed }) {
         // grid-cols-1(minmax(0,1fr))이 없으면 모바일에서 textarea 고유 너비가 열 너비가 되어 패널이 오른쪽으로 넘친다
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* 왼쪽: Day별 일정 */}
-          <div key={plan.id} className="animate-slide-in min-w-0 bg-[#F8FAFC] border border-slate-100 rounded-3xl p-4 sm:p-6">
+          <div key={plan.id} className="animate-slide-in min-w-0 bg-slate-50 border border-slate-100 rounded-3xl p-4 sm:p-6">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-[15px] font-extrabold text-slate-900 truncate">{plan.title}</div>
@@ -248,7 +248,7 @@ export default function ParticipateSection({ feed }) {
                     type="button"
                     onClick={() => shiftDays(-1)}
                     disabled={dayStart === 0}
-                    className="w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-white"
+                    className="w-7 h-7 rounded-full bg-surface border border-slate-200 flex items-center justify-center text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-surface"
                     aria-label="이전 날짜 보기"
                   >
                     <Icon icon="solar:alt-arrow-left-linear" width={13} />
@@ -257,7 +257,7 @@ export default function ParticipateSection({ feed }) {
                     type="button"
                     onClick={() => shiftDays(1)}
                     disabled={dayStart + DAYS_PER_VIEW >= days.length}
-                    className="w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-white"
+                    className="w-7 h-7 rounded-full bg-surface border border-slate-200 flex items-center justify-center text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-surface"
                     aria-label="다음 날짜 보기"
                   >
                     <Icon icon="solar:alt-arrow-right-linear" width={13} />
@@ -281,7 +281,7 @@ export default function ParticipateSection({ feed }) {
           </div>
 
           {/* 오른쪽: 참견 입력 */}
-          <div className="min-w-0 bg-[#F8FAFC] border border-slate-100 rounded-3xl p-4 sm:p-6 flex flex-col">
+          <div className="min-w-0 bg-slate-50 border border-slate-100 rounded-3xl p-4 sm:p-6 flex flex-col">
             {/* 모바일에선 참견·저장 묶음이 제목을 3줄로 밀어내서, sm 미만에서는 제목 아래 줄로 내린다 */}
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
               <div className="min-w-0">
@@ -307,7 +307,7 @@ export default function ParticipateSection({ feed }) {
                   className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold transition-all ${
                     saved
                       ? 'border-brand/30 bg-brand-light text-brand'
-                      : 'border-slate-200 bg-white text-slate-600 hover:border-brand hover:text-brand disabled:opacity-60'
+                      : 'border-slate-200 bg-surface text-slate-600 hover:border-brand hover:text-brand disabled:opacity-60'
                   }`}
                 >
                   <Icon icon={saved ? 'solar:bookmark-bold' : 'solar:bookmark-linear'} width={13} />
@@ -322,7 +322,7 @@ export default function ParticipateSection({ feed }) {
                   key={q}
                   type="button"
                   onClick={() => setText((t) => (t ? t + ' ' : '') + q)}
-                  className="bg-white border border-slate-200 rounded-full px-3 py-1.5 text-[11.8px] font-semibold text-slate-600 hover:border-brand hover:text-brand transition-all"
+                  className="bg-surface border border-slate-200 rounded-full px-3 py-1.5 text-[11.8px] font-semibold text-slate-600 hover:border-brand hover:text-brand transition-all"
                 >
                   {q}
                 </button>
@@ -338,7 +338,7 @@ export default function ParticipateSection({ feed }) {
               rows={3}
               maxLength={2000}
               disabled={sending}
-              className="mt-4 w-full resize-none bg-white border border-slate-200 rounded-2xl p-3 text-[13px] text-slate-700 placeholder-slate-400 outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all disabled:opacity-60"
+              className="mt-4 w-full resize-none bg-surface border border-slate-200 rounded-2xl p-3 text-[13px] text-slate-700 placeholder-slate-400 outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all disabled:opacity-60"
             />
 
             <div className="mt-3 flex items-center justify-between gap-3">

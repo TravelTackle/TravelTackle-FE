@@ -37,7 +37,7 @@ function FeedbackItemMenu({ onEdit, onDelete }) {
         <Icon icon="mdi:dots-vertical" width={15} />
       </button>
       {open && (
-        <div className="nav-pop absolute right-0 top-full z-30 mt-1 w-28 overflow-hidden rounded-xl border border-slate-100 bg-white py-1 shadow-popup">
+        <div className="nav-pop absolute right-0 top-full z-30 mt-1 w-28 overflow-hidden rounded-xl border border-slate-100 bg-surface py-1 shadow-popup">
           <button
             type="button"
             onClick={() => {
@@ -69,8 +69,8 @@ function FeedbackItemMenu({ onEdit, onDelete }) {
 // FeedDetailDrawer의 DeleteConfirmDialog와 같은 오버레이+흰 카드+버튼 2개 패턴
 function DeleteFeedbackDialog({ deleting, error, onCancel, onConfirm }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 p-4">
-      <div className="w-full max-w-[320px] rounded-2xl bg-white p-5 shadow-popup">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-[320px] rounded-2xl bg-surface p-5 shadow-popup">
         <h3 className="text-[15px] font-bold text-slate-900">이 참견을 삭제하시겠어요?</h3>
         <p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-500">삭제하면 되돌릴 수 없어요.</p>
         {error && <p className="mt-2 text-[12px] text-rose-500">{error}</p>}
@@ -305,7 +305,7 @@ export default function FeedbackDrawer({ target, onClose, onPosted, onDeleted })
 
       <aside
         aria-label="참견"
-        className={`fixed top-16 bottom-0 right-0 z-[58] flex w-full max-w-[420px] flex-col bg-white shadow-popup transition-transform duration-300 ${
+        className={`fixed top-16 bottom-0 right-0 z-[58] flex w-full max-w-[420px] flex-col bg-surface shadow-popup transition-transform duration-300 ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -358,7 +358,7 @@ export default function FeedbackDrawer({ target, onClose, onPosted, onDeleted })
                     return (
                     <li
                       key={f.id ?? i}
-                      className="animate-slide-in rounded-2xl border border-slate-100 bg-white p-3.5 shadow-card"
+                      className="animate-slide-in rounded-2xl border border-slate-100 bg-surface p-3.5 shadow-card"
                       style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }}
                     >
                       <div className="flex items-center gap-2">
@@ -384,7 +384,7 @@ export default function FeedbackDrawer({ target, onClose, onPosted, onDeleted })
                             onChange={(e) => setEditDraft(e.target.value.slice(0, MAX_LENGTH))}
                             disabled={editSubmitting}
                             rows={3}
-                            className="w-full resize-none rounded-xl border border-slate-200 bg-white p-2.5 text-[13px] text-slate-800 outline-none focus:border-brand disabled:text-slate-400"
+                            className="w-full resize-none rounded-xl border border-slate-200 bg-surface p-2.5 text-[13px] text-slate-800 outline-none focus:border-brand disabled:text-slate-400"
                           />
                           {editError && <p className="mt-1.5 text-[12px] font-semibold text-rose-500">{editError}</p>}
                           <div className="mt-1.5 flex items-center justify-between gap-2">
@@ -474,7 +474,7 @@ export default function FeedbackDrawer({ target, onClose, onPosted, onDeleted })
                                     onClick={() => handleCart(rec)}
                                     disabled={carted.has(rec.id)}
                                     className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
-                                      carted.has(rec.id) ? 'bg-emerald-50 text-emerald-600' : 'bg-white text-brand-dark shadow-card hover:bg-brand-light'
+                                      carted.has(rec.id) ? 'bg-emerald-50 text-emerald-600' : 'bg-surface text-brand-dark shadow-card hover:bg-brand-light'
                                     }`}
                                   >
                                     <Icon icon={carted.has(rec.id) ? 'solar:cart-check-bold' : 'solar:cart-large-2-linear'} width={13} />
@@ -499,7 +499,7 @@ export default function FeedbackDrawer({ target, onClose, onPosted, onDeleted })
               )}
             </div>
 
-            <div className="border-t border-slate-100 bg-white p-4">
+            <div className="border-t border-slate-100 bg-surface p-4">
               {isMine ? (
                 <div className="rounded-2xl bg-slate-50 px-4 py-3 text-center">
                   <p className="text-[12.5px] text-slate-600">위 목록은 다른 여행자들이 남긴 참견이에요.</p>
@@ -542,7 +542,7 @@ export default function FeedbackDrawer({ target, onClose, onPosted, onDeleted })
                     </ul>
                   )}
                   <div
-                    className={`rounded-2xl border bg-white transition-colors ${
+                    className={`rounded-2xl border bg-surface transition-colors ${
                       submitting ? 'border-slate-200' : 'border-slate-200 focus-within:border-rose-400 focus-within:ring-4 focus-within:ring-rose-500/10'
                     }`}
                   >
@@ -676,7 +676,7 @@ function PlacePicker({ user, selected, onPick, onClose }) {
   const loading = tab === 'search' ? results.loading : cart.loading
 
   return (
-    <div className="nav-pop mb-2 rounded-2xl border border-rose-100 bg-white p-3 shadow-card">
+    <div className="nav-pop mb-2 rounded-2xl border border-rose-100 bg-surface p-3 shadow-card">
       <div className="flex items-center gap-2">
         <div className="flex rounded-full bg-slate-100 p-0.5 text-[11.5px] font-bold">
           {[
@@ -689,7 +689,7 @@ function PlacePicker({ user, selected, onPick, onClose }) {
               onClick={() => setTab(t.key)}
               aria-pressed={tab === t.key}
               className={`flex items-center gap-1 rounded-full px-2.5 py-1 transition-colors ${
-                tab === t.key ? 'bg-white text-rose-600 shadow-card' : 'text-slate-500 hover:text-slate-700'
+                tab === t.key ? 'bg-surface text-rose-600 shadow-card' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               <Icon icon={t.icon} width={12} />

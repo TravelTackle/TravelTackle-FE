@@ -138,7 +138,7 @@ export default function TripHeader({
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen((v) => !v)}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-icon-btn hover:shadow-icon-btn-hover"
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-surface text-slate-500 shadow-icon-btn hover:shadow-icon-btn-hover"
             aria-label="계획 전환"
             aria-expanded={menuOpen}
           >
@@ -146,7 +146,7 @@ export default function TripHeader({
           </button>
 
           {menuOpen && (
-            <div className="absolute left-0 top-full z-30 mt-2 w-96 rounded-2xl border border-slate-100 bg-white py-1.5 shadow-popup">
+            <div className="absolute left-0 top-full z-30 mt-2 w-96 rounded-2xl border border-slate-100 bg-surface py-1.5 shadow-popup">
               {orderedTrips.map((t) => (
                 <div
                   key={t.id}
@@ -224,7 +224,7 @@ export default function TripHeader({
               {trip.title}
             </span>
             {!titleHover && titleOverflow > 0 && (
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center bg-gradient-to-l from-white from-40% to-white/0 pl-4">
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center bg-gradient-to-l from-surface from-40% to-white/0 pl-4">
                 <span className="text-[19px] font-extrabold text-slate-400">...</span>
               </div>
             )}
@@ -285,11 +285,11 @@ export default function TripHeader({
 
           {showPublishHint && (
             <div
-              className={`absolute left-0 top-full z-30 mt-2 flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-slate-900/90 px-3 py-2 text-[11.5px] font-semibold text-white shadow-popup transition-opacity duration-300 ${
+              className={`absolute left-0 top-full z-30 mt-2 flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-black/90 px-3 py-2 text-[11.5px] font-semibold text-white shadow-popup transition-opacity duration-300 ${
                 publishHintVisible ? 'opacity-100' : 'opacity-0'
               }`}
             >
-              <span aria-hidden="true" className="absolute -top-1 left-4 h-2 w-2 rotate-45 bg-slate-900/90" />
+              <span aria-hidden="true" className="absolute -top-1 left-4 h-2 w-2 rotate-45 bg-black/90" />
               {publishBlocked ? `${blockedLabel}에 일정을 넣으면 전체공개할 수 있어요` : '눌러서 전체공개로 바꿔보세요'}
               <button
                 type="button"
@@ -323,7 +323,7 @@ export default function TripHeader({
           {indicator && (
             <div
               aria-hidden="true"
-              className="absolute rounded-lg bg-white shadow-[0_1px_2px_rgba(0,0,0,0.15)] transition-all duration-200 ease-out"
+              className="absolute rounded-lg bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.15)] transition-all duration-200 ease-out"
               style={{ left: indicator.left, top: indicator.top, width: indicator.width, height: indicator.height }}
             />
           )}

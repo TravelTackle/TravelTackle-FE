@@ -231,7 +231,7 @@ export default function FloatingCart() {
     <div className="pointer-events-none fixed bottom-24 right-6 z-40 flex flex-col items-end">
       <div className="pointer-events-none absolute -top-2 right-0 -translate-y-full">
         <div
-          className={`whitespace-nowrap rounded-full bg-slate-900/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
+          className={`whitespace-nowrap rounded-full bg-black/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
             notice ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0'
           }`}
         >
@@ -249,7 +249,7 @@ export default function FloatingCart() {
 
         <div
           {...dropZoneProps}
-          className="relative flex h-[min(620px,calc(100vh-200px))] w-[340px] flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-popup"
+          className="relative flex h-[min(620px,calc(100vh-200px))] w-[340px] flex-col overflow-hidden rounded-2xl border border-slate-100 bg-surface shadow-popup"
         >
           {/* 헤더 · 검색 · 칩 — 나의 여행 사이드바(TripCartPanel)와 같은 디자인 */}
           <div className="flex items-center justify-between px-4 pt-4">
@@ -287,7 +287,7 @@ export default function FloatingCart() {
                   onClick={() => scrollTabs(-1)}
                   aria-label="이전 필터"
                   tabIndex={canScrollLeft ? 0 : -1}
-                  className={`flex h-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-white text-brand shadow-card transition-all duration-300 hover:border-brand hover:bg-brand-light ${
+                  className={`flex h-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-surface text-brand shadow-card transition-all duration-300 hover:border-brand hover:bg-brand-light ${
                     canScrollLeft ? 'mr-1 w-6 border-slate-200 opacity-100' : 'w-0 border-transparent opacity-0'
                   }`}
                 >
@@ -311,7 +311,7 @@ export default function FloatingCart() {
                       type="button"
                       onClick={() => setTab(t.key)}
                       className={`shrink-0 rounded-full border px-2.5 py-1 text-[11.5px] font-bold transition-colors ${
-                        tab === t.key ? 'border-brand bg-brand text-white' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                        tab === t.key ? 'border-brand bg-brand text-white' : 'border-slate-200 bg-surface text-slate-500 hover:bg-slate-50'
                       }`}
                     >
                       {t.label}
@@ -323,7 +323,7 @@ export default function FloatingCart() {
                   onClick={() => scrollTabs(1)}
                   aria-label="다음 필터"
                   tabIndex={canScrollRight ? 0 : -1}
-                  className={`flex h-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-white text-brand shadow-card transition-all duration-300 hover:border-brand hover:bg-brand-light ${
+                  className={`flex h-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-surface text-brand shadow-card transition-all duration-300 hover:border-brand hover:bg-brand-light ${
                     canScrollRight ? 'ml-1 w-6 border-slate-200 opacity-100' : 'w-0 border-transparent opacity-0'
                   }`}
                 >
@@ -352,7 +352,7 @@ export default function FloatingCart() {
             ) : loading ? (
               <div className="flex flex-col gap-2.5" role="status" aria-label="담은 장소를 불러오는 중">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3">
+                  <div key={i} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-surface p-3">
                     <Skeleton className="h-14 w-14 shrink-0 rounded-xl" style={{ animationDelay: `${i * 120}ms` }} />
                     <div className="min-w-0 flex-1">
                       <Skeleton className="h-3.5 w-12 rounded" style={{ animationDelay: `${i * 120 + 40}ms` }} />
@@ -380,7 +380,7 @@ export default function FloatingCart() {
                   <Link
                     to="/explore"
                     onClick={() => setOpen(false)}
-                    className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-[12.5px] font-bold text-slate-700 transition-all hover:border-brand hover:text-brand"
+                    className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-surface px-4 py-2 text-[12.5px] font-bold text-slate-700 transition-all hover:border-brand hover:text-brand"
                   >
                     <Icon icon="solar:compass-linear" width={14} /> 여행지 탐색하기
                   </Link>
@@ -394,7 +394,7 @@ export default function FloatingCart() {
                     draggable
                     onDragStart={(e) => e.dataTransfer.setData('application/json', JSON.stringify(item))}
                     className={`flex cursor-grab items-center gap-3 rounded-xl border p-2.5 shadow-card transition-colors duration-700 active:cursor-grabbing ${
-                      item.contentId === justAddedId ? 'border-brand/40 bg-brand-light' : 'border-slate-100 bg-white'
+                      item.contentId === justAddedId ? 'border-brand/40 bg-brand-light' : 'border-slate-100 bg-surface'
                     }`}
                   >
                     {item.imageUrl ? (
@@ -426,7 +426,7 @@ export default function FloatingCart() {
 
           {/* 푸터 — 담은 장소로 바로 계획 만들기 */}
           {user && items.length > 0 && !loading && (
-            <div className="shrink-0 border-t border-slate-100 bg-white p-3">
+            <div className="shrink-0 border-t border-slate-100 bg-surface p-3">
               <Link
                 to="/trips"
                 onClick={() => setOpen(false)}
@@ -445,7 +445,7 @@ export default function FloatingCart() {
           {dragActive && (
             <div
               className={`pointer-events-none absolute inset-1.5 z-10 flex items-center justify-center rounded-[24px] border-2 border-dashed transition-colors ${
-                dragOver ? 'border-brand bg-brand-light/85' : 'border-brand/40 bg-white/75'
+                dragOver ? 'border-brand bg-brand-light/85' : 'border-brand/40 bg-surface/75'
               }`}
             >
               <p className="flex items-center gap-1.5 text-[13px] font-bold text-brand">
@@ -458,7 +458,7 @@ export default function FloatingCart() {
       </div>
 
       {dragActive && !open && (
-        <div className="pointer-events-none mb-2 whitespace-nowrap rounded-full bg-slate-900/90 px-3 py-1.5 text-[11.5px] font-bold text-white shadow-popup">
+        <div className="pointer-events-none mb-2 whitespace-nowrap rounded-full bg-black/90 px-3 py-1.5 text-[11.5px] font-bold text-white shadow-popup">
           여기에 놓아서 담기
         </div>
       )}
@@ -466,7 +466,7 @@ export default function FloatingCart() {
       <button
         {...dropZoneProps}
         onClick={() => setOpen((v) => !v)}
-        className={`pointer-events-auto relative flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-white bg-brand text-white shadow-float transition-all hover:scale-105 hover:bg-brand-dark hover:shadow-float-hover ${
+        className={`pointer-events-auto relative flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-surface bg-brand text-white shadow-float transition-all hover:scale-105 hover:bg-brand-dark hover:shadow-float-hover ${
           dragActive
             ? dragOver
               ? 'scale-125 shadow-float-hover ring-4 ring-brand/40'
@@ -482,7 +482,7 @@ export default function FloatingCart() {
           <Icon icon={open ? 'solar:close-circle-bold' : 'solar:cart-large-2-bold'} width={24} />
         </span>
         {user && items.length > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">
+          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-surface">
             {items.length > 99 ? '99+' : items.length}
           </span>
         )}
@@ -491,7 +491,7 @@ export default function FloatingCart() {
 
     {/* 여행지 탐색 등 다른 페이지들과 같은 화면 하단 중앙 팝업 — 담기/빼기 결과를 여기서도 알린다 */}
     <div
-      className={`fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-slate-900/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
+      className={`fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-black/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
         toast ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
       }`}
     >

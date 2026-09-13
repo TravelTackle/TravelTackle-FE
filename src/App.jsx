@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { LanguageProvider } from './i18n'
+import { ThemeProvider } from './theme'
 import ProtectedRoute from './components/ProtectedRoute'
 import HomePage from './pages/HomePage'
 import TourExplorePage from './pages/TourExplorePage'
@@ -31,6 +32,7 @@ function ScrollToTop() {
 function App() {
   return (
     <BrowserRouter>
+      <ThemeProvider>
       <LanguageProvider>
       <AuthProvider>
         <ScrollToTop />
@@ -101,6 +103,7 @@ function App() {
         </Routes>
       </AuthProvider>
       </LanguageProvider>
+      </ThemeProvider>
     </BrowserRouter>
   )
 }

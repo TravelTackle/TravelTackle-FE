@@ -34,8 +34,8 @@ const GROUPS = {
     key: 'record',
     title: '기록',
     icon: 'solar:camera-linear',
-    accent: 'text-[#0F766E]',
-    accentBg: 'bg-[#F0FDFA]',
+    accent: 'text-teal-700',
+    accentBg: 'bg-teal-50',
     filter: 'record',
     popularCaption: '반응이 많았던 기록',
     personalCaption: '취향이 비슷한 여행자의 기록',
@@ -191,7 +191,7 @@ function RankSkeleton() {
 function GroupColumn({ group, cards, loading, personal, caption: captionOverride }) {
   const caption = captionOverride ?? (personal ? group.personalCaption : group.popularCaption)
   return (
-    <div className="rounded-3xl border border-slate-100 bg-white p-3 shadow-card">
+    <div className="rounded-3xl border border-slate-100 bg-surface p-3 shadow-card">
       <div className="flex items-center justify-between gap-3 px-3 pb-2 pt-1.5">
         <div className="flex items-center gap-2.5">
           <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${group.accentBg} ${group.accent}`}>
@@ -308,7 +308,7 @@ function AiStatusBadge({ summarizing }) {
           </span>
         </>
       ) : (
-        <span className="ai-pop flex h-9 w-9 items-center justify-center rounded-full bg-white text-blue-600 shadow-card" aria-hidden="true">
+        <span className="ai-pop flex h-9 w-9 items-center justify-center rounded-full bg-surface text-blue-600 shadow-card" aria-hidden="true">
           <Icon icon="solar:check-read-linear" width={20} />
         </span>
       )}
@@ -328,7 +328,7 @@ function ModeSwitch({ mode, onChange }) {
     <div role="tablist" aria-label="모아보기 기준" className="relative grid shrink-0 grid-cols-2 rounded-full bg-white/15 p-1 ring-1 ring-white/20">
       <span
         aria-hidden="true"
-        className="mode-thumb absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-white shadow-card"
+        className="mode-thumb absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-surface shadow-card"
         style={{ transform: `translateX(${index * 100}%)` }}
       />
       {MODES.map((m) => {
@@ -448,7 +448,7 @@ export default function AiSummaryFeed({ feed }) {
   )
 
   return (
-    <section id="community" className="bg-white">
+    <section id="community" className="bg-surface">
       <Section as="div" className="py-14 sm:py-16">
         <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-blue-700 via-blue-600 to-blue-400">
           <span className="absolute left-5 top-0 bg-sky-400 text-white text-[10px] font-bold px-3 py-1.5 rounded-b-lg">모아보기</span>

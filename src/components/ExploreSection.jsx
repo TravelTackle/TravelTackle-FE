@@ -47,7 +47,7 @@ function regionKey(region) {
 
 function RegionChip({ children }) {
   return (
-    <Chip className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold bg-white/90 text-slate-700 shadow-card">
+    <Chip className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold bg-white/90 text-ink shadow-card">
       {children}
     </Chip>
   )
@@ -144,7 +144,7 @@ function SpotSkeletonGrid() {
       </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         {Array.from({ length: SPOT_COUNT }).map((_, i) => (
-          <div key={i} className="overflow-hidden rounded-2xl border border-slate-100 bg-white">
+          <div key={i} className="overflow-hidden rounded-2xl border border-slate-100 bg-surface">
             <div className="relative h-[150px]">
               <Skeleton className="absolute inset-0 rounded-none" style={{ animationDelay: `${i * 90}ms` }} />
               <Skeleton className="absolute left-2 top-2 h-5 w-10 rounded-full" style={{ animationDelay: `${i * 90 + 40}ms` }} />
@@ -216,7 +216,7 @@ function SpotCaption({ spots, user, region }) {
           className="group relative flex shrink-0 items-center gap-2 overflow-hidden rounded-full bg-brand-light py-1.5 pl-1.5 pr-4 text-[12px] font-bold text-brand transition-colors duration-300 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         >
           <span aria-hidden="true" className="absolute inset-0 origin-left scale-x-0 bg-brand transition-transform duration-300 ease-out group-hover:scale-x-100" />
-          <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-white text-brand transition-transform duration-300 group-hover:scale-110">
+          <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-surface text-brand transition-transform duration-300 group-hover:scale-110">
             <Icon icon="solar:magic-stick-3-bold" width={13} />
           </span>
           <span className="relative">취향 등록하고 맞춤 추천 받기</span>
@@ -230,7 +230,7 @@ function SkeletonGrid() {
   return (
     <div className="mt-5 grid grid-cols-2 md:grid-cols-3 gap-4" role="status" aria-label="불러오는 중">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="rounded-2xl overflow-hidden border border-slate-100 bg-white">
+        <div key={i} className="rounded-2xl overflow-hidden border border-slate-100 bg-surface">
           <div className="relative">
             <Skeleton className="h-[150px] w-full rounded-none" style={{ animationDelay: `${i * 110}ms` }} />
             <Skeleton className="absolute left-2 top-2 h-5 w-10 rounded-full" style={{ animationDelay: `${i * 110 + 40}ms` }} />
@@ -248,7 +248,7 @@ function SkeletonGrid() {
 function EmptyState({ icon, title, desc, to, cta }) {
   return (
     <div className="mt-5 flex flex-col items-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-6 py-14 text-center">
-      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-300 shadow-card">
+      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface text-slate-300 shadow-card">
         <Icon icon={icon} width={22} />
       </span>
       <p className="mt-3 text-[13.5px] font-bold text-slate-700">{title}</p>
@@ -449,7 +449,7 @@ export default function ExploreSection({ feed }) {
           className="group relative flex shrink-0 items-center gap-2 overflow-hidden rounded-full bg-brand-light py-2 pl-2 pr-4 text-[12.5px] font-bold text-brand transition-colors duration-300 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         >
           <span aria-hidden="true" className="absolute inset-0 origin-left scale-x-0 bg-brand transition-transform duration-300 ease-out group-hover:scale-x-100" />
-          <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-white text-brand transition-transform duration-300 group-hover:scale-110">
+          <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-surface text-brand transition-transform duration-300 group-hover:scale-110">
             <Icon icon={activeTab.icon} width={13} />
           </span>
           <span className="relative">{activeTab.label} 전체보기</span>
@@ -460,7 +460,7 @@ export default function ExploreSection({ feed }) {
       <div className="relative mt-6 grid grid-cols-3 rounded-full bg-slate-100 p-1" role="tablist" aria-label="탐색 콘텐츠 종류">
         <span
           aria-hidden="true"
-          className="mode-thumb pointer-events-none absolute inset-y-1 left-1 w-[calc((100%-8px)/3)] rounded-full bg-white shadow-card"
+          className="mode-thumb pointer-events-none absolute inset-y-1 left-1 w-[calc((100%-8px)/3)] rounded-full bg-surface shadow-card"
           style={{ transform: `translateX(${TABS.findIndex((t) => t.key === tab) * 100}%)` }}
         />
         {TABS.map((t) => {
@@ -500,7 +500,7 @@ export default function ExploreSection({ feed }) {
               className={`shrink-0 rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition-all duration-200 ${
                 active
                   ? 'border-brand bg-brand text-white shadow-[0_4px_12px_rgba(37,99,235,0.28)]'
-                  : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-800'
+                  : 'border-slate-200 bg-surface text-slate-500 hover:border-slate-300 hover:text-slate-800'
               }`}
             >
               {r.label}

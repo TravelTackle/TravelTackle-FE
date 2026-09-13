@@ -3,7 +3,9 @@ import { Icon } from '@iconify/react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage, LANGUAGES } from '../i18n'
+import { useTheme, THEME_MODES } from '../theme'
 import logoHorizontal from '../assets/logo-horizontal.svg'
+import logoHorizontalDark from '../assets/logo-horizontal-dark.svg' // '트레블' 글자만 밝은 색 — 다크 모드에서 검정 글자가 묻히지 않게
 import { getReceivedFeedback, dismissReceivedFeedback } from '../api/feed'
 import { updateProfile } from '../api/auth'
 import { formatDate } from '../lib/homeFormat'
@@ -23,7 +25,7 @@ const NAV = [
   },
 ]
 
-const POPOVER_BASE = 'nav-pop z-50 rounded-2xl border border-slate-100 bg-white shadow-popup ring-1 ring-black/5'
+const POPOVER_BASE = 'nav-pop z-50 rounded-2xl border border-slate-100 bg-surface shadow-popup ring-1 ring-black/5'
 const POPOVER = `${POPOVER_BASE} absolute right-0 mt-2`
 
 function initialOf(user) {
@@ -35,7 +37,7 @@ function initialOf(user) {
 export function Avatar({ user, size = 28 }) {
   return (
     <span
-      className="flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-mid font-extrabold text-white ring-2 ring-white"
+      className="flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-mid font-extrabold text-white ring-2 ring-surface"
       style={{ width: size, height: size, fontSize: size * 0.42 }}
       aria-hidden="true"
     >
@@ -123,12 +125,12 @@ function DesktopNav({ pathname }) {
   return (
     <div
       ref={trackRef}
-      className="absolute left-1/2 hidden -translate-x-1/2 md:flex items-center rounded-full bg-slate-900/[0.035] p-1"
+      className="absolute left-1/2 hidden -translate-x-1/2 md:flex items-center rounded-full bg-black/[0.035] p-1"
       onMouseLeave={() => setHover(null)}
     >
       <span
         aria-hidden="true"
-        className={`nav-pill pointer-events-none absolute top-1 h-[calc(100%-8px)] rounded-full bg-white shadow-card ${
+        className={`nav-pill pointer-events-none absolute top-1 h-[calc(100%-8px)] rounded-full bg-surface shadow-card ${
           pill.visible ? 'opacity-100' : 'opacity-0'
         }`}
         style={{ transform: `translateX(${pill.left}px)`, width: pill.width, left: 0 }}
@@ -181,7 +183,7 @@ function DesktopNav({ pathname }) {
                   style={{ transformOrigin: 'top center' }}
                 >
                   {/* 패딩은 여기(바깥 래퍼)에 — 안쪽 ul은 패딩 0이라 top:0이 li가 시작하는 위치와 정확히 같다 */}
-                  <div className="w-36 rounded-2xl bg-white/90 p-1.5 backdrop-blur-sm">
+                  <div className="w-36 rounded-2xl bg-surface/90 p-1.5 backdrop-blur-sm">
                     <ul role="menu" className="relative flex flex-col gap-1">
                       <span
                         aria-hidden="true"
@@ -250,6 +252,7 @@ export default function Navbar() {
   const [received, setReceived] = useState({ items: [], loading: false, error: false })
   const { user, loading: authLoading, logout, setUser } = useAuth()
   const { language, setLanguage } = useLanguage()
+  const { mode: themeMode, resolved: theme, setMode: setThemeMode, toggle: toggleTheme } = useTheme()
   const profileRef = useRef(null)
   const location = useLocation()
   const navigate = useNavigate()
@@ -349,17 +352,17 @@ export default function Navbar() {
   const iconButton =
     'flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-900/5 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand'
   const pillButton =
-    'flex h-9 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-[12.5px] font-bold text-slate-700 transition-all hover:border-slate-300 hover:shadow-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand'
+    'flex h-9 items-center gap-1.5 rounded-full border border-slate-200 bg-surface px-3 text-[12.5px] font-bold text-slate-700 transition-all hover:border-slate-300 hover:shadow-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand'
 
   return (
     <nav
       className={`sticky top-0 z-40 border-b backdrop-blur-md transition-[background-color,box-shadow,border-color] duration-300 ${
-        scrolled ? 'border-slate-200/80 bg-white/90 shadow-[0_8px_24px_rgba(15,23,42,0.06)]' : 'border-transparent bg-[#F4F7FA]/85'
+        scrolled ? 'border-slate-200/80 bg-surface/90 shadow-[0_8px_24px_rgba(15,23,42,0.06)]' : 'border-transparent bg-slate-50/85'
       }`}
     >
       <div className="relative mx-auto flex h-16 max-w-[1200px] items-center gap-5 px-4 sm:px-6">
         <Link to="/" className="flex shrink-0 items-center transition-transform hover:scale-[1.02]" aria-label="트레블 참견 홈">
-          <img src={logoHorizontal} alt="트레블 참견" className="h-8 w-auto sm:h-9" />
+          <img src={theme === 'dark' ? logoHorizontalDark : logoHorizontal} alt="트레블 참견" className="h-8 w-auto sm:h-9" />
         </Link>
 
         <DesktopNav pathname={location.pathname} />
@@ -394,7 +397,7 @@ export default function Navbar() {
                   >
                     <Icon icon={unreadTotal > 0 ? 'solar:bell-bing-bold' : 'solar:bell-linear'} width={20} />
                     {unreadTotal > 0 && (
-                      <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9.5px] font-bold text-white ring-2 ring-white">
+                      <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9.5px] font-bold text-white ring-2 ring-surface">
                         {unreadTotal > 99 ? '99+' : unreadTotal}
                       </span>
                     )}
@@ -474,6 +477,19 @@ export default function Navbar() {
                   )}
                 </div>
               )}
+
+              {/* 라이트/다크 전환 — 지금 보이는 모드의 반대편 아이콘(다크면 해, 라이트면 달). 시스템 따라가기는 모바일 시트에서 */}
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className={`${iconButton} hidden sm:flex`}
+                aria-label={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
+                title={themeMode === 'system' ? '시스템 설정을 따르는 중' : undefined}
+              >
+                <span key={theme} className="ai-pop flex">
+                  <Icon icon={theme === 'dark' ? 'solar:sun-2-linear' : 'solar:moon-linear'} width={19} />
+                </span>
+              </button>
 
               <div className="relative hidden sm:block" ref={langRef}>
                 <button
@@ -618,7 +634,7 @@ export default function Navbar() {
 
       {/* 모바일 시트 */}
       {menuOpen && (
-        <div className="nav-sheet border-t border-slate-100 bg-white px-4 pb-4 pt-2 md:hidden">
+        <div className="nav-sheet border-t border-slate-100 bg-surface px-4 pb-4 pt-2 md:hidden">
           <div className="flex flex-col">
             {NAV.flatMap((n) => (n.children ? n.children : [n])).map((n) => {
               const active = location.pathname === n.to
@@ -632,7 +648,7 @@ export default function Navbar() {
                     active ? 'bg-brand-light text-brand' : 'text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${active ? 'bg-white text-brand' : 'bg-slate-100 text-slate-500'}`}>
+                  <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${active ? 'bg-surface text-brand' : 'bg-slate-100 text-slate-500'}`}>
                     <Icon icon={n.icon} width={16} />
                   </span>
                   {n.label}
@@ -640,6 +656,33 @@ export default function Navbar() {
                 </Link>
               )
             })}
+          </div>
+
+          {/* 화면 모드 — 라이트 / 다크 / 시스템. 데스크톱 토글은 sm 미만에서 숨겨지므로 여기서 고른다 */}
+          <div className="mt-3 border-t border-slate-100 pt-3">
+            <p className="flex items-center gap-1.5 px-3 text-[12px] font-bold text-slate-400">
+              <Icon icon="solar:pallete-2-linear" width={14} /> 화면 모드
+            </p>
+            <div className="mt-2 flex gap-1.5 px-3" role="radiogroup" aria-label="화면 모드">
+              {THEME_MODES.map((m) => {
+                const active = themeMode === m.key
+                return (
+                  <button
+                    key={m.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setThemeMode(m.key)}
+                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+                      active ? 'border-brand bg-brand-light font-bold text-brand' : 'border-slate-200 bg-surface text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <Icon icon={m.icon} width={14} />
+                    {m.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* 데스크톱 선택기가 sm 미만에서 숨겨지므로 모바일에서는 여기서 언어를 바꾼다 */}
@@ -660,7 +703,7 @@ export default function Navbar() {
                       setMenuOpen(false)
                     }}
                     className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-                      active ? 'border-brand bg-brand-light font-bold text-brand' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                      active ? 'border-brand bg-brand-light font-bold text-brand' : 'border-slate-200 bg-surface text-slate-600 hover:bg-slate-50'
                     }`}
                   >
                     {lang.label}

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import Section from './ui/Section'
 import Skeleton from './ui/Skeleton'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../theme'
 
 const STEPS = [
   {
@@ -12,6 +13,7 @@ const STEPS = [
     desc: '관심 지역과 취향을 고르면 날짜별 일정을 쉽게 만들 수 있어요.',
     icon: 'solar:map-linear',
     bg: 'linear-gradient(135deg,#EFF6FF,#DBEAFE)',
+    bgDark: 'linear-gradient(135deg,#14213d,#1b2f5e)',
     color: '#2563EB',
     cta: { label: '여행 계획 시작하기', to: '/trips', guestLabel: '로그인하고 계획 시작하기', guestTo: '/login' },
   },
@@ -21,6 +23,7 @@ const STEPS = [
     desc: '현지인과 여행 고수의 솔직한 참견으로 일정을 더 탄탄하게 다듬어요.',
     icon: 'solar:chat-round-dots-linear',
     bg: 'linear-gradient(135deg,#EEF2FF,#E0E7FF)',
+    bgDark: 'linear-gradient(135deg,#171d3f,#232a63)',
     color: '#4F46E5',
     cta: { label: '여행자 피드 보기', to: '/feed' },
   },
@@ -30,6 +33,7 @@ const STEPS = [
     desc: '검증된 코스로 여행을 떠나고, 기록으로 남겨 다음 여행자에게 이어줘요.',
     icon: 'solar:check-circle-linear',
     bg: 'linear-gradient(135deg,#ECFDF5,#D1FAE5)',
+    bgDark: 'linear-gradient(135deg,#0f2a24,#134036)',
     color: '#0F766E',
     cta: { label: '여행지 탐색하기', to: '/explore' },
   },
@@ -61,11 +65,11 @@ function SlideCta({ to, label, icon, color }) {
     <Link
       to={to}
       style={{ color, '--cta-ring': `${color}55` }}
-      className="group cta-pulse relative mt-6 inline-flex w-fit items-center gap-2.5 overflow-hidden rounded-full border border-white bg-white/85 py-2 pl-2 pr-5 text-[13.5px] font-bold shadow-card backdrop-blur transition-all duration-200 hover:-translate-y-px hover:bg-white hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+      className="group cta-pulse relative mt-6 inline-flex w-fit items-center gap-2.5 overflow-hidden rounded-full border border-surface bg-white/85 py-2 pl-2 pr-5 text-[13.5px] font-bold shadow-card backdrop-blur transition-all duration-200 hover:-translate-y-px hover:bg-surface hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
     >
       <span
         aria-hidden="true"
-        className="cta-shine pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white to-transparent opacity-80"
+        className="cta-shine pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-surface to-transparent opacity-80"
       />
       <span
         className="flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-110"
@@ -93,12 +97,13 @@ function SlideSkeleton() {
 
 // 양옆 미리보기 카드 — 눌러서 그 단계로 바로 이동
 function SideCard({ step, onClick, label }) {
+  const dark = useTheme().resolved === 'dark'
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={`${label}: ${step.title}`}
-      style={{ background: step.bg }}
+      style={{ background: dark ? step.bgDark : step.bg }}
       className="hidden lg:flex w-[190px] xl:w-[220px] h-[240px] shrink-0 flex-col items-center justify-center rounded-2xl border border-slate-100 px-6 text-center opacity-60 transition-all duration-300 hover:opacity-100 hover:-translate-y-0.5 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
     >
       <div className="w-11 h-11 rounded-xl bg-white/80 flex items-center justify-center mb-3 shadow-sm">
@@ -112,6 +117,7 @@ function SideCard({ step, onClick, label }) {
 
 export default function HeroSlider() {
   const { user, loading: authLoading } = useAuth()
+  const dark = useTheme().resolved === 'dark' // 슬라이드 배경은 인라인 그라데이션이라 변수 뒤집기가 안 닿는다 — 다크용을 따로 고른다
   // 트랙은 [3번 복제, 1, 2, 3, 1번 복제] 순. pos는 트랙 위치(1..total이 진짜), idx는 표시용 단계 번호.
   // 3 → 1로 넘어갈 때도 복제 슬라이드로 앞으로 밀린 뒤, 전환 없이 진짜 1번으로 되돌린다.
   const [pos, setPos] = useState(1)
@@ -170,7 +176,7 @@ export default function HeroSlider() {
   const current = STEPS[idx]
 
   return (
-    <section className="bg-white">
+    <section className="bg-surface">
       <Section as="div" className="pt-8 pb-10 sm:pt-10 sm:pb-12">
         {pending ? (
           // 첫 로딩 — 제목 자리를 어절 단위 스켈레톤으로 잡아 둔다
@@ -249,7 +255,7 @@ export default function HeroSlider() {
                 <div
                   key={`${step.tag}-${i}`}
                   className="relative h-full w-full shrink-0 overflow-hidden"
-                  style={{ background: step.bg }}
+                  style={{ background: dark ? step.bgDark : step.bg }}
                   aria-hidden={i !== pos || clone}
                   inert={i !== pos || clone}
                 >
@@ -282,17 +288,17 @@ export default function HeroSlider() {
 
             <button
               onClick={() => go(-1)}
-              className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/85 hover:bg-white flex items-center justify-center shadow-sm transition-colors"
+              className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/85 hover:bg-surface flex items-center justify-center shadow-sm transition-colors"
               aria-label="이전 단계"
             >
-              <Icon icon="solar:alt-arrow-left-linear" width={19} className="text-slate-500" />
+              <Icon icon="solar:alt-arrow-left-linear" width={19} className="text-ink" />
             </button>
             <button
               onClick={() => go(1)}
-              className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/85 hover:bg-white flex items-center justify-center shadow-sm transition-colors"
+              className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/85 hover:bg-surface flex items-center justify-center shadow-sm transition-colors"
               aria-label="다음 단계"
             >
-              <Icon icon="solar:alt-arrow-right-linear" width={19} className="text-slate-500" />
+              <Icon icon="solar:alt-arrow-right-linear" width={19} className="text-ink" />
             </button>
 
             <p className="sr-only" aria-live="polite">{`${idx + 1}단계: ${current.title}`}</p>
@@ -301,11 +307,11 @@ export default function HeroSlider() {
               <span className="text-[11px] font-bold text-slate-500 tabular-nums">{idx + 1} / {total}</span>
               <button
                 onClick={() => setPlaying((value) => !value)}
-                className="w-6 h-6 rounded-full bg-white/70 hover:bg-white flex items-center justify-center transition-colors"
+                className="w-6 h-6 rounded-full bg-white/70 hover:bg-surface flex items-center justify-center transition-colors"
                 aria-label={playing ? '자동 넘김 일시정지' : '자동 넘김 재생'}
                 aria-pressed={!playing}
               >
-                <Icon icon={playing ? 'solar:pause-bold' : 'solar:play-bold'} width={9} className="text-slate-700" />
+                <Icon icon={playing ? 'solar:pause-bold' : 'solar:play-bold'} width={9} className="text-ink" />
               </button>
             </div>
           </div>

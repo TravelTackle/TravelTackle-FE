@@ -97,7 +97,7 @@ export default function TripCartPanel({ onToggle }) {
     .filter((i) => !q || i.title?.toLowerCase().includes(q) || areaName(i.areaCode).toLowerCase().includes(q))
 
   return (
-    <div className="flex max-h-[calc(100vh-160px)] w-[340px] shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-card">
+    <div className="flex max-h-[calc(100vh-160px)] w-[340px] shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-100 bg-surface shadow-card">
       <div className="flex items-center justify-between px-4 pt-4">
         <h2 className="text-[14px] font-bold text-slate-800">여행 장바구니</h2>
         <div className="flex items-center gap-2">
@@ -131,7 +131,7 @@ export default function TripCartPanel({ onToggle }) {
           onClick={() => scrollTabs(-1)}
           aria-label="이전 필터"
           tabIndex={canScrollLeft ? 0 : -1}
-          className={`flex h-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-white text-brand shadow-card transition-all duration-300 hover:border-brand hover:bg-brand-light ${
+          className={`flex h-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-surface text-brand shadow-card transition-all duration-300 hover:border-brand hover:bg-brand-light ${
             canScrollLeft ? 'mr-1 w-6 border-slate-200 opacity-100' : 'w-0 border-transparent opacity-0'
           }`}
         >
@@ -154,7 +154,7 @@ export default function TripCartPanel({ onToggle }) {
               key={t.key}
               onClick={() => setTab(t.key)}
               className={`shrink-0 rounded-full border px-2.5 py-1 text-[11.5px] font-bold transition-colors ${
-                tab === t.key ? 'border-brand bg-brand text-white' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                tab === t.key ? 'border-brand bg-brand text-white' : 'border-slate-200 bg-surface text-slate-500 hover:bg-slate-50'
               }`}
             >
               {t.label}
@@ -166,7 +166,7 @@ export default function TripCartPanel({ onToggle }) {
           onClick={() => scrollTabs(1)}
           aria-label="다음 필터"
           tabIndex={canScrollRight ? 0 : -1}
-          className={`flex h-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-white text-brand shadow-card transition-all duration-300 hover:border-brand hover:bg-brand-light ${
+          className={`flex h-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-surface text-brand shadow-card transition-all duration-300 hover:border-brand hover:bg-brand-light ${
             canScrollRight ? 'ml-1 w-6 border-slate-200 opacity-100' : 'w-0 border-transparent opacity-0'
           }`}
         >

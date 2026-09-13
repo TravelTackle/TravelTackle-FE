@@ -10,9 +10,9 @@ import { festivalStatus, formatRange, formatSpan } from '../../lib/festivalPerio
 // 상태 배지 색 — 진행 중은 초록에 살아있는 점, 예정은 흰 바탕의 브랜드 블루, 오늘 마감은 앰버, 종료는 짙은 회색
 const TONE = {
   live: 'bg-emerald-500 text-white',
-  upcoming: 'bg-white/95 text-brand-dark',
+  upcoming: 'bg-white/95 text-ink-brand',
   closing: 'bg-amber-500 text-white',
-  ended: 'bg-slate-800/80 text-white',
+  ended: 'bg-black/80 text-white',
 }
 
 export default function FestivalCard({ festival, index = 0, onOpen, onToggleCart, carted }) {
@@ -57,7 +57,7 @@ export default function FestivalCard({ festival, index = 0, onOpen, onToggleCart
       <div className="relative h-[150px] overflow-hidden">
         <CardImage src={festival.imageUrl} alt={festival.title} className="h-full w-full" imgClassName="transition-transform duration-500 ease-out group-hover:scale-[1.04]" />
         {/* 아래쪽만 살짝 어둡게 — 날짜 텍스트 가독성용, 사진 자체는 밝게 유지 */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-slate-900/45 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/45 to-transparent" />
 
         <span
           className={`absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold shadow-card ${TONE[status.tone]}`}
@@ -65,7 +65,7 @@ export default function FestivalCard({ festival, index = 0, onOpen, onToggleCart
           {status.tone === 'live' && (
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/80" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-surface" />
             </span>
           )}
           {status.label}
@@ -76,7 +76,7 @@ export default function FestivalCard({ festival, index = 0, onOpen, onToggleCart
           disabled={loading}
           aria-label={carted ? '카트에서 빼기' : '카트에 담기'}
           className={`absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full shadow-card transition-colors ${
-            carted ? 'bg-brand text-white' : 'bg-white/95 text-slate-600 hover:text-brand'
+            carted ? 'bg-brand text-white' : 'bg-white/95 text-ink hover:text-ink-brand'
           }`}
         >
           <Icon icon={carted ? 'solar:cart-check-bold' : 'solar:cart-large-2-linear'} width={16} />
@@ -106,7 +106,7 @@ export default function FestivalCard({ festival, index = 0, onOpen, onToggleCart
 export function FestivalCardSkeleton({ index = 0 }) {
   const delay = (index % 3) * 120
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white">
+    <div className="overflow-hidden rounded-2xl border border-slate-100 bg-surface">
       <div className="relative h-[150px]">
         <Skeleton className="h-full w-full rounded-none" style={{ animationDelay: `${delay}ms` }} />
         <Skeleton className="absolute top-2.5 left-2.5 h-6 w-16 rounded-full bg-white/70" style={{ animationDelay: `${delay + 40}ms` }} />

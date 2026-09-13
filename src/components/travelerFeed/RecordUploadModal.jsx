@@ -228,8 +228,8 @@ export default function RecordUploadModal({ open, onClose, onUploaded }) {
   return (
     <>
       {/* 바깥 클릭으로는 닫히지 않음 — 상단 "<" 버튼으로만 닫을 수 있음 */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
-        <div className="max-h-[90vh] w-full max-w-[520px] overflow-y-auto rounded-2xl bg-white shadow-popup">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="max-h-[90vh] w-full max-w-[520px] overflow-y-auto rounded-2xl bg-surface shadow-popup">
           {step === 'crop' ? (
             <CropStep
               imageUrl={pendingFileUrl}
@@ -305,7 +305,7 @@ export default function RecordUploadModal({ open, onClose, onUploaded }) {
                     <Icon icon="mdi:chevron-down" width={16} className={`ml-auto shrink-0 transition-transform ${planListOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {planListOpen && !plans.loading && (
-                    <ul className="absolute left-0 right-0 z-10 mt-1 max-h-56 overflow-y-auto rounded-2xl border border-slate-100 bg-white py-1.5 shadow-popup">
+                    <ul className="absolute left-0 right-0 z-10 mt-1 max-h-56 overflow-y-auto rounded-2xl border border-slate-100 bg-surface py-1.5 shadow-popup">
                       {plans.error && (
                         <li className="px-3.5 py-3 text-[12px] text-rose-500">내 여행 계획을 불러오지 못했어요.</li>
                       )}
@@ -345,7 +345,7 @@ export default function RecordUploadModal({ open, onClose, onUploaded }) {
                         type="button"
                         onClick={() => handleRemovePhoto(i)}
                         aria-label="사진 삭제"
-                        className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900/70 text-white transition-colors hover:bg-slate-900"
+                        className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white transition-colors hover:bg-black"
                       >
                         <Icon icon="mdi:close" width={12} />
                       </button>
@@ -450,7 +450,7 @@ function CropStep({
         {locked && <span className="ml-1 text-[11px] text-slate-400">(이 기록은 방향이 고정돼요)</span>}
       </div>
 
-      <div className="relative h-[360px] w-full bg-slate-900">
+      <div className="relative h-[360px] w-full bg-black">
         <Cropper
           image={imageUrl}
           crop={crop}
@@ -482,8 +482,8 @@ function CropStep({
 
 function ConfirmDiscardDialog({ onKeepEditing, onDiscard }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 p-4">
-      <div className="w-full max-w-[320px] rounded-2xl bg-white p-5 shadow-popup">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-[320px] rounded-2xl bg-surface p-5 shadow-popup">
         <h3 className="text-[15px] font-bold text-slate-900">작성 중인 내용이 있어요</h3>
         <p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-500">
           지금 나가면 작성 중인 내용이 사라져요. 정말 나가시겠어요?

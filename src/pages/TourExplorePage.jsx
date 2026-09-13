@@ -161,7 +161,7 @@ export default function TourExplorePage() {
   const hasMore = spots.length < totalCount
 
   return (
-    <div className="bg-white text-slate-900">
+    <div className="bg-surface text-slate-900">
       <Navbar />
 
       {/* 사이드바 왼쪽 끝은 탑바 로고, 카드 오른쪽 끝은 프로필 알약과 같은 선에 오도록 탑바 컨테이너(1200px, px-4 sm:px-6)와 폭을 맞춘다 */}
@@ -242,7 +242,7 @@ export default function TourExplorePage() {
       />
 
       <div
-        className={`fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-slate-900/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
+        className={`fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-black/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
           toast ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
         }`}
       >

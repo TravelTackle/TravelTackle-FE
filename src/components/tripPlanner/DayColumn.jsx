@@ -156,7 +156,7 @@ export default function DayColumn({
           </div>
           <div className="flex flex-1 flex-col items-center gap-1 py-3 text-center">
             <p className="text-[11px] text-slate-400">{day.items.length}개의 장소</p>
-            <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-300">
+            <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
               <Icon icon="solar:widget-add-linear" width={13} />
               드래그하여 장소 추가
             </p>

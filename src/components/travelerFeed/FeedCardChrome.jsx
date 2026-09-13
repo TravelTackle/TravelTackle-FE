@@ -82,7 +82,7 @@ function PublishToggle({ item }) {
           중앙에 뜨게 한다 */}
       {toast &&
         createPortal(
-          <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-900/90 px-4 py-2.5 text-[12.5px] font-semibold text-white shadow-popup">
+          <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/90 px-4 py-2.5 text-[12.5px] font-semibold text-white shadow-popup">
             {toast}
           </div>,
           document.body,

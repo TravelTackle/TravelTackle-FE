@@ -129,7 +129,7 @@ export default function RegionRankPanel({ monthly, chips, loading, active, onSel
               onClick={() => onSelect(null)}
               aria-pressed={!active}
               className={`rounded-full border px-3 py-1 text-[11.5px] font-bold transition-all ${
-                !active ? 'border-brand bg-brand text-white' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                !active ? 'border-brand bg-brand text-white' : 'border-slate-200 bg-surface text-slate-500 hover:bg-slate-50'
               }`}
             >
               전체
@@ -195,7 +195,7 @@ function RegionChip({ region, count, rank, active, onSelect, small = false }) {
       aria-pressed={active}
       className={`flex shrink-0 items-center gap-1 rounded-full border font-bold transition-all ${
         small ? 'px-3 py-1 text-[11.5px]' : 'px-3.5 py-1.5 text-[12px]'
-      } ${active ? 'border-brand bg-brand text-white' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}
+      } ${active ? 'border-brand bg-brand text-white' : 'border-slate-200 bg-surface text-slate-500 hover:bg-slate-50'}`}
     >
       {rank && (
         <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[9.5px] font-extrabold ${RANK_STYLE[rank - 1]}`}>{rank}</span>

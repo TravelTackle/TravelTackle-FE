@@ -4,7 +4,7 @@ import Skeleton from '../ui/Skeleton'
 import { PERIOD_PRESETS, formatRange } from '../../lib/festivalPeriod'
 
 const INPUT =
-  'h-8 rounded-lg border border-slate-200 bg-white px-2 text-[12px] text-slate-700 outline-none transition-colors [color-scheme:light] hover:border-brand/40 focus:border-brand'
+  'h-8 rounded-lg border border-slate-200 bg-surface px-2 text-[12px] text-slate-700 outline-none transition-colors hover:border-brand/40 focus:border-brand'
 
 // 첫 진입에만 스켈레톤 → 드러나기 모션을 재생한다. 같은 세션에서 테마를 오갈 때 매번 반복되면 새로고침처럼 느껴진다.
 let revealedOnce = false
@@ -84,7 +84,7 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
 
   if (!revealed) {
     return (
-      <div className="mb-5 flex h-[54px] items-center gap-4 rounded-2xl border border-slate-100 bg-white px-4 shadow-card" role="status" aria-label="축제·행사 기간 필터를 준비하는 중">
+      <div className="mb-5 flex h-[54px] items-center gap-4 rounded-2xl border border-slate-100 bg-surface px-4 shadow-card" role="status" aria-label="축제·행사 기간 필터를 준비하는 중">
         <div className="flex min-w-0 items-center gap-2.5">
           <Skeleton className="h-4 w-20" />
           <Skeleton className="h-3 w-28" style={{ animationDelay: '80ms' }} />
@@ -100,7 +100,7 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
   }
 
   return (
-    <div className="relative mb-5 flex flex-wrap items-center gap-x-4 gap-y-2.5 rounded-2xl border border-slate-100 bg-white px-4 py-2.5 shadow-card">
+    <div className="relative mb-5 flex flex-wrap items-center gap-x-4 gap-y-2.5 rounded-2xl border border-slate-100 bg-surface px-4 py-2.5 shadow-card">
       {/* 제목 · 기간 · 결과 수 */}
       <div className="flex min-w-0 items-baseline gap-2.5">
         <h2 className="flex shrink-0 gap-x-[0.22em] text-[15px] font-bold text-slate-900">
@@ -138,7 +138,7 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
       >
         <span
           aria-hidden="true"
-          className="mode-thumb pointer-events-none absolute inset-y-1 left-0 rounded-full bg-white shadow-card"
+          className="mode-thumb pointer-events-none absolute inset-y-1 left-0 rounded-full bg-surface shadow-card"
           style={{
             width: thumb ? thumb.w : 0,
             transform: `translateX(${thumb ? thumb.x : 0}px) scale(${thumb ? 1 : 0.6})`,
@@ -182,7 +182,7 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
               ? 'border-brand bg-brand text-white'
               : customOpen
                 ? 'border-brand bg-brand-light text-brand-dark'
-                : 'border-slate-200 bg-white text-slate-600 hover:border-brand/40 hover:text-brand-dark'
+                : 'border-slate-200 bg-surface text-slate-600 hover:border-brand/40 hover:text-brand-dark'
           }`}
         >
           <Icon icon="solar:calendar-search-linear" width={14} />
@@ -198,7 +198,7 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
           ref={popRef}
           role="dialog"
           aria-label="기간 직접 선택"
-          className="nav-pop absolute left-3 right-3 top-[calc(100%+8px)] z-30 flex flex-col gap-2 rounded-2xl border border-slate-100 bg-white p-3 text-[12px] text-slate-500 shadow-popup sm:left-auto sm:right-4 sm:flex-row sm:items-center"
+          className="nav-pop absolute left-3 right-3 top-[calc(100%+8px)] z-30 flex flex-col gap-2 rounded-2xl border border-slate-100 bg-surface p-3 text-[12px] text-slate-500 shadow-popup sm:left-auto sm:right-4 sm:flex-row sm:items-center"
         >
           <label className="flex items-center justify-between gap-3 sm:justify-start sm:gap-1.5">
             <span className="shrink-0 font-semibold text-slate-400">시작</span>

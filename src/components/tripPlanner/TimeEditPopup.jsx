@@ -24,7 +24,7 @@ export default function TimeEditPopup({ startTime, endTime, onSave, onClose }) {
   return (
     <div
       ref={ref}
-      className="absolute left-0 top-full z-20 mt-1.5 w-56 rounded-xl border border-slate-100 bg-white p-3 shadow-popup"
+      className="absolute left-0 top-full z-20 mt-1.5 w-56 rounded-xl border border-slate-100 bg-surface p-3 shadow-popup"
       onClick={(e) => e.stopPropagation()}
     >
       <form onSubmit={handleSave} className="flex flex-col gap-2.5">

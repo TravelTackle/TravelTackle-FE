@@ -126,7 +126,7 @@ function LanguageDropdown({ onPersist }) {
         <Icon icon="solar:alt-arrow-down-linear" width={11} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="nav-pop absolute left-0 top-full z-30 mt-1.5 max-h-64 w-36 overflow-y-auto rounded-xl border border-slate-100 bg-white py-1 shadow-popup">
+        <div className="nav-pop absolute left-0 top-full z-30 mt-1.5 max-h-64 w-36 overflow-y-auto rounded-xl border border-slate-100 bg-surface py-1 shadow-popup">
           {LANGUAGES.map((l) => (
             <button
               key={l.code}
@@ -161,7 +161,7 @@ function NotifToggle({ label, checked, onChange, disabled }) {
     >
       <span
         className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border-2 transition-colors ${
-          checked && !disabled ? 'border-brand bg-brand' : 'border-slate-200 bg-white'
+          checked && !disabled ? 'border-brand bg-brand' : 'border-slate-200 bg-surface'
         }`}
       >
         {checked && !disabled && <Icon icon="solar:check-bold" width={9} color="white" />}
@@ -174,8 +174,8 @@ function NotifToggle({ label, checked, onChange, disabled }) {
 // RecordUploadModal의 확인 다이얼로그(오버레이 + 흰 카드 + 문구/버튼2개)와 동일한 패턴
 function ConfirmDialog({ title, description, confirmLabel = '끄기', confirmDisabled, onCancel, onConfirm }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 p-4">
-      <div className="w-full max-w-[320px] rounded-2xl bg-white p-5 shadow-popup">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-[320px] rounded-2xl bg-surface p-5 shadow-popup">
         <h3 className="text-[15px] font-bold text-slate-900">{title}</h3>
         <p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-500">{description}</p>
         <div className="mt-4 flex gap-2">
@@ -251,27 +251,27 @@ function PasswordInlinePanel({ open, onSaved }) {
         {/* 라벨 폭만큼 자리를 비워 SettingRow의 값 칸과 좌측을 맞춘다 */}
         <div className="flex gap-6 mb-2">
           <span className="w-24 shrink-0" aria-hidden="true" />
-          <div className="flex min-w-0 flex-1 flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-4">
+          <div className="flex min-w-0 flex-1 flex-col gap-3 rounded-2xl border border-slate-100 bg-surface p-4">
           <input
             type="password"
             value={current}
             onChange={(e) => setCurrent(e.target.value)}
             placeholder="현재 비밀번호"
-            className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-[13px] outline-none focus:border-brand"
+            className="h-10 rounded-lg border border-slate-200 bg-surface px-3 text-[13px] outline-none focus:border-brand"
           />
           <input
             type="password"
             value={next}
             onChange={(e) => setNext(e.target.value)}
             placeholder="새 비밀번호 (8자 이상)"
-            className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-[13px] outline-none focus:border-brand"
+            className="h-10 rounded-lg border border-slate-200 bg-surface px-3 text-[13px] outline-none focus:border-brand"
           />
           <input
             type="password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             placeholder="새 비밀번호 확인"
-            className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-[13px] outline-none focus:border-brand"
+            className="h-10 rounded-lg border border-slate-200 bg-surface px-3 text-[13px] outline-none focus:border-brand"
           />
           {error && <p className="text-[12px] text-rose-500">{error}</p>}
           <div className="flex justify-end">
@@ -352,7 +352,7 @@ function DeleteSummaryStep({ onCancel, onNext }) {
   const feedback = data?.feedback || []
 
   return (
-    <div className="w-full max-w-[560px] rounded-3xl bg-white p-8 shadow-popup">
+    <div className="w-full max-w-[560px] rounded-3xl bg-surface p-8 shadow-popup">
       <div className="flex justify-center">
         <MascotFlyIn />
       </div>
@@ -422,7 +422,7 @@ function DeleteSummaryStep({ onCancel, onNext }) {
         <button
           type="button"
           onClick={onNext}
-          className="flex-1 rounded-full border border-slate-200 bg-white py-2.5 text-[12.5px] font-bold text-slate-500 hover:bg-slate-50"
+          className="flex-1 rounded-full border border-slate-200 bg-surface py-2.5 text-[12.5px] font-bold text-slate-500 hover:bg-slate-50"
         >
           그래도 탈퇴할게요
         </button>
@@ -436,7 +436,7 @@ function DeleteConfirmStep({ onBack, onConfirmed, deleting, error }) {
   const matched = text === DELETE_CONFIRM_PHRASE
 
   return (
-    <div className="w-full max-w-[560px] rounded-3xl bg-white p-8 shadow-popup">
+    <div className="w-full max-w-[560px] rounded-3xl bg-surface p-8 shadow-popup">
       <h3 className="text-[15px] font-bold text-slate-900">정말 탈퇴하시겠어요?</h3>
       <p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-500 sm:whitespace-nowrap">
         탈퇴하면 내 여행 계획, 기록, 참견 내역이 모두 삭제되고 복구할 수 없어요.
@@ -494,7 +494,7 @@ function DeleteAccountModal({ onClose, onDeleted }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
       {step === 'summary' ? (
         <DeleteSummaryStep onCancel={onClose} onNext={() => setStep('confirm')} />
       ) : (
@@ -799,7 +799,7 @@ function ProfileTab({ user }) {
       )}
 
       <div
-        className={`fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-slate-900/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
+        className={`fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-black/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
           toast ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
         }`}
       >
@@ -1055,7 +1055,7 @@ export default function MyPageAccountSettings() {
   }, [])
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-slate-900">
+    <div className="flex min-h-screen flex-col bg-surface text-slate-900">
       <Navbar />
 
       {/* 토글 좌우 끝을 Navbar 컨테이너(1200px, px-4 sm:px-6)와 맞춘다 — TourExplorePage와 동일한 패턴 */}
@@ -1088,7 +1088,7 @@ export default function MyPageAccountSettings() {
         <div className="relative flex w-full items-center gap-1 rounded-xl bg-slate-100 p-1">
           <div
             aria-hidden="true"
-            className="absolute top-1 h-8 rounded-lg bg-white shadow-[0_1px_2px_rgba(0,0,0,0.15)] transition-transform duration-200 ease-out"
+            className="absolute top-1 h-8 rounded-lg bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.15)] transition-transform duration-200 ease-out"
             style={{
               width: `calc(50% - 0.25rem)`,
               transform: `translateX(calc(${SETTINGS_TABS.findIndex((t) => t.value === tab)} * (100% + 0.25rem)))`,
