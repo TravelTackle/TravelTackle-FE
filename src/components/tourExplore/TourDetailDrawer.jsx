@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '@iconify/react'
 import Button from '../ui/Button'
+import CardImage from '../ui/CardImage'
 import { getTourContentDetail } from '../../api/tour'
 
 const stripTags = (html) => (html ? html.replace(/<[^>]*>/g, '') : '')
@@ -71,11 +72,7 @@ export default function TourDetailDrawer({ contentId, onClose, onToggleCart, car
             ) : (
               <>
                 <div className="px-4">
-                  {detail.imageUrl ? (
-                    <img src={detail.imageUrl} alt={detail.title} className="h-[240px] w-full rounded-2xl object-cover" />
-                  ) : (
-                    <div className="h-[240px] w-full rounded-2xl bg-gradient-to-br from-slate-200 to-slate-300" />
-                  )}
+                  <CardImage src={detail.imageUrl} alt={detail.title} className="h-[240px] w-full overflow-hidden rounded-2xl" />
                 </div>
 
                 <div className="p-4">
