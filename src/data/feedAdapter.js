@@ -89,6 +89,8 @@ export function adaptPlanDetail(detail) {
     startDate: detail.startDate,
     endDate: detail.endDate,
     days: detail.days,
+    feedbackCount: detail.feedbackCount,
+    saveCount: detail.saveCount, // 백엔드 PR #32부터 상세에도 스크랩 수가 온다
     savedTripId: detail.savedTripId,
   })
 }
