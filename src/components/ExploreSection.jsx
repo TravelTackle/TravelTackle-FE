@@ -167,10 +167,12 @@ function RecordCard({ item }) {
 function SpotSkeletonGrid() {
   return (
     <div className="mt-5" role="status" aria-label="추천 여행지를 불러오는 중">
-      <div className="mb-3 flex items-center gap-2">
-        <Skeleton className="h-4 w-4 rounded-full" />
-        <Skeleton className="h-3.5 w-32" style={{ animationDelay: '60ms' }} />
-        <Skeleton className="h-3 w-14" style={{ animationDelay: '120ms' }} />
+      <div className="mb-4 flex items-center gap-3">
+        <Skeleton className="h-11 w-11 rounded-xl" />
+        <div>
+          <Skeleton className="h-4 w-32" style={{ animationDelay: '60ms' }} />
+          <Skeleton className="mt-1.5 h-3 w-44" style={{ animationDelay: '120ms' }} />
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
         <div className="relative col-span-2 aspect-[16/10] overflow-hidden rounded-2xl border border-slate-100 bg-white md:row-span-2 md:aspect-auto">
@@ -198,28 +200,51 @@ function SpotSkeletonGrid() {
   )
 }
 
-// 목록 위 한 줄 — 무엇을 기준으로 고른 목록인지 밝힌다. 맞춤 추천은 보라, 나머지는 브랜드색 나침반
+// 목록 위 캡션 — 왼쪽 타일이 목록의 기준을 말한다. 오늘의 추천은 달력 타일(월·일), 맞춤 추천은 보라 마법봉,
+// 지역을 골랐을 땐 지도 핀. 제목 아래 한 줄로 무엇을 골랐는지 풀어 쓴다.
 function SpotCaption({ spots, user, region }) {
   const today = new Date()
-  const daily = !spots.personal && !region.areaCode
+  const personal = spots.personal
+  const daily = !personal && !region.areaCode
+  const tile = personal
+    ? { className: 'bg-violet-50 text-violet-600', body: <Icon icon="solar:magic-stick-3-bold" width={19} /> }
+    : daily
+      ? {
+          className: 'bg-brand-light text-brand',
+          body: (
+            <>
+              <span className="text-[9.5px] font-bold leading-none opacity-70">{today.getMonth() + 1}월</span>
+              <span className="mt-0.5 text-[17px] font-extrabold leading-none tabular-nums">{today.getDate()}</span>
+            </>
+          ),
+        }
+      : { className: 'bg-slate-100 text-slate-600', body: <Icon icon="solar:map-point-bold" width={19} /> }
+  const sub = personal
+    ? `${user?.name || '회원'}님 취향에 맞춰 골랐어요`
+    : daily
+      ? `지금 둘러보기 좋은 여행지 ${SPOT_COUNT}곳`
+      : `${region.label}에서 가볼 만한 곳`
+
   return (
-    <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-      <p className={`flex items-center gap-1.5 text-[13px] font-bold ${spots.personal ? 'text-violet-600' : 'text-slate-900'}`}>
-        <Icon icon={spots.personal ? 'solar:magic-stick-3-bold' : 'solar:compass-bold'} width={15} className={spots.personal ? '' : 'text-brand'} />
-        {spots.title}
-        {daily && (
-          <span className="font-semibold text-slate-400">
-            {today.getMonth() + 1}월 {today.getDate()}일
-          </span>
-        )}
-      </p>
-      {spots.personal ? (
-        <span className="text-[12px] text-slate-400">{user?.name || '회원'}님 취향에 맞춰 골랐어요</span>
-      ) : daily && user ? (
-        <Link to="/onboarding/preferences" className="text-[12px] font-semibold text-brand underline underline-offset-2 transition-colors hover:text-brand-dark">
-          취향을 등록하면 맞춤 추천을 받을 수 있어요
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+      <div className="flex min-w-0 items-center gap-3">
+        <span aria-hidden="true" className={`flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl ${tile.className}`}>
+          {tile.body}
+        </span>
+        <div className="min-w-0">
+          <h3 className={`truncate text-[15px] font-extrabold leading-tight ${personal ? 'text-violet-700' : 'text-slate-900'}`}>{spots.title}</h3>
+          <p className="mt-0.5 truncate text-[12px] text-slate-500">{sub}</p>
+        </div>
+      </div>
+      {daily && user && (
+        <Link
+          to="/onboarding/preferences"
+          className="group flex shrink-0 items-center gap-1 rounded-full border border-brand/20 bg-white px-3 py-1.5 text-[12px] font-bold text-brand transition-colors hover:border-brand hover:bg-brand-light"
+        >
+          취향 등록하고 맞춤 추천 받기
+          <Icon icon="solar:arrow-right-linear" width={13} className="transition-transform group-hover:translate-x-0.5" />
         </Link>
-      ) : null}
+      )}
     </div>
   )
 }
