@@ -13,6 +13,7 @@ import { getTourContents, getTourFestivals } from '../api/tour'
 import { CART_CHANGED_EVENT, addCartItem, getCartItems, removeCartItem } from '../api/cart'
 import { PAGE_SIZE, toLDongRegnCd } from '../data/tourSpots'
 import { DEFAULT_PRESET, presetRange } from '../lib/festivalPeriod'
+import { shuffle } from '../lib/shuffle'
 
 // 축제·행사 테마의 기간 상태 — 프리셋 키와 그로부터 계산된 start/end("YYYY-MM-DD", end는 null 가능)
 function initialPeriod() {
@@ -80,11 +81,12 @@ export default function TourExplorePage() {
           sigunguCode: sigungu?.code,
           page: pageNum,
           size: PAGE_SIZE,
-          arrange: 'O', // 제목순 + 대표이미지 있는 콘텐츠만 (이미지 없는 관광지 제외)
+          arrange: 'R', // 최신 등록순 + 대표이미지 있는 콘텐츠만 (이미지 없는 관광지 제외)
         })
     return request
       .then((data) => {
-        setSpots((prev) => (append ? [...prev, ...(data.items || [])] : data.items || []))
+        // 새로 받아온 배치만 섞는다 — 이미 붙어있는 이전 페이지 순서는 건드리지 않는다
+        setSpots((prev) => (append ? [...prev, ...shuffle(data.items || [])] : shuffle(data.items || [])))
         setTotalCount(data.totalCount || 0)
         setPage(data.page || pageNum)
       })

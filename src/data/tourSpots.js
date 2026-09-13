@@ -33,7 +33,7 @@ export const FALLBACK_AREAS = [
 ]
 
 export const REGIONS_VISIBLE_COUNT = 6
-export const PAGE_SIZE = 9
+export const PAGE_SIZE = 12
 
 // 인기 여행지 순 정렬 기준 (한국관광 데이터랩·국민여행조사 등 국내여행 선호도 통계 참고)
 // 제주 > 서울 > 부산 > 강원 > 경기 > 경북 > 전남 > 인천 > 대전 > 대구 > 충북 > 전북 > 충남 > 경남 > 광주 > 울산 > 세종
