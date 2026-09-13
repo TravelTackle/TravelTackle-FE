@@ -694,7 +694,8 @@ function ProfileTab({ user }) {
         </SettingRow>
 
         <SettingRow label="이메일">
-          <span className="text-[13px] text-slate-500">{user?.email || 'test1234@example.com'}</span>
+          {/* 목업 더미 텍스트("test1234@example.com") 대신 값이 없을 때만 옅은 회색 대시로 */}
+          <span className={`text-[13px] ${user?.email ? 'text-slate-500' : 'text-slate-300'}`}>{user?.email || '—'}</span>
         </SettingRow>
 
         <SettingRow label="비밀번호">
@@ -1077,7 +1078,8 @@ export default function MyPageAccountSettings() {
             <>
               {/* Nav바 프로필과 동일하게 닉네임 첫 글자로 표시 — 별도 프로필 사진 업로드 전 기본값 */}
               <Avatar user={user} size={36} />
-              <h1 className="text-[15px] font-extrabold text-slate-900">{user?.name || 'nickname'}</h1>
+              {/* 목업 더미 텍스트("nickname") 대신 값이 없을 때만 옅은 회색 대시로 */}
+              <h1 className={`text-[15px] font-extrabold ${user?.name ? 'text-slate-900' : 'text-slate-300'}`}>{user?.name || '—'}</h1>
             </>
           )}
         </div>
