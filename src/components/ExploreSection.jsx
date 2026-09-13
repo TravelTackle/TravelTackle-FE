@@ -9,7 +9,9 @@ import { getRecommendedSpots, getTourContents } from '../api/tour'
 import { shortRegion } from '../lib/homeFormat'
 import { useAuth } from '../context/AuthContext'
 
-const PAGE_SIZE = 9
+const PAGE_SIZE = 9 // 계획·기록 탭 카드 수
+// 여행지 탭 카드 수 — 첫 장 크게(2칸×2줄) + 5장이면 데스크톱 3줄에 딱 맞고, 모바일은 마지막 장을 숨겨 큰 카드 + 4장 = 3줄
+const SPOT_COUNT = 6
 
 // "전체" 목록의 제목. 백엔드 default 섹션은 관광 API 결과를 무작위로 섞어 주는 것이라(인기 집계가 아님)
 // 서버가 붙인 제목 대신 사실에 맞는 이 문구를 쓴다. 맞춤 추천(personal)만 서버 제목을 그대로 쓴다.
@@ -161,7 +163,7 @@ function RecordCard({ item }) {
   )
 }
 
-// 여행지 탭 스켈레톤 — 실제 그리드와 같은 자리(첫 장 2칸×2줄 + 나머지 8장)를 잡아 두어 로딩이 끝나도 레이아웃이 튀지 않는다
+// 여행지 탭 스켈레톤 — 실제 그리드와 같은 자리(첫 장 2칸×2줄 + 나머지 5장)를 잡아 두어 로딩이 끝나도 레이아웃이 튀지 않는다
 function SpotSkeletonGrid() {
   return (
     <div className="mt-5" role="status" aria-label="추천 여행지를 불러오는 중">
@@ -179,8 +181,8 @@ function SpotSkeletonGrid() {
             <div className="mt-2 h-3 w-2/5 rounded bg-white/50" />
           </div>
         </div>
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="overflow-hidden rounded-2xl border border-slate-100 bg-white">
+        {Array.from({ length: SPOT_COUNT - 1 }).map((_, i) => (
+          <div key={i} className={`overflow-hidden rounded-2xl border border-slate-100 bg-white ${i === SPOT_COUNT - 2 ? 'max-md:hidden' : ''}`}>
             <div className="relative aspect-[4/3]">
               <Skeleton className="absolute inset-0 rounded-none" style={{ animationDelay: `${(i + 1) * 90}ms` }} />
               <Skeleton className="absolute left-2 top-2 h-5 w-10 rounded-full" style={{ animationDelay: `${(i + 1) * 90 + 40}ms` }} />
@@ -297,7 +299,7 @@ export default function ExploreSection({ feed }) {
         areaCode: region.areaCode,
         sigunguCode: region.sigunguCode,
         arrange: 'O', // 제목순 + 대표이미지 있는 콘텐츠만
-        size: PAGE_SIZE,
+        size: SPOT_COUNT,
         page: 1,
       }).then((data) => ({
         items: Array.isArray(data?.items) ? data.items : [],
@@ -309,7 +311,7 @@ export default function ExploreSection({ feed }) {
     const request = personalized
       ? getRecommendedSpots()
           .then((data) => pickRecommended(Array.isArray(data?.sections) ? data.sections : []))
-          .then((picked) => (picked ? { items: picked.items.slice(0, PAGE_SIZE), title: picked.title, personal: picked.personal } : fetchList()))
+          .then((picked) => (picked ? { items: picked.items.slice(0, SPOT_COUNT), title: picked.title, personal: picked.personal } : fetchList()))
           .catch(fetchList)
       : fetchList()
 
@@ -334,7 +336,7 @@ export default function ExploreSection({ feed }) {
       .slice(0, PAGE_SIZE)
   }, [feed.items, tab, region])
 
-  const spotItems = spots.items
+  const spotItems = spots.items.slice(0, SPOT_COUNT) // 세션 캐시에 이전 개수가 남아 있어도 6장만
   const loading = tab === 'spot' ? spots.loading : feed.loading
 
   // 제목 스켈레톤은 섹션이 처음 열릴 때 한 번만 — 탭·지역을 바꿀 땐 카드만 다시 로딩된다
@@ -372,10 +374,14 @@ export default function ExploreSection({ feed }) {
       return (
         <div key={spots.personal ? 'personal' : regionKey(region)} className="animate-slide-in mt-5">
           <SpotCaption spots={spots} user={user} region={region} />
-          {/* 첫 장은 2칸×2줄(모바일은 2칸×1줄)로 크게, 나머지 8장은 같은 크기로 — 9장이 데스크톱 4줄, 모바일 5줄에 딱 맞는다 */}
+          {/* 첫 장은 2칸×2줄(모바일은 2칸×1줄)로 크게, 나머지 5장은 같은 크기 — 데스크톱 3줄. 모바일은 마지막 장을 숨겨 3줄 */}
           <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
             {spotItems.map((s, i) => (
-              <div key={s.contentId} className={`animate-slide-in ${i === 0 ? 'col-span-2 md:row-span-2' : ''}`} style={{ animationDelay: `${i * 60}ms` }}>
+              <div
+                key={s.contentId}
+                className={`animate-slide-in ${i === 0 ? 'col-span-2 md:row-span-2' : ''} ${i === SPOT_COUNT - 1 ? 'max-md:hidden' : ''}`}
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
                 <SpotCard spot={s} featured={i === 0} />
               </div>
             ))}
