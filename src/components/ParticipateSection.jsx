@@ -282,14 +282,15 @@ export default function ParticipateSection({ feed }) {
 
           {/* 오른쪽: 참견 입력 */}
           <div className="min-w-0 bg-[#F8FAFC] border border-slate-100 rounded-3xl p-4 sm:p-6 flex flex-col">
-            <div className="flex items-start justify-between gap-3">
+            {/* 모바일에선 참견·저장 묶음이 제목을 3줄로 밀어내서, sm 미만에서는 제목 아래 줄로 내린다 */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
               <div className="min-w-0">
                 <h3 className="text-[15px] font-extrabold text-slate-900">이 계획, 어떻게 생각하세요?</h3>
                 <div className="text-[11.5px] text-slate-400 mt-0.5 truncate">
                   {plan.user.nickname} · {plan.duration} · 장소 {plan.placeCount}곳
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
                 <span className="flex items-center gap-1 text-brand text-[11px] font-bold tabular-nums">
                   <Icon icon="solar:chat-round-dots-bold" width={13} /> 참견 {feedbackCount}
                 </span>
