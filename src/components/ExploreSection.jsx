@@ -12,7 +12,7 @@ import { useAuth } from '../context/AuthContext'
 const PAGE_SIZE = 9
 
 const TABS = [
-  { key: 'spot', label: '관광지 탐색', icon: 'solar:map-point-linear', moreTo: '/explore', moreLabel: '관광지 전체보기' },
+  { key: 'spot', label: '여행지 탐색', icon: 'solar:map-point-linear', moreTo: '/explore', moreLabel: '관광지 전체보기' },
   { key: 'plan', label: '계획', icon: 'solar:document-text-linear', moreTo: '/feed', moreLabel: '여행자 피드 전체보기' },
   { key: 'record', label: '기록', icon: 'solar:camera-linear', moreTo: '/feed', moreLabel: '여행자 피드 전체보기' },
 ]
@@ -29,19 +29,6 @@ const REGIONS = [
   { label: '여수', areaCode: '38', sigunguCode: '13' },
   { label: '속초', areaCode: '32', sigunguCode: '5' },
   { label: '통영', areaCode: '36', sigunguCode: '17' },
-]
-
-// 관광지 API 실패 시 폴백 (이미지 없음)
-const FALLBACK_SPOTS = [
-  { contentId: 'f1', title: '섭지코지', address: '제주 서귀포시' },
-  { contentId: 'f2', title: '황리단길', address: '경북 경주시' },
-  { contentId: 'f3', title: '흰여울문화마을', address: '부산 영도구' },
-  { contentId: 'f4', title: '안목해변', address: '강원 강릉시' },
-  { contentId: 'f5', title: '전주한옥마을', address: '전북 전주시' },
-  { contentId: 'f6', title: '남산서울타워', address: '서울 용산구' },
-  { contentId: 'f7', title: '해운대해수욕장', address: '부산 해운대구' },
-  { contentId: 'f8', title: '경복궁', address: '서울 종로구' },
-  { contentId: 'f9', title: '전주 은행로', address: '전북 전주시' },
 ]
 
 // 캐시 키 → { items, title } — 탭·페이지를 오가도 같은 지역을 다시 부르지 않는다 (세션 유지)
@@ -242,8 +229,7 @@ export default function ExploreSection({ feed }) {
       .slice(0, PAGE_SIZE)
   }, [feed.items, tab, region])
 
-  // 관광지 API가 죽었고 전체 지역일 때만 예시 카드로 채운다
-  const spotItems = spots.error && !region.areaCode ? FALLBACK_SPOTS : spots.items
+  const spotItems = spots.items
   const loading = tab === 'spot' ? spots.loading : feed.loading
 
   // 제목 스켈레톤은 섹션이 처음 열릴 때 한 번만 — 탭·지역을 바꿀 땐 카드만 다시 로딩된다
@@ -256,6 +242,17 @@ export default function ExploreSection({ feed }) {
     if (loading) return <SkeletonGrid />
 
     if (tab === 'spot') {
+      if (spots.error) {
+        return (
+          <EmptyState
+            icon="solar:cloud-cross-linear"
+            title="관광지 정보를 불러오지 못했어요"
+            desc="네트워크 상태를 확인하고 잠시 후 다시 시도해주세요."
+            to="/explore"
+            cta="여행지 탐색으로 가기"
+          />
+        )
+      }
       if (spotItems.length === 0) {
         return (
           <EmptyState

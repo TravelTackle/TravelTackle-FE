@@ -13,24 +13,6 @@ const PLACES_PER_DAY = 3
 const RECENT_FEEDBACK = 3
 const QUICK = ['동선이 좋아요 👍', '여기도 가보세요 📍', '시간이 촉박해보여요 ⏱️']
 
-// 피드를 못 불러왔을 때 보여주는 예시 계획 — id가 없어 참견은 저장되지 않는다
-const SAMPLE_PLAN = {
-  id: null,
-  title: '제주 서쪽 감성 로드',
-  user: { nickname: '예시 여행자' },
-  startDate: '2026-07-06',
-  endDate: '2026-07-09',
-  duration: '3박 4일',
-  placeCount: 7,
-  feedbackCount: 0,
-  days: [
-    { id: 'd1', day: 1, date: '2026-07-06', places: [{ name: '협재해수욕장' }, { name: '애월 카페거리' }] },
-    { id: 'd2', day: 2, date: '2026-07-07', places: [{ name: '한림공원' }, { name: '한담 해안산책로' }] },
-    { id: 'd3', day: 3, date: '2026-07-08', places: [{ name: '협재 흑돼지거리' }] },
-    { id: 'd4', day: 4, date: '2026-07-09', places: [{ name: '공항 이동' }, { name: '기념품 쇼핑' }] },
-  ],
-}
-
 function formatRange(start, end) {
   const a = formatDay(start)
   const b = formatDay(end)
@@ -123,17 +105,18 @@ export default function ParticipateSection({ feed }) {
   const [saving, setSaving] = useState(false)
   const [savedIds, setSavedIds] = useState({}) // 이 세션에서 내 여행으로 담은 계획
 
-  const plan = plans.length ? plans[planIdx % plans.length] : SAMPLE_PLAN
-  const isSample = plan === SAMPLE_PLAN
-  const days = plan.days
+  // plans가 비어있으면(진짜 없음) plan은 undefined — 아래 렌더링은 plans.length === 0일 때
+  // 빈 상태로 대체되므로, 여기서는 크래시만 안 나게 옵셔널 체이닝으로 안전하게 다룬다.
+  const plan = plans.length ? plans[planIdx % plans.length] : undefined
+  const days = plan?.days ?? []
   const canPageDays = days.length > DAYS_PER_VIEW
   const visibleDays = days.slice(dayStart, dayStart + DAYS_PER_VIEW)
-  const feedbackCount = plan.feedbackCount + (added[plan.id] ?? 0)
-  const saved = Boolean(savedIds[plan.id])
+  const feedbackCount = (plan?.feedbackCount ?? 0) + (added[plan?.id] ?? 0)
+  const saved = Boolean(plan?.id && savedIds[plan.id])
 
   // 계획이 바뀔 때마다 그 계획에 달린 최근 참견을 불러온다
   useEffect(() => {
-    if (!plan.id) {
+    if (!plan?.id) {
       setRecent({ items: [], loading: false })
       return undefined
     }
@@ -149,14 +132,10 @@ export default function ParticipateSection({ feed }) {
     return () => {
       ignore = true
     }
-  }, [plan.id])
+  }, [plan?.id])
 
   async function handleSave() {
-    if (saving || saved) return
-    if (isSample) {
-      setNotice({ tone: 'err', message: '예시 계획은 저장할 수 없어요.' })
-      return
-    }
+    if (!plan || saving || saved) return
     if (!user) {
       setNotice({ tone: 'err', message: '로그인 후 보관함에 저장할 수 있어요.', login: true })
       return
@@ -194,11 +173,7 @@ export default function ParticipateSection({ feed }) {
 
   async function submit() {
     const content = text.trim()
-    if (!content || sending) return
-    if (isSample) {
-      setNotice({ tone: 'err', message: '예시 계획이라 참견을 남길 수 없어요. 여행자 피드에서 실제 계획을 골라보세요.' })
-      return
-    }
+    if (!content || sending || !plan) return
     if (!user) {
       setNotice({ tone: 'err', message: '로그인 후 참견을 남길 수 있어요.', login: true })
       return
@@ -249,10 +224,18 @@ export default function ParticipateSection({ feed }) {
           <PanelSkeleton />
           <PanelSkeleton composer />
         </div>
+      ) : plans.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 rounded-3xl border border-slate-100 bg-[#F8FAFC] px-6 py-16 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-300 shadow-card">
+            <Icon icon="solar:chat-round-dots-linear" width={24} />
+          </span>
+          <p className="text-[14px] font-bold text-slate-600">아직 참견을 남길 수 있는 계획이 없어요</p>
+          <p className="text-[12.5px] text-slate-400">다른 여행자가 계획을 공개하면 여기서 바로 참견할 수 있어요.</p>
+        </div>
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
           {/* 왼쪽: Day별 일정 */}
-          <div key={plan.id ?? 'sample'} className="animate-slide-in bg-[#F8FAFC] border border-slate-100 rounded-3xl p-6">
+          <div key={plan.id} className="animate-slide-in bg-[#F8FAFC] border border-slate-100 rounded-3xl p-6">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-[15px] font-extrabold text-slate-900 truncate">{plan.title}</div>
@@ -416,11 +399,11 @@ export default function ParticipateSection({ feed }) {
                   </li>
                 ))}
               </ul>
-            ) : !isSample ? (
+            ) : (
               <p className="mt-4 border-t border-slate-200/70 pt-4 text-[11.5px] text-slate-400">
                 아직 참견이 없어요. 첫 번째 참견을 남겨보세요.
               </p>
-            ) : null}
+            )}
           </div>
         </div>
       )}

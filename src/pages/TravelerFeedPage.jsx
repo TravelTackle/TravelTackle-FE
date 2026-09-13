@@ -27,8 +27,6 @@ const SORT_OPTIONS = [
   { value: 'oldest', label: '오래된순' },
 ]
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
 export default function TravelerFeedPage() {
   const { user } = useAuth()
   const [realItems, setRealItems] = useState([])
@@ -203,10 +201,6 @@ export default function TravelerFeedPage() {
   const toggleSave = useCallback(async (item) => {
     const tripId = targetTripId(item)
     if (!tripId) return
-    if (!UUID_RE.test(tripId)) {
-      showToast('예시 게시물이라 스크랩할 수 없어요')
-      return
-    }
     if (!user) {
       showToast('로그인하면 내 여행으로 스크랩할 수 있어요')
       return
@@ -251,10 +245,6 @@ export default function TravelerFeedPage() {
   const openFeedback = useCallback((item) => {
     const tripId = targetTripId(item)
     if (!tripId) return
-    if (!UUID_RE.test(tripId)) {
-      showToast('예시 게시물에는 참견을 남길 수 없어요')
-      return
-    }
     // 기록에서 열면 참견 대상은 그 기록의 계획 — 제목은 목록에 있으면 계획 제목, 없으면 기록 제목을 쓴다
     const plan = item.type === 'plan' ? item : allItemsRef.current.find((i) => i.type === 'plan' && i.id === tripId)
     setFeedbackTarget({ tripId, title: plan?.title ?? item.title, ownerName: (plan ?? item).user?.nickname, ownerId: (plan ?? item).user?.id ?? null })
