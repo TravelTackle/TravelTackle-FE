@@ -183,6 +183,13 @@ export default function TravelerFeedPage() {
   const [feedbackDelta, setFeedbackDelta] = useState({})
   const [feedbackTarget, setFeedbackTarget] = useState(null)
 
+  // 검색어/정렬이 바뀌어 목록을 처음부터 다시 받으면, 그 새 목록엔 이미 최신 참견·스크랩 수가
+  // 들어있다 — 이전 화면에서 쌓아둔 낙관적 델타를 그대로 두면 서버 값 위에 또 더해져 숫자가 어긋난다.
+  useEffect(() => {
+    setSaveDelta({})
+    setFeedbackDelta({})
+  }, [searchKeyword, sortOption, reloadKey])
+
   useEffect(() => {
     if (!user) {
       setSavedIds(new Map())

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage, LANGUAGES } from '../i18n'
 import logoHorizontal from '../assets/logo-horizontal.svg'
-import { getReceivedFeedback } from '../api/feed'
+import { getReceivedFeedback, dismissReceivedFeedback } from '../api/feed'
 import { updateProfile } from '../api/auth'
 import { formatDate } from '../lib/homeFormat'
 import Skeleton from './ui/Skeleton'
@@ -252,6 +252,7 @@ export default function Navbar() {
   const { language, setLanguage } = useLanguage()
   const profileRef = useRef(null)
   const location = useLocation()
+  const navigate = useNavigate()
   const langRef = useRef(null)
   const notiRef = useRef(null)
 
@@ -267,6 +268,24 @@ export default function Navbar() {
     if (user) loadReceived()
     else setReceived({ items: [], loading: false, error: false })
   }, [user, loadReceived])
+
+  // 지우기 — 백엔드에 dismissReceivedFeedback 전용 엔드포인트를 요청해둔 상태. 아직 없을 수 있어
+  // 실패는 조용히 무시하고, 화면에서는 로컬로 즉시 제거해 지운 것처럼 보이게 한다. 엔드포인트가
+  // 붙으면 "다음 새 참견 전까지 안 돌아옴"까지 그대로 맞아떨어진다.
+  const dismissReceived = useCallback((e, tripId) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setReceived((r) => ({ ...r, items: r.items.filter((t) => t.tripId !== tripId) }))
+    dismissReceivedFeedback(tripId).catch(() => {})
+  }, [])
+
+  // 전체 지우기 — 현재 목록에 있는 트립을 한 번에 지운다(개별 지우기와 동일한 API를 트립마다 호출)
+  const dismissAllReceived = useCallback(() => {
+    const ids = received.items.map((t) => t.tripId)
+    if (ids.length === 0) return
+    setReceived((r) => ({ ...r, items: [] }))
+    ids.forEach((tripId) => dismissReceivedFeedback(tripId).catch(() => {}))
+  }, [received.items])
 
   const unreadTotal = received.items.reduce((sum, t) => sum + (t.unreadCount || 0), 0)
   const currentLang = LANGUAGES.find((l) => l.code === language) ?? LANGUAGES[0]
@@ -313,6 +332,7 @@ export default function Navbar() {
       /* 무시 */
     }
     setProfileOpen(false)
+    navigate('/')
   }
 
   // 로컬(챗봇 등에 즉시 반영)은 그대로 두고, 로그인 상태면 계정에도 저장 — 마이페이지 언어 변경과 동일한 API
@@ -384,7 +404,18 @@ export default function Navbar() {
                     <div role="dialog" aria-label="내 계획에 달린 참견" className={`${POPOVER} w-72 py-2`}>
                       <div className="flex items-center justify-between border-b border-slate-100 px-3.5 pb-2">
                         <span className="text-[12.5px] font-bold text-slate-800">내 계획에 달린 참견</span>
-                        {unreadTotal > 0 && <span className="text-[11px] font-bold text-rose-500">새 참견 {unreadTotal}</span>}
+                        <div className="flex items-center gap-2.5">
+                          {unreadTotal > 0 && <span className="text-[11px] font-bold text-rose-500">새 참견 {unreadTotal}</span>}
+                          {received.items.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={dismissAllReceived}
+                              className="text-[11px] font-semibold text-slate-400 transition-colors hover:text-slate-600"
+                            >
+                              전체 지우기
+                            </button>
+                          )}
+                        </div>
                       </div>
                       {received.loading && received.items.length === 0 ? (
                         <ul className="flex flex-col gap-2.5 px-3.5 py-3" role="status" aria-label="알림을 불러오는 중">
@@ -407,11 +438,12 @@ export default function Navbar() {
                       ) : (
                         <ul className="max-h-[320px] overflow-y-auto py-1">
                           {received.items.map((t) => (
-                            <li key={t.tripId}>
+                            <li key={t.tripId} className="group relative">
+                              {/* 마이페이지로 이동해 그 계획의 참견 탭을 바로 연다 — ?feedback=<tripId>를 MyPageSettings가 읽어 드로어를 띄운다 */}
                               <Link
-                                to="/trips"
+                                to={`/mypage?feedback=${t.tripId}`}
                                 onClick={() => setNotiOpen(false)}
-                                className="flex items-start gap-2.5 px-3.5 py-2 transition-colors hover:bg-slate-50"
+                                className="flex items-start gap-2.5 px-3.5 py-2 pr-9 transition-colors hover:bg-slate-50"
                               >
                                 <span
                                   className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${t.unreadCount > 0 ? 'bg-rose-500' : 'bg-slate-200'}`}
@@ -426,6 +458,14 @@ export default function Navbar() {
                                   </span>
                                 </span>
                               </Link>
+                              <button
+                                type="button"
+                                onClick={(e) => dismissReceived(e, t.tripId)}
+                                aria-label={`${t.tripTitle} 알림 지우기`}
+                                className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-slate-300 opacity-0 transition-all hover:bg-slate-100 hover:text-slate-500 group-hover:opacity-100 focus-visible:opacity-100"
+                              >
+                                <Icon icon="solar:close-circle-linear" width={15} />
+                              </button>
                             </li>
                           ))}
                         </ul>

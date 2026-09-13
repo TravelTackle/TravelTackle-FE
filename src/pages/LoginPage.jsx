@@ -71,7 +71,7 @@ export default function LoginPage() {
         <FormField
           label="이메일"
           type="email"
-          placeholder="test@example.com"
+          placeholder="traveler@traveltackle.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Icon } from '@iconify/react'
 import Navbar, { Avatar } from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -127,6 +127,9 @@ function MyProfileGallery({ user, authLoading, planItems, recordItems, loading, 
 export default function MyPageSettings() {
   const { user, loading: authLoading } = useAuth()
   const navigate = useNavigate()
+  // Navbar 알림에서 ?feedback=<tripId>로 들어오면 그 계획의 참견 드로어를 바로 연다
+  const [searchParams, setSearchParams] = useSearchParams()
+  const feedbackTripId = searchParams.get('feedback')
   const [feedFilter, setFeedFilter] = useState('plan')
   const [planItems, setPlanItems] = useState([])
   const [recordItems, setRecordItems] = useState([])
@@ -147,6 +150,9 @@ export default function MyPageSettings() {
         const results = await Promise.all(
           summaries.map(async (t) => {
             const [detail, record] = await Promise.all([getTripDetail(t.id).catch(() => null), getTripRecord(t.id).catch(() => null)])
+            // saveCount: 백엔드가 TripDetailResponse에 아직 안 내려주면 undefined → null로 떨어져
+            // FeedActionBar가 스크랩 수를 안 보여준다(지금과 동일). 필드가 추가되면 별도 수정 없이 뜬다.
+            const saveCount = typeof detail?.saveCount === 'number' ? detail.saveCount : null
             const plan = detail
               ? {
                   ...adaptPlanDetail({ ...detail, ownerName: user?.name, region: '' }),
@@ -154,17 +160,22 @@ export default function MyPageSettings() {
                   feedbackCount: feedbackMap.get(t.id) ?? 0,
                   // 나만보기/전체공개 토글(FeedUserHeader)이 이 값이 있을 때만 보인다 — TripDetailResponse에만 있는 필드.
                   published: detail.published,
+                  saveCount,
                 }
               : null
             const rec = record
-              ? adaptRecordDetail({
-                  id: t.id,
-                  ownerName: user?.name,
-                  region: '',
-                  record,
-                  feedbackCount: feedbackMap.get(t.id) ?? 0,
-                  savedTripId: null,
-                })
+              ? {
+                  ...adaptRecordDetail({
+                    id: t.id,
+                    ownerName: user?.name,
+                    region: '',
+                    record,
+                    feedbackCount: feedbackMap.get(t.id) ?? 0,
+                    savedTripId: null,
+                  }),
+                  // 기록도 같은 계획(트립) 소속이라 스크랩 수는 계획과 동일한 값을 쓴다
+                  saveCount,
+                }
               : null
             return { plan, rec }
           }),
@@ -172,6 +183,8 @@ export default function MyPageSettings() {
         if (ignore) return
         setPlanItems(results.map((r) => r.plan).filter(Boolean))
         setRecordItems(results.map((r) => r.rec).filter(Boolean))
+        // 방금 받아온 목록엔 이미 최신 참견 수가 들어있다 — 이전 낙관적 델타가 남아있으면 중복 가산된다.
+        setFeedbackDelta({})
       } catch {
         if (!ignore) {
           setPlanItems([])
@@ -199,6 +212,26 @@ export default function MyPageSettings() {
     const plan = item.type === 'plan' ? item : allItems.find((i) => i.type === 'plan' && i.id === tripId)
     setFeedbackTarget({ tripId, title: plan?.title ?? item.title, ownerName: user?.name, ownerId: user?.userId ?? null })
   }, [allItems, user])
+
+  // 갤러리(계획 목록)가 다 뜬 다음에 대상 계획을 찾아 — 카드를 눌러 상세를 연 것처럼 계획 상세
+  // 드로어부터 열고, 그 위에 참견 드로어를 띄운다(상세 안의 참견 버튼을 누른 것과 같은 상태).
+  // 주소는 한 번 처리했으면 지운다(안 지우면 새로고침·뒤로가기 때 다시 열림).
+  useEffect(() => {
+    if (!feedbackTripId || galleryLoading) return
+    const target = planItems.find((p) => p.id === feedbackTripId)
+    if (!target) return
+    setFeedFilter('plan')
+    setDrawerItem(target)
+    openFeedback(target)
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('feedback')
+        return next
+      },
+      { replace: true },
+    )
+  }, [feedbackTripId, galleryLoading, planItems, openFeedback, setSearchParams])
 
   // 내 계획/기록이라 스크랩은 의미가 없어(FeedActionBar가 본인 글이면 알아서 막는다) 저장 관련 값은 빈 상태로 둔다.
   const feedActions = useMemo(

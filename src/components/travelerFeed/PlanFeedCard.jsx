@@ -39,6 +39,8 @@ export function PlanCardBody({ item, headerRight }) {
     if (!el) return
     function handleWheel(e) {
       if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return
+      // 실제로 가로로 넘칠 게 없으면(장소 4개 이하 등) 그냥 통과시켜 페이지 세로 스크롤을 막지 않는다
+      if (el.scrollWidth <= el.clientWidth) return
       e.preventDefault()
       el.scrollLeft += e.deltaY
     }

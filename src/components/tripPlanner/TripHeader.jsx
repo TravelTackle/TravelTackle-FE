@@ -146,7 +146,7 @@ export default function TripHeader({
           </button>
 
           {menuOpen && (
-            <div className="absolute left-0 top-full z-30 mt-2 w-64 rounded-2xl border border-slate-100 bg-white py-1.5 shadow-popup">
+            <div className="absolute left-0 top-full z-30 mt-2 w-96 rounded-2xl border border-slate-100 bg-white py-1.5 shadow-popup">
               {orderedTrips.map((t) => (
                 <div
                   key={t.id}
@@ -197,27 +197,32 @@ export default function TripHeader({
             onChange={(e) => setTitleDraft(e.target.value)}
             onBlur={commitTitle}
             onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+            // 긴 제목은 포커스 시 브라우저가 기본으로 끝을 보여주며 스크롤한다 — 커서를 맨 앞으로 되돌려 처음부터 보이게 한다
+            onFocus={(e) => e.currentTarget.setSelectionRange(0, 0)}
             className="min-w-0 max-w-[360px] flex-1 rounded-lg border border-brand/40 px-2 py-1 text-[19px] font-extrabold text-slate-800 outline-none"
           />
         ) : (
-          <div
-            className="relative min-w-0 max-w-[265px] shrink"
+          <button
+            type="button"
+            className="relative min-w-0 max-w-[265px] shrink text-left"
             onMouseEnter={() => setTitleHover(true)}
             onMouseLeave={() => setTitleHover(false)}
+            onClick={() => {
+              setTitleDraft(trip.title)
+              setEditingTitle(true)
+            }}
           >
-            {/* 기본 상태 — 잘린 텍스트. 호버 중엔 마퀴 레이어에 자리를 내주고 자신은 숨는다(마우스를 떼면 애니메이션 없이 바로 이 자리로 복귀) */}
-            <button
+            {/* 기본 상태 — 잘린 텍스트. 호버 중엔 마퀴 레이어에 자리를 내주고 자신은 숨는다(마우스를 떼면 애니메이션 없이 바로 이 자리로 복귀).
+                클릭 핸들러는 이 바깥 버튼에 둬서, 마퀴가 도는 중(호버 중)에도 눌러서 수정할 수 있게 한다 —
+                예전엔 안쪽 텍스트 버튼에만 있어서 호버 시 그 버튼이 invisible이 되며 클릭이 아예 안 먹었다. */}
+            <span
               ref={titleRef}
-              onClick={() => {
-                setTitleDraft(trip.title)
-                setEditingTitle(true)
-              }}
-              className={`block w-full overflow-hidden whitespace-nowrap text-left text-[19px] font-extrabold text-slate-800 hover:text-brand ${
+              className={`block w-full overflow-hidden whitespace-nowrap text-[19px] font-extrabold text-slate-800 hover:text-brand ${
                 titleHover && titleOverflow > 0 ? 'invisible' : ''
               }`}
             >
               {trip.title}
-            </button>
+            </span>
             {!titleHover && titleOverflow > 0 && (
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center bg-gradient-to-l from-white from-40% to-white/0 pl-4">
                 <span className="text-[19px] font-extrabold text-slate-400">...</span>
@@ -226,7 +231,7 @@ export default function TripHeader({
 
             {/* 호버 중 — 텍스트를 이어붙여 무한 루프로 흘려보내는 마퀴 */}
             {titleHover && titleOverflow > 0 && (
-              <div className="absolute inset-0 overflow-hidden">
+              <div className="pointer-events-none absolute inset-0 overflow-hidden">
                 <div
                   className="flex w-max animate-marquee whitespace-nowrap text-[19px] font-extrabold text-brand"
                   style={{ animationDuration: `${marqueeDuration}s` }}
@@ -238,7 +243,7 @@ export default function TripHeader({
                 </div>
               </div>
             )}
-          </div>
+          </button>
         )}
         <Chip className="shrink-0 bg-brand-light px-2.5 py-1 text-[11px] font-bold text-brand">
           {formatNights(trip.startDate, trip.endDate)}
