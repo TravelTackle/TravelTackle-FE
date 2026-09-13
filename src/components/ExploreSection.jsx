@@ -202,14 +202,13 @@ function SpotCaption({ spots, user, region }) {
         // 맞춤 추천 유도 — 위 "전체보기" 알약과 같은 문법(아이콘 원 + 문구, 올리면 색이 왼쪽에서 차오름). 맞춤 추천의 보라색을 쓴다
         <Link
           to="/onboarding/preferences"
-          className="group relative flex shrink-0 items-center gap-2 overflow-hidden rounded-full border border-violet-200 bg-white py-1.5 pl-1.5 pr-3.5 text-[12px] font-bold text-violet-700 transition-colors duration-300 hover:border-violet-600 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
+          className="group relative flex shrink-0 items-center gap-2 overflow-hidden rounded-full border border-violet-200 bg-white py-1.5 pl-1.5 pr-4 text-[12px] font-bold text-violet-700 transition-colors duration-300 hover:border-violet-600 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
         >
           <span aria-hidden="true" className="absolute inset-0 origin-left scale-x-0 bg-violet-600 transition-transform duration-300 ease-out group-hover:scale-x-100" />
           <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-violet-50 text-violet-600 transition-colors duration-300 group-hover:bg-white/20 group-hover:text-white">
             <Icon icon="solar:magic-stick-3-bold" width={13} />
           </span>
           <span className="relative">취향 등록하고 맞춤 추천 받기</span>
-          <Icon icon="solar:arrow-right-linear" width={13} className="relative transition-transform duration-300 group-hover:translate-x-0.5" />
         </Link>
       )}
     </div>
