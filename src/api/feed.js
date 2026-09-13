@@ -51,6 +51,12 @@ export function getReceivedFeedback() {
   return client.get('/trips/feedback/received').then((res) => res.data)
 }
 
+// 참견 알림 지우기 — 지운 시점 이후 새 참견이 없으면 getReceivedFeedback 목록에서 숨긴다(읽음 처리 포함).
+// 백엔드에 요청해둔 엔드포인트라 아직 없을 수 있음 — 호출부에서 실패를 조용히 무시하고 로컬 제거만으로 동작한다.
+export function dismissReceivedFeedback(tripId) {
+  return client.post(`/trips/${tripId}/feedback/notifications/dismiss`)
+}
+
 // 내 선호도와 맞는 다른 사용자의 공개 계획/기록 (로그인 필요)
 export function getRecommendedTrips(limit = 20) {
   return client.get('/recommendations/trips', { params: { limit } }).then((res) => res.data)

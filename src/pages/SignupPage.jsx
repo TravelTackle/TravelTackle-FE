@@ -53,10 +53,12 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [nationality, setNationality] = useState('KR')
   // 알림 수신 동의 — 기본값은 전부 켜둠(선택 사항). 이메일 동의를 끄면 하위 항목도 같이 꺼진다.
+  // 세부 항목 패널은 체크 여부와 별개로, 왼쪽 꺽쇠를 눌러야만 펼쳐진다(기본은 접힘).
   const [notifyEmail, setNotifyEmail] = useState(true)
   const [notifyFeedback, setNotifyFeedback] = useState(true)
   const [notifyRecommend, setNotifyRecommend] = useState(true)
   const [notifyEvent, setNotifyEvent] = useState(true)
+  const [notifyDetailsOpen, setNotifyDetailsOpen] = useState(false)
 
   function toggleNotifyEmail() {
     setNotifyEmail((v) => {
@@ -324,10 +326,22 @@ export default function SignupPage() {
             </label>
 
             <div>
-              <NotifToggle label="이메일 알림 수신 동의" hint="(선택)" checked={notifyEmail} onChange={toggleNotifyEmail} />
-              <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${notifyEmail ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+              <div className="flex items-center gap-1">
+                {/* 세부 항목 펼치기 — 체크 여부와는 별개 동작. ExploreSidebar 접기·펼치기와 같은 화살표 */}
+                <button
+                  type="button"
+                  onClick={() => setNotifyDetailsOpen((v) => !v)}
+                  aria-expanded={notifyDetailsOpen}
+                  aria-label="알림 세부 항목 보기"
+                  className="flex h-4 w-4 shrink-0 items-center justify-center text-slate-400 hover:text-slate-600"
+                >
+                  <Icon icon="solar:alt-arrow-down-linear" width={11} className={`transition-transform ${notifyDetailsOpen ? 'rotate-180' : ''}`} />
+                </button>
+                <NotifToggle label="이메일 알림 수신 동의" hint="(선택)" checked={notifyEmail} onChange={toggleNotifyEmail} />
+              </div>
+              <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${notifyDetailsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                 <div className="overflow-hidden">
-                  <div className="mt-2.5 flex flex-col gap-2 border-l-2 border-slate-100 pl-3">
+                  <div className="ml-5 mt-2.5 flex flex-col gap-2 border-l-2 border-slate-100 pl-3">
                     <NotifToggle label="피드백 알림" checked={notifyFeedback} onChange={setNotifyFeedback} />
                     <NotifToggle label="여행 추천" checked={notifyRecommend} onChange={setNotifyRecommend} />
                     <NotifToggle label="이벤트" checked={notifyEvent} onChange={setNotifyEvent} />
