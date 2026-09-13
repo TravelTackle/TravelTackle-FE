@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Icon } from '@iconify/react'
 import Navbar, { Avatar } from '../components/Navbar'
@@ -11,7 +11,8 @@ import { FeedTypeFilter, FILTERS } from '../components/travelerFeed/FeedFilterBa
 import PlanFeedCard from '../components/travelerFeed/PlanFeedCard'
 import RecordFeedCard from '../components/travelerFeed/RecordFeedCard'
 import FeedDetailDrawer from '../components/travelerFeed/FeedDetailDrawer'
-import { FeedActionsProvider } from '../components/travelerFeed/FeedActionsContext'
+import FeedbackDrawer from '../components/travelerFeed/FeedbackDrawer'
+import { FeedActionsProvider, targetTripId } from '../components/travelerFeed/FeedActionsContext'
 import { useAuth } from '../context/AuthContext'
 import { getMyTrips, getTripDetail } from '../api/trip'
 import { getTripRecord } from '../api/record'
@@ -131,6 +132,8 @@ export default function MyPageSettings() {
   const [recordItems, setRecordItems] = useState([])
   const [galleryLoading, setGalleryLoading] = useState(true)
   const [drawerItem, setDrawerItem] = useState(null)
+  const [feedbackTarget, setFeedbackTarget] = useState(null)
+  const [feedbackDelta, setFeedbackDelta] = useState({})
 
   // 계획은 getMyTrips 목록마다 getTripDetail로 Day/장소까지 채우고, 기록은 트립마다
   // GET /trips/{id}/record를 개별 조회해 있는 것만 모은다 — "내 기록 전체 목록"을 한 번에 주는
@@ -189,11 +192,18 @@ export default function MyPageSettings() {
     [planItems, recordItems],
   )
 
-  // 내 계획/기록이라 스크랩은 의미가 없어(FeedActionBar가 본인 글이면 알아서 막는다) 저장 관련 값은
-  // 빈 상태로 두고, 참견 버튼은 지금은 아무 동작 없이 둔다(FeedActionsContext 기본값과 동일한 no-op).
+  // 기록에서 열면 참견 대상은 그 기록의 계획(targetTripId) — 제목은 계획 제목을 우선 쓴다
+  const openFeedback = useCallback((item) => {
+    const tripId = targetTripId(item)
+    if (!tripId) return
+    const plan = item.type === 'plan' ? item : allItems.find((i) => i.type === 'plan' && i.id === tripId)
+    setFeedbackTarget({ tripId, title: plan?.title ?? item.title, ownerName: user?.name, ownerId: user?.userId ?? null })
+  }, [allItems, user])
+
+  // 내 계획/기록이라 스크랩은 의미가 없어(FeedActionBar가 본인 글이면 알아서 막는다) 저장 관련 값은 빈 상태로 둔다.
   const feedActions = useMemo(
-    () => ({ user, savedIds: new Map(), pendingIds: new Set(), saveDelta: {}, feedbackDelta: {}, toggleSave: () => {}, openFeedback: () => {} }),
-    [user],
+    () => ({ user, savedIds: new Map(), pendingIds: new Set(), saveDelta: {}, feedbackDelta, toggleSave: () => {}, openFeedback }),
+    [user, feedbackDelta, openFeedback],
   )
 
   return (
@@ -231,6 +241,15 @@ export default function MyPageSettings() {
                 setRecordItems((list) => list.filter((r) => r.planId !== deleted.id))
               }
             }}
+          />
+
+          {/* 내 계획/기록이라 새 참견은 못 남기지만(FeedbackDrawer가 본인 글이면 알아서 막는다),
+              받은 참견 목록은 볼 수 있어야 하니 열어준다. */}
+          <FeedbackDrawer
+            target={feedbackTarget}
+            onClose={() => setFeedbackTarget(null)}
+            onPosted={(tripId) => setFeedbackDelta((d) => ({ ...d, [tripId]: (d[tripId] ?? 0) + 1 }))}
+            onDeleted={(tripId) => setFeedbackDelta((d) => ({ ...d, [tripId]: (d[tripId] ?? 0) - 1 }))}
           />
         </FeedActionsProvider>
       </Section>

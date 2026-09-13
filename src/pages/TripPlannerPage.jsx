@@ -489,7 +489,7 @@ export default function TripPlannerPage() {
           </div>
         </div>
       ) : detailError ? (
-        <Section as="main" className="flex flex-col gap-5 pb-5">
+        <Section as="main" className="flex flex-col gap-5 pt-8 pb-5">
           <div className="flex flex-col items-center gap-3 py-24 text-center">
             <Icon icon="solar:danger-triangle-bold" width={26} className="text-rose-300" />
             <p className="text-[13px] text-slate-400">계획을 불러오지 못했어요.</p>
@@ -504,7 +504,7 @@ export default function TripPlannerPage() {
         </Section>
       ) : (
         !showDetailLoading && (
-          <Section as="main" className="flex flex-col gap-5 pb-5">
+          <Section as="main" className="flex flex-col gap-5 pt-8 pb-5">
             {showEmpty ? (
               <EmptyTripState onCreate={() => setCreateModalOpen(true)} />
             ) : (
