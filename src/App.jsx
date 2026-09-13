@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { LanguageProvider } from './i18n'
 import { ThemeProvider } from './theme'
+import { NotificationProvider } from './notifications/NotificationContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import HomePage from './pages/HomePage'
 import TourExplorePage from './pages/TourExplorePage'
@@ -35,6 +36,7 @@ function App() {
       <ThemeProvider>
       <LanguageProvider>
       <AuthProvider>
+      <NotificationProvider>
         <ScrollToTop />
         <Routes>
           <Route path="/" element={<HomePage />} />
@@ -101,6 +103,7 @@ function App() {
             }
           />
         </Routes>
+      </NotificationProvider>
       </AuthProvider>
       </LanguageProvider>
       </ThemeProvider>
