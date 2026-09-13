@@ -140,8 +140,11 @@ function SpotSkeletonGrid() {
       <div className="mb-4 flex items-center gap-3">
         <Skeleton className="h-11 w-11 rounded-xl" />
         <div>
-          <Skeleton className="h-4 w-32" style={{ animationDelay: '60ms' }} />
-          <Skeleton className="mt-1.5 h-3 w-44" style={{ animationDelay: '120ms' }} />
+          <div className="flex items-center gap-1.5">
+            <Skeleton className="h-4 w-12" style={{ animationDelay: '60ms' }} />
+            <Skeleton className="h-4 w-20" style={{ animationDelay: '120ms' }} />
+          </div>
+          <Skeleton className="mt-1.5 h-3 w-44" style={{ animationDelay: '180ms' }} />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
@@ -186,6 +189,12 @@ function SpotCaption({ spots, user, region }) {
     : daily
       ? `지금 둘러보기 좋은 여행지 ${SPOT_COUNT}곳`
       : `${region.label}에서 가볼 만한 곳`
+  // 제목은 앞 어절만 브랜드색으로 — 섹션 제목("좋은 참견에서")과 같은 강조 방식
+  const words = personal
+    ? [{ text: spots.title, accent: true }]
+    : daily
+      ? [{ text: '오늘의', accent: true }, { text: '추천 여행지' }]
+      : [{ text: region.label, accent: true }, { text: '여행지' }]
 
   return (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
@@ -194,8 +203,15 @@ function SpotCaption({ spots, user, region }) {
           {tile.body}
         </span>
         <div className="min-w-0">
-          <h3 className="truncate text-[15px] font-extrabold leading-tight text-slate-900">{spots.title}</h3>
-          <p className="mt-0.5 truncate text-[12px] text-slate-500">{sub}</p>
+          {/* ai-word는 inline-block이라 어절 사이 공백이 사라진다 — 간격은 gap으로 */}
+          <h3 className="flex flex-wrap items-baseline gap-x-[0.3em] text-[15px] font-extrabold leading-tight text-slate-700">
+            {words.map((w, i) => (
+              <span key={w.text} className={`ai-word ${w.accent ? 'text-brand' : ''}`} style={{ animationDelay: `${i * 90}ms` }}>
+                {w.text}
+              </span>
+            ))}
+          </h3>
+          <p className="ai-word mt-0.5 truncate text-[12px] text-slate-500" style={{ animationDelay: `${words.length * 90}ms` }}>{sub}</p>
         </div>
       </div>
       {daily && user && (
