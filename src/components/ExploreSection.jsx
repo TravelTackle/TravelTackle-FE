@@ -10,8 +10,7 @@ import { shortRegion } from '../lib/homeFormat'
 import { useAuth } from '../context/AuthContext'
 
 const PAGE_SIZE = 9 // 계획·기록 탭 카드 수
-// 여행지 탭 카드 수 — 첫 장 크게(2칸×2줄) + 5장이면 데스크톱 3줄에 딱 맞고, 모바일은 마지막 장을 숨겨 큰 카드 + 4장 = 3줄
-const SPOT_COUNT = 6
+const SPOT_COUNT = 6 // 여행지 탭 카드 수 — 계획·기록 탭과 같은 카드 크기로 데스크톱 2줄, 모바일 3줄
 
 // "전체" 목록의 제목. 백엔드 default 섹션은 관광 API 결과를 무작위로 섞어 주는 것이라(인기 집계가 아님)
 // 서버가 붙인 제목 대신 사실에 맞는 이 문구를 쓴다. 맞춤 추천(personal)만 서버 제목을 그대로 쓴다.
@@ -53,41 +52,12 @@ function RegionChip({ children }) {
   )
 }
 
-// 여행지 카드. featured(오늘의 첫 추천)는 그리드에서 2칸×2줄을 차지하고 제목을 사진 위에 얹는다 —
-// 나머지는 사진 비율(4:3)을 고정해 화면 폭이 바뀌어도 줄 높이가 맞는다.
-function SpotCard({ spot, featured = false }) {
+// 여행지 카드 — 계획·기록 탭 카드와 같은 크기(이미지 150px + 제목·주소)라 탭을 오가도 줄 높이가 같다
+function SpotCard({ spot }) {
   const region = spot.address ? shortRegion(spot.address) : ''
-
-  if (featured) {
-    return (
-      <Card as={Link} to="/explore" shadow className="group relative block aspect-[16/10] overflow-hidden md:aspect-auto md:h-full">
-        {spot.imageUrl ? (
-          <img src={spot.imageUrl} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]" alt={spot.title} loading="lazy" />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-brand-light to-slate-200" />
-        )}
-        {/* 제목이 사진 어디에 놓여도 읽히도록 아래쪽만 어둡게 */}
-        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/25 to-transparent" />
-        {region && <RegionChip>{region}</RegionChip>}
-        <div className="absolute inset-x-0 bottom-0 p-4 md:p-5">
-          <span className="flex items-center gap-1 text-[11px] font-bold text-sky-200">
-            <Icon icon="solar:star-bold" width={11} /> 오늘의 첫 추천
-          </span>
-          <h3 className="mt-1 line-clamp-2 text-[18px] font-extrabold leading-tight text-white [text-wrap:balance] md:text-[21px]">{spot.title}</h3>
-          {spot.address && (
-            <p className="mt-1.5 flex items-center gap-1 text-[12px] text-white/75">
-              <Icon icon="solar:map-point-bold" width={12} className="shrink-0" />
-              <span className="truncate">{spot.address}</span>
-            </p>
-          )}
-        </div>
-      </Card>
-    )
-  }
-
   return (
-    <Card as={Link} to="/explore" shadow className="group block h-full overflow-hidden">
-      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+    <Card as={Link} to="/explore" shadow className="group block overflow-hidden">
+      <div className="relative h-[150px] overflow-hidden bg-slate-100">
         {spot.imageUrl ? (
           <img src={spot.imageUrl} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" alt={spot.title} loading="lazy" />
         ) : (
@@ -163,7 +133,7 @@ function RecordCard({ item }) {
   )
 }
 
-// 여행지 탭 스켈레톤 — 실제 그리드와 같은 자리(첫 장 2칸×2줄 + 나머지 5장)를 잡아 두어 로딩이 끝나도 레이아웃이 튀지 않는다
+// 여행지 탭 스켈레톤 — 캡션(타일+두 줄)과 카드 6장 자리를 실제 그리드와 똑같이 잡아 로딩이 끝나도 레이아웃이 튀지 않는다
 function SpotSkeletonGrid() {
   return (
     <div className="mt-5" role="status" aria-label="추천 여행지를 불러오는 중">
@@ -174,24 +144,16 @@ function SpotSkeletonGrid() {
           <Skeleton className="mt-1.5 h-3 w-44" style={{ animationDelay: '120ms' }} />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
-        <div className="relative col-span-2 aspect-[16/10] overflow-hidden rounded-2xl border border-slate-100 bg-white md:row-span-2 md:aspect-auto">
-          <Skeleton className="absolute inset-0 rounded-none" />
-          <div className="absolute inset-x-0 bottom-0 p-4 md:p-5">
-            <div className="h-2.5 w-20 rounded bg-white/60" />
-            <div className="mt-2 h-5 w-3/5 rounded bg-white/70" />
-            <div className="mt-2 h-3 w-2/5 rounded bg-white/50" />
-          </div>
-        </div>
-        {Array.from({ length: SPOT_COUNT - 1 }).map((_, i) => (
-          <div key={i} className={`overflow-hidden rounded-2xl border border-slate-100 bg-white ${i === SPOT_COUNT - 2 ? 'max-md:hidden' : ''}`}>
-            <div className="relative aspect-[4/3]">
-              <Skeleton className="absolute inset-0 rounded-none" style={{ animationDelay: `${(i + 1) * 90}ms` }} />
-              <Skeleton className="absolute left-2 top-2 h-5 w-10 rounded-full" style={{ animationDelay: `${(i + 1) * 90 + 40}ms` }} />
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+        {Array.from({ length: SPOT_COUNT }).map((_, i) => (
+          <div key={i} className="overflow-hidden rounded-2xl border border-slate-100 bg-white">
+            <div className="relative h-[150px]">
+              <Skeleton className="absolute inset-0 rounded-none" style={{ animationDelay: `${i * 90}ms` }} />
+              <Skeleton className="absolute left-2 top-2 h-5 w-10 rounded-full" style={{ animationDelay: `${i * 90 + 40}ms` }} />
             </div>
             <div className="p-3">
-              <Skeleton className="h-4 w-2/3" style={{ animationDelay: `${(i + 1) * 90 + 80}ms` }} />
-              <Skeleton className="mt-2 h-3 w-1/2" style={{ animationDelay: `${(i + 1) * 90 + 120}ms` }} />
+              <Skeleton className="h-4 w-2/3" style={{ animationDelay: `${i * 90 + 80}ms` }} />
+              <Skeleton className="mt-2 h-3 w-1/2" style={{ animationDelay: `${i * 90 + 120}ms` }} />
             </div>
           </div>
         ))}
@@ -399,15 +361,10 @@ export default function ExploreSection({ feed }) {
       return (
         <div key={spots.personal ? 'personal' : regionKey(region)} className="animate-slide-in mt-5">
           <SpotCaption spots={spots} user={user} region={region} />
-          {/* 첫 장은 2칸×2줄(모바일은 2칸×1줄)로 크게, 나머지 5장은 같은 크기 — 데스크톱 3줄. 모바일은 마지막 장을 숨겨 3줄 */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
             {spotItems.map((s, i) => (
-              <div
-                key={s.contentId}
-                className={`animate-slide-in ${i === 0 ? 'col-span-2 md:row-span-2' : ''} ${i === SPOT_COUNT - 1 ? 'max-md:hidden' : ''}`}
-                style={{ animationDelay: `${i * 60}ms` }}
-              >
-                <SpotCard spot={s} featured={i === 0} />
+              <div key={s.contentId} className="animate-slide-in" style={{ animationDelay: `${i * 60}ms` }}>
+                <SpotCard spot={s} />
               </div>
             ))}
           </div>
