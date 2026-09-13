@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Icon } from '@iconify/react'
 import Card from '../ui/Card'
+import CardImage from '../ui/CardImage'
 import Skeleton from '../ui/Skeleton'
 import { SPOT_DRAG_TYPE } from '../../api/cart'
 import { shortRegion } from '../../lib/homeFormat'
@@ -54,18 +55,7 @@ export default function FestivalCard({ festival, index = 0, onOpen, onToggleCart
       }`}
     >
       <div className="relative h-[150px] overflow-hidden">
-        {festival.imageUrl ? (
-          <img
-            src={festival.imageUrl}
-            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
-            alt={festival.title}
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand-light to-slate-100 text-brand/40">
-            <Icon icon="mdi:party-popper" width={34} />
-          </div>
-        )}
+        <CardImage src={festival.imageUrl} alt={festival.title} className="h-full w-full" imgClassName="transition-transform duration-500 ease-out group-hover:scale-[1.04]" />
         {/* 아래쪽만 살짝 어둡게 — 날짜 텍스트 가독성용, 사진 자체는 밝게 유지 */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-slate-900/45 to-transparent" />
 

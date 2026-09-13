@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Icon } from '@iconify/react'
 import Card from '../ui/Card'
+import CardImage from '../ui/CardImage'
 import { SPOT_DRAG_TYPE } from '../../api/cart'
 
 export default function TourCard({ spot, carted, onOpen, onToggleCart }) {
@@ -37,11 +38,7 @@ export default function TourCard({ spot, carted, onOpen, onToggleCart }) {
       }`}
     >
       <div className="relative">
-        {spot.imageUrl ? (
-          <img src={spot.imageUrl} className="h-[150px] w-full object-cover" alt={spot.title} loading="lazy" />
-        ) : (
-          <div className="h-[150px] w-full bg-gradient-to-br from-slate-200 to-slate-300" />
-        )}
+        <CardImage src={spot.imageUrl} alt={spot.title} className="h-[150px] w-full" />
         <button
           onClick={handleQuickToggle}
           disabled={loading}

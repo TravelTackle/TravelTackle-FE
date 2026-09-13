@@ -5,6 +5,7 @@ import Section from './ui/Section'
 import Card from './ui/Card'
 import Chip from './ui/Chip'
 import Skeleton from './ui/Skeleton'
+import CardImage, { ImagePlaceholder } from './ui/CardImage'
 import { getRecommendedSpots, getTourContents } from '../api/tour'
 import { shortRegion } from '../lib/homeFormat'
 import { useAuth } from '../context/AuthContext'
@@ -58,11 +59,7 @@ function SpotCard({ spot }) {
   return (
     <Card as={Link} to="/explore" shadow className="group block overflow-hidden">
       <div className="relative h-[150px] overflow-hidden bg-slate-100">
-        {spot.imageUrl ? (
-          <img src={spot.imageUrl} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" alt={spot.title} loading="lazy" />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200" />
-        )}
+        <CardImage src={spot.imageUrl} alt={spot.title} className="absolute inset-0 h-full w-full" imgClassName="transition-transform duration-500 ease-out group-hover:scale-105" />
         {region && <RegionChip>{region}</RegionChip>}
       </div>
       <div className="p-3">
@@ -88,7 +85,9 @@ function PlanCard({ item }) {
             ))}
           </div>
         ) : (
-          <div className="w-full h-[150px] bg-gradient-to-br from-blue-50 to-slate-200" />
+          <div className="h-[150px] w-full">
+            <ImagePlaceholder />
+          </div>
         )}
         {item.region && <RegionChip>{item.region}</RegionChip>}
       </div>
@@ -111,11 +110,7 @@ function RecordCard({ item }) {
   return (
     <Card as={Link} to={`/feed?open=${encodeURIComponent(item.id)}&filter=record`} className="group block overflow-hidden">
       <div className="relative overflow-hidden">
-        {item.imageUrl ? (
-          <img src={item.imageUrl} className="w-full h-[150px] object-cover bg-slate-100 transition-transform duration-500 ease-out group-hover:scale-105" alt="" loading="lazy" />
-        ) : (
-          <div className="w-full h-[150px] bg-gradient-to-br from-emerald-50 to-slate-200" />
-        )}
+        <CardImage src={item.imageUrl} className="h-[150px] w-full" imgClassName="bg-slate-100 transition-transform duration-500 ease-out group-hover:scale-105" />
         {item.region && <RegionChip>{item.region}</RegionChip>}
       </div>
       <div className="p-3">
