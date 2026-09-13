@@ -127,13 +127,14 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
       </div>
 
       {/* 프리셋 세그먼트 — 흰 썸이 선택 쪽으로 미끄러진다. 직접 선택 중엔 썸이 사라진다.
-          ai-word는 display:inline-block을 강제하므로 flex 트랙이 아니라 바깥 래퍼에 건다 */}
-      <div className="ai-word ml-auto min-w-0 max-w-full" style={{ animationDelay: '320ms' }}>
+          ai-word는 display:inline-block을 강제하므로 flex 트랙이 아니라 바깥 래퍼에 건다.
+          모바일(sm 미만)에선 둘째 줄 전체 폭으로 내려가고(order-3) 버튼이 폭을 나눠 갖는다 */}
+      <div className="ai-word order-3 w-full min-w-0 sm:order-2 sm:ml-auto sm:w-auto sm:max-w-full" style={{ animationDelay: '320ms' }}>
       <div
         ref={trackRef}
         role="tablist"
         aria-label="기간 프리셋"
-        className="relative flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full bg-slate-100 p-1 scrollbar-hide"
+        className="relative flex w-full items-center gap-0.5 overflow-x-auto rounded-full bg-slate-100 p-1 scrollbar-hide sm:w-auto sm:max-w-full"
       >
         <span
           aria-hidden="true"
@@ -157,7 +158,7 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
                 setCustomOpen(false)
                 onChange({ preset: p.key })
               }}
-              className={`relative z-10 shrink-0 rounded-full px-3 py-1.5 text-[12.5px] font-semibold whitespace-nowrap transition-colors duration-300 ${
+              className={`relative z-10 flex-1 shrink-0 rounded-full px-2 py-1.5 text-center text-[12.5px] font-semibold whitespace-nowrap transition-colors duration-300 sm:flex-none sm:px-3 ${
                 active ? 'text-brand-dark' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -168,8 +169,8 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
       </div>
       </div>
 
-      {/* 날짜 직접 선택 — 바 높이를 늘리지 않고 아래로 뜨는 팝오버 */}
-      <div className="relative z-30 ai-word" style={{ animationDelay: '380ms' }}>
+      {/* 날짜 직접 선택 — 모바일에선 제목 줄 오른쪽 끝(order-2), sm부터 세그먼트 뒤(order-3) */}
+      <div className="ai-word order-2 ml-auto sm:order-3 sm:ml-0" style={{ animationDelay: '380ms' }}>
         <button
           ref={triggerRef}
           type="button"
@@ -188,26 +189,28 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
           {isCustom ? rangeLabel : '직접 선택'}
           <Icon icon="solar:alt-arrow-down-linear" width={11} className={`transition-transform ${customOpen ? 'rotate-180' : ''}`} />
         </button>
-
-        {customOpen && (
-          <div
-            ref={popRef}
-            role="dialog"
-            aria-label="기간 직접 선택"
-            className="nav-pop absolute right-0 top-[calc(100%+8px)] z-30 flex items-center gap-2 rounded-2xl border border-slate-100 bg-surface p-3 text-[12px] text-slate-500 shadow-popup"
-          >
-            <label className="flex items-center gap-1.5">
-              <span className="font-semibold text-slate-400">시작</span>
-              <input type="date" value={period.start} onChange={(e) => setDate('start', e.target.value)} className={INPUT} />
-            </label>
-            <span className="text-slate-300">~</span>
-            <label className="flex items-center gap-1.5">
-              <span className="font-semibold text-slate-400">종료</span>
-              <input type="date" value={period.end || ''} min={period.start} onChange={(e) => setDate('end', e.target.value)} className={INPUT} />
-            </label>
-          </div>
-        )}
       </div>
+
+      {/* 팝오버 — 트리거가 아니라 바(relative)에 붙인다. 트리거 기준 right-0이면 모바일에서 트리거가 왼쪽에 있을 때
+          왼쪽 화면 밖으로 밀려 잘린다. 모바일은 바 폭에 맞춰 시작·종료를 세로로, sm부터 오른쪽 아래에 가로로 */}
+      {customOpen && (
+        <div
+          ref={popRef}
+          role="dialog"
+          aria-label="기간 직접 선택"
+          className="nav-pop absolute left-3 right-3 top-[calc(100%+8px)] z-30 flex flex-col gap-2 rounded-2xl border border-slate-100 bg-surface p-3 text-[12px] text-slate-500 shadow-popup sm:left-auto sm:right-4 sm:flex-row sm:items-center"
+        >
+          <label className="flex items-center justify-between gap-3 sm:justify-start sm:gap-1.5">
+            <span className="shrink-0 font-semibold text-slate-400">시작</span>
+            <input type="date" value={period.start} onChange={(e) => setDate('start', e.target.value)} className={`${INPUT} flex-1 sm:flex-none`} />
+          </label>
+          <span className="hidden text-slate-300 sm:inline">~</span>
+          <label className="flex items-center justify-between gap-3 sm:justify-start sm:gap-1.5">
+            <span className="shrink-0 font-semibold text-slate-400">종료</span>
+            <input type="date" value={period.end || ''} min={period.start} onChange={(e) => setDate('end', e.target.value)} className={`${INPUT} flex-1 sm:flex-none`} />
+          </label>
+        </div>
+      )}
     </div>
   )
 }

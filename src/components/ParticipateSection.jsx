@@ -42,7 +42,7 @@ function DayCard({ day }) {
 
 function PanelSkeleton({ composer }) {
   return (
-    <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6">
+    <div className="min-w-0 bg-slate-50 border border-slate-100 rounded-3xl p-4 sm:p-6">
       <Skeleton className="h-4 w-40" />
       <Skeleton className="mt-2 h-3 w-56" />
       {composer ? (
@@ -220,7 +220,7 @@ export default function ParticipateSection({ feed }) {
       </div>
 
       {feed.loading ? (
-        <div className="grid md:grid-cols-2 gap-4" role="status" aria-label="여행 계획을 불러오는 중">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4" role="status" aria-label="여행 계획을 불러오는 중">
           <PanelSkeleton />
           <PanelSkeleton composer />
         </div>
@@ -233,9 +233,10 @@ export default function ParticipateSection({ feed }) {
           <p className="text-[12.5px] text-slate-400">다른 여행자가 계획을 공개하면 여기서 바로 참견할 수 있어요.</p>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-4">
+        // grid-cols-1(minmax(0,1fr))이 없으면 모바일에서 textarea 고유 너비가 열 너비가 되어 패널이 오른쪽으로 넘친다
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* 왼쪽: Day별 일정 */}
-          <div key={plan.id} className="animate-slide-in bg-slate-50 border border-slate-100 rounded-3xl p-6">
+          <div key={plan.id} className="animate-slide-in min-w-0 bg-slate-50 border border-slate-100 rounded-3xl p-4 sm:p-6">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-[15px] font-extrabold text-slate-900 truncate">{plan.title}</div>
@@ -265,8 +266,8 @@ export default function ParticipateSection({ feed }) {
               )}
             </div>
 
-            {/* 날짜가 4일 미만이어도 빈 칸 없이 폭을 나눠 갖도록 sm 이상에서는 flex */}
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:flex">
+            {/* 날짜가 4일 미만이어도 빈 칸 없이 폭을 나눠 갖도록 sm 이상에서는 flex. 모바일 2열에서는 홀수 개(1·3일)일 때 마지막 카드가 두 칸을 차지 */}
+            <div className="mt-4 grid grid-cols-2 gap-2 max-sm:[&>*:last-child:nth-child(odd)]:col-span-2 sm:flex">
               {visibleDays.map((d) => (
                 <DayCard key={d.id ?? d.day} day={d} />
               ))}
@@ -280,15 +281,16 @@ export default function ParticipateSection({ feed }) {
           </div>
 
           {/* 오른쪽: 참견 입력 */}
-          <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 flex flex-col">
-            <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 bg-slate-50 border border-slate-100 rounded-3xl p-4 sm:p-6 flex flex-col">
+            {/* 모바일에선 참견·저장 묶음이 제목을 3줄로 밀어내서, sm 미만에서는 제목 아래 줄로 내린다 */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
               <div className="min-w-0">
                 <h3 className="text-[15px] font-extrabold text-slate-900">이 계획, 어떻게 생각하세요?</h3>
                 <div className="text-[11.5px] text-slate-400 mt-0.5 truncate">
                   {plan.user.nickname} · {plan.duration} · 장소 {plan.placeCount}곳
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
                 <span className="flex items-center gap-1 text-brand text-[11px] font-bold tabular-nums">
                   <Icon icon="solar:chat-round-dots-bold" width={13} /> 참견 {feedbackCount}
                 </span>
