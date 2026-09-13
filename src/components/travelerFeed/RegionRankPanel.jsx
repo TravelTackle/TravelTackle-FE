@@ -23,9 +23,10 @@ function countRegions(items) {
   return [...counts.entries()].map(([region, count]) => ({ region, count })).sort((a, b) => b.count - a.count)
 }
 
-// 이번 달 인기 지역 TOP 3 — GET /feed/regions?from=&to= 로 백엔드가 이번 달에 공개된 계획을
-// 첫 일정 지역별로 세어 준다(계획 수 내림차순, 동점은 지역명순). 프론트는 받은 순서를 그대로 쓰고,
-// 이번 달 계획이 없어도 다른 기간으로 대체하지 않는다. 같은 세션에서는 한 번만 조회한다.
+// 이번 달 인기 지역 TOP 3 — GET /feed/regions?from=&to= 로 백엔드가 이번 달에 공개된 계획에 담긴 지역을
+// 세어 준다. 한 계획에 여러 지역이 섞여 있으면 각 지역에 1씩, 같은 지역 일정이 여러 개여도 그 계획에서는 1번만
+// (계획 수 내림차순, 동점은 지역명순). 프론트는 받은 순서를 그대로 쓰고, 이번 달 계획이 없어도 다른 기간으로
+// 대체하지 않는다. 같은 세션에서는 한 번만 조회한다.
 let monthlyCache = null
 
 // 로컬 날짜를 YYYY-MM-DD로 — toISOString은 UTC라 KST 자정 전후에 날짜가 하루 어긋난다

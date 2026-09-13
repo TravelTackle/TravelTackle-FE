@@ -9,8 +9,9 @@ export function getFeedDetail(tripId) {
   return client.get(`/feed/${tripId}`).then((res) => res.data)
 }
 
-// 기간 내 인기 지역 집계 (비로그인 가능). 공개 계획을 첫 일정 지역별로 센 [{ region, tripCount }]가
-// 계획 수 내림차순으로 온다. from/to는 YYYY-MM-DD(계획 생성일 기준, 양끝 포함), 생략하면 무제한. size 최대 50.
+// 기간 내 인기 지역 집계 (비로그인 가능). 공개 계획에 담긴 지역별 계획 수 [{ region, tripCount }]가
+// 내림차순으로 온다 — 한 계획에 여러 지역이 있으면 각 지역에 1씩, 같은 지역은 계획당 1번만 센다.
+// from/to는 YYYY-MM-DD(계획 생성일 기준, 양끝 포함), 생략하면 무제한. size 최대 50.
 export function getFeedRegionCounts(params) {
   return client.get('/feed/regions', { params }).then((res) => res.data)
 }
