@@ -11,7 +11,7 @@ import * as authApi from '../api/auth'
 const RESEND_COOLDOWN = 60
 const CODE_EXPIRE_SECONDS = 600 // 백엔드 email-verification-expiration-minutes(10분)와 일치
 const inputClass =
-  'w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-[14px] text-slate-900 placeholder:text-slate-400 outline-none focus:border-brand transition-all disabled:bg-slate-50 disabled:text-slate-400'
+  'w-full h-12 px-4 rounded-xl border border-slate-200 bg-surface text-[14px] text-slate-900 placeholder:text-slate-400 outline-none focus:border-brand transition-all disabled:bg-slate-50 disabled:text-slate-400'
 
 // MyPageAccountSettings의 알림 설정과 같은 체크 인디케이터 — 기본 브라우저 체크박스 대신 씀
 function NotifToggle({ label, hint, checked, onChange }) {
@@ -24,7 +24,7 @@ function NotifToggle({ label, hint, checked, onChange }) {
     >
       <span
         className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border-2 transition-colors ${
-          checked ? 'border-brand bg-brand' : 'border-slate-200 bg-white'
+          checked ? 'border-brand bg-brand' : 'border-slate-200 bg-surface'
         }`}
       >
         {checked && <Icon icon="solar:check-bold" width={9} color="white" />}
@@ -315,7 +315,7 @@ export default function SignupPage() {
               <select
                 value={nationality}
                 onChange={(e) => setNationality(e.target.value)}
-                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-[14px] text-slate-900 outline-none focus:border-brand transition-all"
+                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-surface text-[14px] text-slate-900 outline-none focus:border-brand transition-all"
               >
                 {COUNTRIES.map((c) => (
                   <option key={c.code} value={c.code}>

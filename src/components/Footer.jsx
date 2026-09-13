@@ -49,7 +49,7 @@ function FooterLink({ to, className, children }) {
 function EmailPopover({ open, onClose }) {
   return (
     <div
-      className={`absolute bottom-full right-0 z-50 mb-2 w-[240px] origin-bottom-right rounded-2xl border border-slate-100 bg-white p-4 shadow-popup transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+      className={`absolute bottom-full right-0 z-50 mb-2 w-[240px] origin-bottom-right rounded-2xl border border-slate-100 bg-surface p-4 shadow-popup transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
         open ? 'pointer-events-auto translate-y-0 scale-100 opacity-100' : 'pointer-events-none translate-y-2 scale-90 opacity-0'
       }`}
     >
@@ -86,12 +86,12 @@ export default function Footer() {
   }, [])
 
   return (
-    <footer className="border-t border-slate-100 bg-[#F4F7FA]">
+    <footer className="border-t border-slate-100 bg-slate-50">
       <Section as="div" className="flex flex-col gap-9 py-9 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <img src={logoHorizontal} alt="트레블 참견" className="h-8 w-auto" />
           <p className="mt-2 text-[11.5px] text-slate-400">함께 만드는 더 좋은 여행</p>
-          <p className="mt-6 text-[10.5px] text-slate-300">© 2026 Travel Tackle. All rights reserved.</p>
+          <p className="mt-6 text-[10.5px] text-slate-400">© 2026 Travel Tackle. All rights reserved.</p>
         </div>
 
         {/* 서비스/고객지원/Contact를 한 줄(감싸지 않음)로 묶어 이 묶음 전체를 컨테이너 오른쪽 끝(카드 그리드 끝)에

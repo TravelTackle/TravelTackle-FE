@@ -93,7 +93,7 @@ export default function FeatureCarousel() {
 
               <div className="mt-7 space-y-2.5 rounded-2xl bg-white/70 p-4 ring-1 ring-white/80 backdrop-blur-sm">
                 {slide.items.map((item, itemIndex) => (
-                  <div key={item} className="flex items-center gap-3 rounded-xl bg-white px-3.5 py-3 shadow-sm">
+                  <div key={item} className="flex items-center gap-3 rounded-xl bg-surface px-3.5 py-3 shadow-sm">
                     <span
                       className="flex h-7 min-w-12 items-center justify-center rounded-lg px-2 text-[10px] font-extrabold"
                       style={{ color: slide.accent, backgroundColor: `${slide.accent}12` }}

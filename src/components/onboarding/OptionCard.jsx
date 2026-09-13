@@ -13,7 +13,7 @@ export default function OptionCard({ option, selected, multiple, onClick }) {
       {option.icon && (
         <span
           className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
-            selected ? 'bg-white text-brand' : 'bg-white text-slate-400 ring-1 ring-slate-100'
+            selected ? 'bg-surface text-brand' : 'bg-surface text-slate-400 ring-1 ring-slate-100'
           }`}
         >
           <Icon icon={option.icon} width={16} />
@@ -30,7 +30,7 @@ export default function OptionCard({ option, selected, multiple, onClick }) {
       <span
         className={`w-4 h-4 shrink-0 flex items-center justify-center border-2 transition-all ${
           multiple ? 'rounded-md' : 'rounded-full'
-        } ${selected ? 'bg-brand border-brand' : 'border-slate-300 bg-white'}`}
+        } ${selected ? 'bg-brand border-brand' : 'border-slate-300 bg-surface'}`}
       >
         {selected && <Icon icon="solar:check-bold" width={10} color="white" />}
       </span>

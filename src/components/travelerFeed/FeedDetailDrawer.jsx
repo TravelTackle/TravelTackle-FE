@@ -38,7 +38,7 @@ function CardMenu({ onDelete }) {
         <Icon icon="mdi:dots-vertical" width={18} />
       </button>
       {open && (
-        <div className="nav-pop absolute right-0 top-full z-30 mt-1.5 w-32 overflow-hidden rounded-xl border border-slate-100 bg-white py-1 shadow-popup">
+        <div className="nav-pop absolute right-0 top-full z-30 mt-1.5 w-32 overflow-hidden rounded-xl border border-slate-100 bg-surface py-1 shadow-popup">
           <button
             type="button"
             onClick={() => {
@@ -59,8 +59,8 @@ function CardMenu({ onDelete }) {
 // MyPageSettings의 ConfirmDialog와 같은 오버레이+흰 카드+버튼 2개 패턴 그대로
 function DeleteConfirmDialog({ title, description, deleting, error, onCancel, onConfirm }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 p-4">
-      <div className="w-full max-w-[320px] rounded-2xl bg-white p-5 shadow-popup">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-[320px] rounded-2xl bg-surface p-5 shadow-popup">
         <h3 className="text-[15px] font-bold text-slate-900">{title}</h3>
         <p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-500">{description}</p>
         {error && <p className="mt-2 text-[12px] text-rose-500">{error}</p>}
@@ -184,13 +184,13 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan, fro
       {open && <button aria-label="상세 패널 닫기" onClick={onClose} className="fixed inset-0 z-[55] cursor-default" />}
 
       <div
-        className={`fixed top-16 bottom-0 right-0 z-[56] w-full max-w-[560px] overflow-y-auto bg-white shadow-popup transition-transform duration-300 ${
+        className={`fixed top-16 bottom-0 right-0 z-[56] w-full max-w-[560px] overflow-y-auto bg-surface shadow-popup transition-transform duration-300 ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {open && current && (
           <>
-            <div className="sticky top-0 z-10 flex items-center justify-between bg-white p-4">
+            <div className="sticky top-0 z-10 flex items-center justify-between bg-surface p-4">
               <button
                 onClick={handleBack}
                 aria-label="뒤로가기"

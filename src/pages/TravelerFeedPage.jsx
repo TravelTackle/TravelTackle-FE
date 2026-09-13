@@ -320,13 +320,13 @@ export default function TravelerFeedPage() {
   )
 
   return (
-    <div className="bg-white text-slate-900">
+    <div className="bg-surface text-slate-900">
       <Navbar />
 
       <FeedActionsProvider value={feedActions}>
       {/* 필터 버튼 왼쪽 끝은 탑바 로고, 기록 업로드 버튼 오른쪽 끝은 프로필 알약과 같은 선 — 탑바 컨테이너(1200px, px-4 sm:px-6)와 폭을 맞춘다 */}
       <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-col gap-5 pb-8">
-        <div className="sticky top-16 z-10 bg-white pt-2.5">
+        <div className="sticky top-16 z-10 bg-surface pt-2.5">
           <FeedFilterBar
             filter={filter}
             onFilterChange={setFilter}
@@ -360,7 +360,7 @@ export default function TravelerFeedPage() {
                     />
                   </button>
                   {sortMenuOpen && (
-                    <div className="absolute left-0 top-full z-30 mt-1.5 w-28 rounded-xl border border-slate-100 bg-white py-1 shadow-popup">
+                    <div className="absolute left-0 top-full z-30 mt-1.5 w-28 rounded-xl border border-slate-100 bg-surface py-1 shadow-popup">
                       {SORT_OPTIONS.map((o) => (
                         <button
                           key={o.value}
@@ -391,7 +391,7 @@ export default function TravelerFeedPage() {
             </div>
             <aside className="order-1 flex w-full shrink-0 flex-col gap-4 md:order-2 md:sticky md:top-[134px] md:w-[300px] md:self-start">
               <div
-                className={`flex h-9 items-center gap-1.5 rounded-lg border bg-white px-2.5 shadow-card transition-colors ${
+                className={`flex h-9 items-center gap-1.5 rounded-lg border bg-surface px-2.5 shadow-card transition-colors ${
                   searchFocused ? 'border-brand/40' : 'border-slate-200'
                 }`}
               >
@@ -480,7 +480,7 @@ export default function TravelerFeedPage() {
       />
 
       <div
-        className={`fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-slate-900/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
+        className={`fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-black/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
           toast ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
         }`}
       >
@@ -495,7 +495,7 @@ function FeedCardSkeletons({ count }) {
   return (
     <>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="rounded-2xl border border-slate-100 bg-white p-4" role="status" aria-label="피드를 불러오는 중">
+        <div key={i} className="rounded-2xl border border-slate-100 bg-surface p-4" role="status" aria-label="피드를 불러오는 중">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Skeleton className="h-8 w-8 rounded-full" style={{ animationDelay: `${i * 120}ms` }} />

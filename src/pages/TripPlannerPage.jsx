@@ -464,14 +464,14 @@ export default function TripPlannerPage() {
   const showDetailLoading = activeTripId && !activeTrip && !detailError
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-slate-900">
+    <div className="flex min-h-screen flex-col bg-surface text-slate-900">
       <Navbar />
 
       {activeTrip ? (
         // sticky는 자기 "부모"의 박스 높이만큼만 붙어있을 수 있다 — 예전엔 이 헤더가 Section 하나만 감싸고 있어서
         // Section 높이 = 헤더 높이라 붙어있을 여유가 사실상 없었다(그래서 스크롤하면 카트와 어긋나 보였음).
         // Day+카트도 함께 담고 있는 페이지 루트를 부모로 삼도록 Section 밖으로 빼고, 1180px 정렬만 안쪽에서 그대로 재현한다.
-        <div className="sticky top-16 z-30 bg-white pb-5 pt-2.5">
+        <div className="sticky top-16 z-30 bg-surface pb-5 pt-2.5">
           <div style={{ paddingLeft: SIDE_PADDING, paddingRight: SIDE_PADDING }}>
             <TripHeader
               trip={activeTrip}
@@ -534,7 +534,7 @@ export default function TripPlannerPage() {
                 ref={dayScrollRef}
                 onMouseDown={handleDayScrollMouseDown}
                 onClickCapture={handleDayScrollClickCapture}
-                className="flex min-w-0 flex-1 gap-3 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-6 transition-all duration-300"
+                className="flex min-w-0 flex-1 gap-3 overflow-x-auto rounded-2xl border border-slate-200 bg-surface p-6 transition-all duration-300"
                 style={{ maxWidth: DAY_BOX_MAX_WIDTH }}
               >
                 {activeTrip.days.map((day) => (
@@ -555,7 +555,7 @@ export default function TripPlannerPage() {
               </div>
             ) : (
               <div
-                className="flex min-h-[720px] min-w-0 flex-1 gap-3 rounded-2xl border border-slate-200 bg-white p-6 transition-all duration-300"
+                className="flex min-h-[720px] min-w-0 flex-1 gap-3 rounded-2xl border border-slate-200 bg-surface p-6 transition-all duration-300"
                 style={{ maxWidth: DAY_BOX_MAX_WIDTH }}
               >
                 <TripMapView
@@ -597,7 +597,7 @@ export default function TripPlannerPage() {
       )}
 
       {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-900/90 px-4 py-2.5 text-[12.5px] font-semibold text-white shadow-popup">
+        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/90 px-4 py-2.5 text-[12.5px] font-semibold text-white shadow-popup">
           {toast}
         </div>
       )}

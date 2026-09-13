@@ -56,7 +56,7 @@ export default function SupportPage() {
   }, [searchParams])
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-slate-900">
+    <div className="flex min-h-screen flex-col bg-surface text-slate-900">
       <Navbar />
 
       <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-1 flex-col gap-8 py-12">
@@ -66,7 +66,7 @@ export default function SupportPage() {
         <div className="relative flex w-full items-center gap-1 rounded-xl bg-slate-100 p-1">
           <div
             aria-hidden="true"
-            className="absolute top-1 h-8 rounded-lg bg-white shadow-[0_1px_2px_rgba(0,0,0,0.15)] transition-transform duration-200 ease-out"
+            className="absolute top-1 h-8 rounded-lg bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.15)] transition-transform duration-200 ease-out"
             style={{
               width: 'calc((100% - 0.5rem) / 3)',
               transform: `translateX(calc(${TABS.findIndex((t) => t.value === tab)} * (100% + 0.25rem)))`,

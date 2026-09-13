@@ -48,7 +48,7 @@ export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDe
     <div
       ref={cardRef}
       data-item-card
-      className="relative flex items-start gap-2.5 rounded-2xl border border-slate-100 bg-white p-3.5 shadow-card"
+      className="relative flex items-start gap-2.5 rounded-2xl border border-slate-100 bg-surface p-3.5 shadow-card"
     >
       {!readOnly && (
         <span
@@ -123,7 +123,7 @@ export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDe
                   세로로만 늘어나며, 마우스를 떼면 다시 페이드아웃된다. */}
               {memoOverflow && (
                 <div
-                  className={`absolute inset-x-0 top-0 z-20 rounded-lg border border-slate-100 bg-white p-2 text-[12px] leading-relaxed text-slate-600 shadow-popup transition-opacity duration-150 ${
+                  className={`absolute inset-x-0 top-0 z-20 rounded-lg border border-slate-100 bg-surface p-2 text-[12px] leading-relaxed text-slate-600 shadow-popup transition-opacity duration-150 ${
                     memoHover ? 'opacity-100' : 'pointer-events-none opacity-0'
                   }`}
                 >
@@ -140,7 +140,7 @@ export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDe
           onClick={onDelete}
           aria-label={deleteLocked ? `${item.cachedTitle} — 공개 중인 계획의 마지막 일정이라 지울 수 없어요` : `${item.cachedTitle} 삭제`}
           title={deleteLocked ? '공개 중인 계획은 각 일차에 일정이 하나 이상 남아야 해요' : undefined}
-          className={`absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-card transition-colors ${
+          className={`absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-surface shadow-card transition-colors ${
             deleteLocked ? 'cursor-not-allowed text-slate-300' : 'text-rose-300 hover:text-rose-500'
           }`}
         >

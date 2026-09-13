@@ -41,9 +41,9 @@ export default function PasswordResetModal({ onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={onClose}>
       <div
-        className="w-full max-w-[380px] bg-white rounded-2xl shadow-popup p-6"
+        className="w-full max-w-[380px] bg-surface rounded-2xl shadow-popup p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">

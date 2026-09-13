@@ -50,7 +50,7 @@ export function FeedTypeFilter({ filter, onFilterChange, options = FILTERS }) {
       >
         <span
           aria-hidden="true"
-          className="mode-thumb pointer-events-none absolute inset-y-1 left-0 rounded-full bg-white shadow-card"
+          className="mode-thumb pointer-events-none absolute inset-y-1 left-0 rounded-full bg-surface shadow-card"
           style={{
             width: thumb ? thumb.w : 0,
             transform: `translateX(${thumb ? thumb.x : 0}px)`,
@@ -126,7 +126,7 @@ export default function FeedFilterBar({ filter, onFilterChange, view, onViewChan
           {/* 선택된 아이콘 뒤에서 슬라이드로 이동하는 흰색 배경 */}
           <div
             aria-hidden="true"
-            className="mode-thumb absolute left-1 top-1 h-7 w-7 rounded-lg bg-white shadow-card"
+            className="mode-thumb absolute left-1 top-1 h-7 w-7 rounded-lg bg-surface shadow-card"
             style={{ transform: `translateX(calc(${VIEWS.findIndex((v) => v.value === view)} * (100% + 0.25rem)))` }}
           />
           {VIEWS.map((v) => {

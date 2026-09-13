@@ -130,7 +130,7 @@ export default function LoginPage() {
           type="button"
           onClick={() => setAppleNotice(true)}
           aria-describedby={appleNotice ? 'apple-login-notice' : undefined}
-          className="h-12 rounded-xl flex items-center justify-center gap-2 font-bold text-[14px] bg-black text-white hover:bg-slate-800 transition-all"
+          className="h-12 rounded-xl flex items-center justify-center gap-2 font-bold text-[14px] bg-black text-white hover:bg-black transition-all"
         >
           <Icon icon="ri:apple-fill" width={19} />
           Apple로 계속하기

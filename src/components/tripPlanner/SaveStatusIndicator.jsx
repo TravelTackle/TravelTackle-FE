@@ -14,7 +14,7 @@ export default function SaveStatusIndicator({ status }) {
 
   return (
     <div
-      className={`fixed bottom-6 left-6 z-50 flex items-center gap-1.5 rounded-full border bg-white/95 px-3 py-1.5 text-[11.5px] font-semibold shadow-card transition-all duration-200 ${tone}`}
+      className={`fixed bottom-6 left-6 z-50 flex items-center gap-1.5 rounded-full border bg-surface/95 px-3 py-1.5 text-[11.5px] font-semibold shadow-card transition-all duration-200 ${tone}`}
     >
       <Icon icon={icon} width={13} className={spin ? 'animate-spin' : ''} />
       {text}

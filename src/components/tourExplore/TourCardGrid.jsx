@@ -28,7 +28,7 @@ export default function TourCardGrid({ spots, loading, loadingMore, hasMore, onL
         {Array.from({ length: festival ? 6 : 9 }).map((_, i) => festival ? (
           <FestivalCardSkeleton key={i} index={i} />
         ) : (
-          <div key={i} className="rounded-2xl overflow-hidden border border-slate-100 bg-white">
+          <div key={i} className="rounded-2xl overflow-hidden border border-slate-100 bg-surface">
             <Skeleton className="h-[150px] w-full rounded-none" style={{ animationDelay: `${(i % 3) * 120}ms` }} />
             <div className="p-3">
               <Skeleton className="h-3.5 w-2/3" style={{ animationDelay: `${(i % 3) * 120 + 60}ms` }} />
