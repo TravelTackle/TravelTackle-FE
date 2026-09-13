@@ -102,6 +102,13 @@ export default function SavedTripsPage() {
     setSavedIds(new Map(items.map((it) => [targetTripId(it), it.savedTripId])))
   }, [items])
 
+  // 목록을 처음부터 다시 받으면 그 안엔 이미 최신 참견·스크랩 수가 들어있다 — 이전 낙관적 델타를
+  // 그대로 두면 서버 값 위에 또 더해져 숫자가 어긋난다.
+  useEffect(() => {
+    setSaveDelta({})
+    setFeedbackDelta({})
+  }, [reloadKey])
+
   const toggleSave = useCallback(async (item) => {
     const tripId = targetTripId(item)
     if (!tripId || pendingIds.has(tripId)) return

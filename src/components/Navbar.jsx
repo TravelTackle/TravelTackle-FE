@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage, LANGUAGES } from '../i18n'
 import logoHorizontal from '../assets/logo-horizontal.svg'
@@ -252,6 +252,7 @@ export default function Navbar() {
   const { language, setLanguage } = useLanguage()
   const profileRef = useRef(null)
   const location = useLocation()
+  const navigate = useNavigate()
   const langRef = useRef(null)
   const notiRef = useRef(null)
 
@@ -313,6 +314,7 @@ export default function Navbar() {
       /* 무시 */
     }
     setProfileOpen(false)
+    navigate('/')
   }
 
   // 로컬(챗봇 등에 즉시 반영)은 그대로 두고, 로그인 상태면 계정에도 저장 — 마이페이지 언어 변경과 동일한 API

@@ -147,6 +147,9 @@ export default function MyPageSettings() {
         const results = await Promise.all(
           summaries.map(async (t) => {
             const [detail, record] = await Promise.all([getTripDetail(t.id).catch(() => null), getTripRecord(t.id).catch(() => null)])
+            // saveCount: 백엔드가 TripDetailResponse에 아직 안 내려주면 undefined → null로 떨어져
+            // FeedActionBar가 스크랩 수를 안 보여준다(지금과 동일). 필드가 추가되면 별도 수정 없이 뜬다.
+            const saveCount = typeof detail?.saveCount === 'number' ? detail.saveCount : null
             const plan = detail
               ? {
                   ...adaptPlanDetail({ ...detail, ownerName: user?.name, region: '' }),
@@ -154,17 +157,22 @@ export default function MyPageSettings() {
                   feedbackCount: feedbackMap.get(t.id) ?? 0,
                   // 나만보기/전체공개 토글(FeedUserHeader)이 이 값이 있을 때만 보인다 — TripDetailResponse에만 있는 필드.
                   published: detail.published,
+                  saveCount,
                 }
               : null
             const rec = record
-              ? adaptRecordDetail({
-                  id: t.id,
-                  ownerName: user?.name,
-                  region: '',
-                  record,
-                  feedbackCount: feedbackMap.get(t.id) ?? 0,
-                  savedTripId: null,
-                })
+              ? {
+                  ...adaptRecordDetail({
+                    id: t.id,
+                    ownerName: user?.name,
+                    region: '',
+                    record,
+                    feedbackCount: feedbackMap.get(t.id) ?? 0,
+                    savedTripId: null,
+                  }),
+                  // 기록도 같은 계획(트립) 소속이라 스크랩 수는 계획과 동일한 값을 쓴다
+                  saveCount,
+                }
               : null
             return { plan, rec }
           }),
@@ -172,6 +180,8 @@ export default function MyPageSettings() {
         if (ignore) return
         setPlanItems(results.map((r) => r.plan).filter(Boolean))
         setRecordItems(results.map((r) => r.rec).filter(Boolean))
+        // 방금 받아온 목록엔 이미 최신 참견 수가 들어있다 — 이전 낙관적 델타가 남아있으면 중복 가산된다.
+        setFeedbackDelta({})
       } catch {
         if (!ignore) {
           setPlanItems([])

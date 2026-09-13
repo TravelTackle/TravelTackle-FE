@@ -39,9 +39,11 @@ export function addRecommendationToCart(tripId, recommendationId) {
     })
 }
 
-// 특정 계획에 달린 참견 목록 (최신순, 비로그인도 조회 가능)
+// 특정 계획에 달린 참견 목록 (최신순, 비로그인도 조회 가능).
+// /feedback(레벨별 필터용, dayId/itemId 없으면 "계획 전체" 레벨만 옴)이 아니라 /feedback/all을 쓴다 —
+// 안 그러면 Day·장소 단위로 남긴 참견이 목록에서 빠져서, 카드 배지 수(전체 레벨 합산)보다 적게 보인다.
 export function getTripFeedback(tripId, params) {
-  return client.get(`/trips/${tripId}/feedback`, { params }).then((res) => res.data)
+  return client.get(`/trips/${tripId}/feedback/all`, { params }).then((res) => res.data)
 }
 
 // 내 계획에 달린 참견 모아보기 — 계획별 전체/미읽음 수 (로그인 필요)
