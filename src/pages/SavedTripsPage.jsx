@@ -201,6 +201,7 @@ export default function SavedTripsPage() {
           target={feedbackTarget}
           onClose={() => setFeedbackTarget(null)}
           onPosted={(tripId) => setFeedbackDelta((d) => ({ ...d, [tripId]: (d[tripId] ?? 0) + 1 }))}
+          onDeleted={(tripId) => setFeedbackDelta((d) => ({ ...d, [tripId]: (d[tripId] ?? 0) - 1 }))}
         />
       </FeedActionsProvider>
 

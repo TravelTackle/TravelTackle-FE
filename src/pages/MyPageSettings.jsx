@@ -62,7 +62,8 @@ function MyProfileGallery({ user, authLoading, planItems, recordItems, loading, 
             <>
               <Avatar user={user} size={80} />
               <div>
-                <h1 className="text-[24px] font-extrabold text-slate-900">{user?.name || 'nickname'}</h1>
+                {/* 목업 더미 텍스트("nickname") 대신 값이 없을 때만 옅은 회색 대시로 — 실사용자에게 가짜 이름처럼 보이지 않게 */}
+                <h1 className={`text-[24px] font-extrabold ${user?.name ? 'text-slate-900' : 'text-slate-300'}`}>{user?.name || '—'}</h1>
                 {/* 개수 텍스트는 기본 13px 대비 20% 키운 16px, "계획 4 · 기록 3"처럼 라벨 다음에 숫자가 오는 순서 */}
                 <div className="mt-2 flex items-center gap-4">
                   <span className="text-[16px] text-slate-500">

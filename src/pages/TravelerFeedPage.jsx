@@ -27,8 +27,6 @@ const SORT_OPTIONS = [
   { value: 'oldest', label: '오래된순' },
 ]
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
 export default function TravelerFeedPage() {
   const { user } = useAuth()
   const [realItems, setRealItems] = useState([])
@@ -50,16 +48,94 @@ export default function TravelerFeedPage() {
 
   // sort는 사용자가 고른 값을 그대로 보내고, relevance인데 keyword가 없으면 서버가 알아서 latest로 대체해준다.
   // reloadKey: 기록 업로드 뒤 같은 조건으로 목록을 다시 불러오기 위한 트리거
+  // 무한 스크롤 — page 0부터 시작해서 검색어/정렬이 바뀌면 처음부터 다시 받는다. size는 서버 최대치(50)를 그대로 유지.
   const [reloadKey, setReloadKey] = useState(0)
+  const [page, setPage] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  // 끝까지 다 봤다는 안내 — 실제로 다음 페이지를 받아 last:true가 됐을 때뿐 아니라, 콘텐츠가 적어
+  // 첫 페이지부터 이미 마지막이라 sentinel이 곧장 보이는 경우에도 로딩 스피너 없이 문구만 툭 뜨면
+  // 어색해서, 그 경우엔 잠깐 스피너를 보여준 뒤 문구로 넘어간다.
+  const [endChecking, setEndChecking] = useState(false)
+  const [endReached, setEndReached] = useState(false)
+  const endCheckTimer = useRef(null)
+  const endCheckStarted = useRef(false)
+
   useEffect(() => {
     let ignore = false
     setFeedLoading(true)
-    getFeed({ size: 50, keyword: searchKeyword || undefined, sort: sortOption })
-      .then((page) => { if (!ignore) setRealItems(page.content.map(adaptFeedItem)) })
-      .catch(() => { if (!ignore) setRealItems([]) })
+    setPage(0)
+    setEndChecking(false)
+    setEndReached(false)
+    endCheckStarted.current = false
+    clearTimeout(endCheckTimer.current)
+    getFeed({ page: 0, size: 50, keyword: searchKeyword || undefined, sort: sortOption })
+      .then((res) => {
+        if (ignore) return
+        setRealItems(res.content.map(adaptFeedItem))
+        setHasMore(!res.last)
+      })
+      .catch(() => {
+        if (ignore) return
+        setRealItems([])
+        setHasMore(false)
+      })
       .finally(() => { if (!ignore) setFeedLoading(false) })
     return () => { ignore = true }
   }, [searchKeyword, sortOption, reloadKey])
+
+  useEffect(() => () => clearTimeout(endCheckTimer.current), [])
+
+  // 목록 끝(sentinel)이 보이면 다음 페이지를 이어붙인다 — 첫 로딩/이미 불러오는 중/더 없음일 땐 무시.
+  const loadMore = useCallback(() => {
+    if (feedLoading || loadingMore || !hasMore) return
+    const nextPage = page + 1
+    setLoadingMore(true)
+    getFeed({ page: nextPage, size: 50, keyword: searchKeyword || undefined, sort: sortOption })
+      .then((res) => {
+        setRealItems((prev) => [...prev, ...res.content.map(adaptFeedItem)])
+        setPage(nextPage)
+        setHasMore(!res.last)
+      })
+      .catch(() => setHasMore(false))
+      .finally(() => setLoadingMore(false))
+  }, [feedLoading, loadingMore, hasMore, page, searchKeyword, sortOption])
+
+  const sentinelRef = useRef(null)
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) return
+        if (hasMore) {
+          loadMore()
+          return
+        }
+        // 더 받을 페이지가 없는데 sentinel이 바로 보인 경우 — 한 번만 짧게 스피너를 보여주고 문구로 전환
+        if (endCheckStarted.current) return
+        endCheckStarted.current = true
+        setEndChecking(true)
+        endCheckTimer.current = setTimeout(() => {
+          setEndChecking(false)
+          setEndReached(true)
+        }, 500)
+      },
+      { rootMargin: '600px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [loadMore, hasMore])
+
+  // 실제로 다음 페이지까지 받아서 끝난 경우(loadMore 이후 hasMore가 false로 바뀐 경우)엔
+  // 이미 로딩 스피너를 보여준 뒤라 별도 지연 없이 바로 문구를 보여준다. endCheckStarted를 같이 세워둬야
+  // sentinel이 여전히 화면에 남아있을 때 관찰자가 다시 반응해 스피너를 한 번 더 깜빡이지 않는다.
+  useEffect(() => {
+    if (!hasMore && page > 0 && !loadingMore) {
+      endCheckStarted.current = true
+      setEndReached(true)
+    }
+  }, [hasMore, page, loadingMore])
 
   // 입력을 멈춘 뒤에만 검색
   useEffect(() => {
@@ -125,10 +201,6 @@ export default function TravelerFeedPage() {
   const toggleSave = useCallback(async (item) => {
     const tripId = targetTripId(item)
     if (!tripId) return
-    if (!UUID_RE.test(tripId)) {
-      showToast('예시 게시물이라 스크랩할 수 없어요')
-      return
-    }
     if (!user) {
       showToast('로그인하면 내 여행으로 스크랩할 수 있어요')
       return
@@ -173,10 +245,6 @@ export default function TravelerFeedPage() {
   const openFeedback = useCallback((item) => {
     const tripId = targetTripId(item)
     if (!tripId) return
-    if (!UUID_RE.test(tripId)) {
-      showToast('예시 게시물에는 참견을 남길 수 없어요')
-      return
-    }
     // 기록에서 열면 참견 대상은 그 기록의 계획 — 제목은 목록에 있으면 계획 제목, 없으면 기록 제목을 쓴다
     const plan = item.type === 'plan' ? item : allItemsRef.current.find((i) => i.type === 'plan' && i.id === tripId)
     setFeedbackTarget({ tripId, title: plan?.title ?? item.title, ownerName: (plan ?? item).user?.nickname, ownerId: (plan ?? item).user?.id ?? null })
@@ -231,6 +299,18 @@ export default function TravelerFeedPage() {
       <RecordFeedCard key={item.id} item={item} onOpen={setDrawerItem} findPlan={findPlan} />
     )
   }
+
+  // 화면 아래에 닿으면 다음 페이지를 이어붙이는 무한 스크롤 트리거 — 검색 결과가 없거나 로딩 중일 땐 안 보인다.
+  // 리스트 뷰에선 우측 사이드바(aside)까지 포함한 전체 폭이 아니라 카드 컬럼 안에 넣어서, 카드 컬럼
+  // 기준으로 가운데에 오게 한다(갤러리 뷰는 사이드바가 없어 바깥에 둬도 카드 폭 그대로 중앙에 온다).
+  const scrollFooter = !feedLoading && items.length > 0 && (
+    <div ref={sentinelRef} className="flex h-10 items-center justify-center">
+      {(loadingMore || endChecking) && <Icon icon="mdi:loading" width={18} className="animate-spin text-slate-300" />}
+      {endReached && !loadingMore && !endChecking && (
+        <span className="text-[12px] text-slate-400">모든 피드를 다 확인했어요</span>
+      )}
+    </div>
+  )
 
   return (
     <div className="bg-white text-slate-900">
@@ -300,6 +380,7 @@ export default function TravelerFeedPage() {
               ) : (
                 items.map(renderCard)
               )}
+              {scrollFooter}
             </div>
             <aside className="order-1 flex w-full shrink-0 flex-col gap-4 md:order-2 md:sticky md:top-[134px] md:w-[300px] md:self-start">
               <div
@@ -343,19 +424,22 @@ export default function TravelerFeedPage() {
             </aside>
           </div>
         ) : (
-          feedLoading ? (
-            <div className="flex gap-6">
-              <div className="flex min-w-0 flex-1 flex-col gap-5"><FeedCardSkeletons count={2} /></div>
-              <div className="flex min-w-0 flex-1 flex-col gap-5"><FeedCardSkeletons count={2} /></div>
-            </div>
-          ) : items.length === 0 ? (
-            <div className="py-20 text-center text-[13px] text-slate-400">해당하는 피드가 없어요.</div>
-          ) : (
-            <div className="flex gap-6">
-              <div className="flex min-w-0 flex-1 flex-col gap-5">{galleryLeft.map(renderCard)}</div>
-              <div className="flex min-w-0 flex-1 flex-col gap-5">{galleryRight.map(renderCard)}</div>
-            </div>
-          )
+          <>
+            {feedLoading ? (
+              <div className="flex gap-6">
+                <div className="flex min-w-0 flex-1 flex-col gap-5"><FeedCardSkeletons count={2} /></div>
+                <div className="flex min-w-0 flex-1 flex-col gap-5"><FeedCardSkeletons count={2} /></div>
+              </div>
+            ) : items.length === 0 ? (
+              <div className="py-20 text-center text-[13px] text-slate-400">해당하는 피드가 없어요.</div>
+            ) : (
+              <div className="flex gap-6">
+                <div className="flex min-w-0 flex-1 flex-col gap-5">{galleryLeft.map(renderCard)}</div>
+                <div className="flex min-w-0 flex-1 flex-col gap-5">{galleryRight.map(renderCard)}</div>
+              </div>
+            )}
+            {scrollFooter}
+          </>
         )}
       </Section>
 
@@ -374,6 +458,7 @@ export default function TravelerFeedPage() {
         target={feedbackTarget}
         onClose={() => setFeedbackTarget(null)}
         onPosted={(tripId) => setFeedbackDelta((d) => ({ ...d, [tripId]: (d[tripId] ?? 0) + 1 }))}
+        onDeleted={(tripId) => setFeedbackDelta((d) => ({ ...d, [tripId]: (d[tripId] ?? 0) - 1 }))}
       />
       </FeedActionsProvider>
 

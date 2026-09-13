@@ -31,6 +31,15 @@ export default function FloatingCart() {
   const noticeTimer = useRef(null)
   const highlightTimer = useRef(null)
   const dragDepth = useRef(0)
+  // 담기/빼기 결과를 다른 페이지들과 같은 위치(화면 하단 중앙)에도 띄운다 — notice는 카트 버튼 옆에 뜨는 것과 별개
+  const [toast, setToast] = useState('')
+  const toastTimer = useRef(null)
+
+  function showToast(message) {
+    setToast(message)
+    clearTimeout(toastTimer.current)
+    toastTimer.current = setTimeout(() => setToast(''), 1600)
+  }
 
   // 패널을 열 때(withSkeleton)는 최소 MIN_SKELETON_MS 동안 스켈레톤을 보여 준 뒤 목록으로 바꾼다
   const refresh = useCallback((withSkeleton) => {
@@ -197,8 +206,10 @@ export default function FloatingCart() {
     setItems((prev) => prev.filter((i) => i.id !== item.id))
     try {
       await removeCartItem(item.id)
+      showToast('장바구니에서 뺐어요')
     } catch {
       setItems((prev) => [item, ...prev]) // 실패 시 되돌림
+      showToast('장바구니에서 빼지 못했어요')
     }
   }
 
@@ -215,7 +226,8 @@ export default function FloatingCart() {
     .filter((i) => !q || i.title?.toLowerCase().includes(q) || areaName(i.areaCode).toLowerCase().includes(q))
 
   return (
-    // 루트는 pointer-events-none — 닫힌 패널의 투명 영역이 클릭을 가로채지 않게
+    <>
+    {/* 루트는 pointer-events-none — 닫힌 패널의 투명 영역이 클릭을 가로채지 않게 */}
     <div className="pointer-events-none fixed bottom-24 right-6 z-40 flex flex-col items-end">
       <div className="pointer-events-none absolute -top-2 right-0 -translate-y-full">
         <div
@@ -476,5 +488,15 @@ export default function FloatingCart() {
         )}
       </button>
     </div>
+
+    {/* 여행지 탐색 등 다른 페이지들과 같은 화면 하단 중앙 팝업 — 담기/빼기 결과를 여기서도 알린다 */}
+    <div
+      className={`fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-slate-900/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
+        toast ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
+      }`}
+    >
+      {toast}
+    </div>
+    </>
   )
 }

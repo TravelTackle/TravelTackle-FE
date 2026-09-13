@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Icon } from '@iconify/react'
 import AuthLayout from '../components/auth/AuthLayout'
 import PasswordResetModal from '../components/auth/PasswordResetModal'
@@ -8,15 +8,36 @@ import FormField from '../components/ui/FormField'
 import { useAuth } from '../context/AuthContext'
 import * as preferencesApi from '../api/preferences'
 
+// OAuthCallback.jsx가 소셜 로그인 실패 시 /login?error=social|session 으로 보낸다 — 여기서 그 값을 읽어 안내한다.
+const OAUTH_ERROR_MESSAGES = {
+  social: '소셜 로그인이 취소되었거나 실패했어요. 다시 시도해주세요.',
+  session: '로그인 처리 중 문제가 생겼어요. 잠시 후 다시 시도해주세요.',
+}
+
 export default function LoginPage() {
   const navigate = useNavigate()
   const { login } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [error, setError] = useState(() => OAUTH_ERROR_MESSAGES[searchParams.get('error')] || '')
   const [loading, setLoading] = useState(false)
   const [showReset, setShowReset] = useState(false)
   const [appleNotice, setAppleNotice] = useState(false)
+
+  // 안내는 한 번만 보여주고 주소에서 지운다 — 새로고침/뒤로가기 때 다시 뜨지 않게
+  useEffect(() => {
+    if (!searchParams.get('error')) return
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('error')
+        return next
+      },
+      { replace: true },
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()

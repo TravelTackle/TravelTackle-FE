@@ -4,7 +4,7 @@ import Skeleton from '../ui/Skeleton'
 import FestivalCard, { FestivalCardSkeleton } from './FestivalCard'
 
 // variant='festival'이면 기간 조회 결과용 카드(상태 배지·날짜)와 그 골격의 스켈레톤을 쓴다
-export default function TourCardGrid({ spots, loading, loadingMore, hasMore, onLoadMore, onOpen, onAddToCart, variant = 'spot', emptyMessage, emptyAction }) {
+export default function TourCardGrid({ spots, loading, loadingMore, hasMore, onLoadMore, onOpen, onToggleCart, cartMap, variant = 'spot', emptyMessage, emptyAction }) {
   const festival = variant === 'festival'
   const sentinelRef = useRef(null)
 
@@ -53,9 +53,9 @@ export default function TourCardGrid({ spots, loading, loadingMore, hasMore, onL
     <div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         {spots.map((spot, i) => festival ? (
-          <FestivalCard key={spot.contentId} festival={spot} index={i} onOpen={onOpen} onAddToCart={onAddToCart} />
+          <FestivalCard key={spot.contentId} festival={spot} index={i} onOpen={onOpen} onToggleCart={onToggleCart} carted={cartMap?.has(spot.contentId)} />
         ) : (
-          <TourCard key={spot.contentId} spot={spot} onOpen={onOpen} onAddToCart={onAddToCart} />
+          <TourCard key={spot.contentId} spot={spot} onOpen={onOpen} onToggleCart={onToggleCart} carted={cartMap?.has(spot.contentId)} />
         ))}
       </div>
       {hasMore && (

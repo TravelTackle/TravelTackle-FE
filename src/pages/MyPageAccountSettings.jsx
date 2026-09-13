@@ -11,7 +11,7 @@ import Skeleton from '../components/ui/Skeleton'
 import OptionCard from '../components/onboarding/OptionCard'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage, LANGUAGES } from '../i18n'
-import { getPreferences } from '../api/preferences'
+import { getPreferences, createPreferences, updatePreferences } from '../api/preferences'
 import { updateProfile, changePassword, updateNotificationSettings, deleteAccount } from '../api/auth'
 import { getMyTrips } from '../api/trip'
 import { getReceivedFeedback } from '../api/feed'
@@ -694,7 +694,8 @@ function ProfileTab({ user }) {
         </SettingRow>
 
         <SettingRow label="이메일">
-          <span className="text-[13px] text-slate-500">{user?.email || 'test1234@example.com'}</span>
+          {/* 목업 더미 텍스트("test1234@example.com") 대신 값이 없을 때만 옅은 회색 대시로 */}
+          <span className={`text-[13px] ${user?.email ? 'text-slate-500' : 'text-slate-300'}`}>{user?.email || '—'}</span>
         </SettingRow>
 
         <SettingRow label="비밀번호">
@@ -808,14 +809,16 @@ function ProfileTab({ user }) {
   )
 }
 
-// 온보딩 PreferenceWizard와 동일한 한 문항씩 넘어가는 흐름 — 완료 시 저장 API 연동은 본작업에서 붙인다(지금은 로컬 반영만).
-function PreferenceEditWizard({ answers, onCancel, onFinish }) {
+// 온보딩 PreferenceWizard와 동일한 한 문항씩 넘어가는 흐름 — 완료 시 onFinish(호출부인 PreferenceTab)가
+// updatePreferences로 실제 저장한다.
+function PreferenceEditWizard({ answers, onCancel, onFinish, saving, error }) {
   const [stepIndex, setStepIndex] = useState(0)
   const [values, setValues] = useState(answers)
 
   const step = STEPS[stepIndex]
   const value = values[step.key]
   const isAnswered = step.multiple ? value.size > 0 : value != null
+  const isLastStep = stepIndex === STEPS.length - 1
 
   function toggleOption(optionValue) {
     setValues((prev) => {
@@ -835,9 +838,9 @@ function PreferenceEditWizard({ answers, onCancel, onFinish }) {
   }
 
   function handleNext() {
-    if (!isAnswered) return
-    if (stepIndex < STEPS.length - 1) setStepIndex((i) => i + 1)
-    else onFinish(values)
+    if (!isAnswered || saving) return
+    if (isLastStep) onFinish(values)
+    else setStepIndex((i) => i + 1)
   }
 
   return (
@@ -882,21 +885,24 @@ function PreferenceEditWizard({ answers, onCancel, onFinish }) {
         </div>
       </div>
 
+      {error && <p className="mt-3 text-center text-[12px] text-rose-500">{error}</p>}
+
       <div className="flex items-center justify-between mt-5">
         <button
           type="button"
           onClick={handlePrev}
-          className="h-11 rounded-xl bg-slate-100 px-6 text-[14px] font-bold text-slate-600 hover:bg-slate-200"
+          disabled={saving}
+          className="h-11 rounded-xl bg-slate-100 px-6 text-[14px] font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-60"
         >
           이전
         </button>
         <button
           type="button"
           onClick={handleNext}
-          disabled={!isAnswered}
+          disabled={!isAnswered || saving}
           className="h-11 rounded-xl bg-brand px-6 text-[14px] font-bold text-white hover:bg-brand-dark disabled:opacity-40"
         >
-          {stepIndex === STEPS.length - 1 ? '완료' : '다음'}
+          {isLastStep ? (saving ? '저장 중…' : '완료') : '다음'}
         </button>
       </div>
       </div>
@@ -908,6 +914,39 @@ function PreferenceEditWizard({ answers, onCancel, onFinish }) {
 // 푸터가 튀는 게 보여서, 선호도 데이터는 페이지 진입 시점(MyPageAccountSettings)에 미리 받아온다.
 function PreferenceTab({ preferences, setPreferences }) {
   const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
+
+  // 계정에 선호도가 아직 없는 채로(온보딩을 건너뛴 경우) 이 화면에 들어왔을 수도 있어 PUT이 PREF_002(없음)로
+  // 실패하면 POST(create)로 한 번 더 시도한다 — 있는 계정은 항상 PUT 한 번으로 끝난다.
+  async function handleFinish(values) {
+    const payload = {
+      travelStyle: values.travelStyle,
+      budgetLevel: values.budgetLevel,
+      interestTags: Array.from(values.interestTags),
+      preferredRegions: Array.from(values.preferredRegions),
+    }
+    setSaving(true)
+    setSaveError('')
+    try {
+      let updated
+      try {
+        updated = await updatePreferences(payload)
+      } catch (err) {
+        if (err.response?.data?.code === 'PREF_002') {
+          updated = await createPreferences(payload)
+        } else {
+          throw err
+        }
+      }
+      setPreferences(updated)
+      setEditing(false)
+    } catch (err) {
+      setSaveError(err.response?.data?.message || '선호도를 저장하지 못했어요. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   if (!preferences) {
     return (
@@ -927,15 +966,9 @@ function PreferenceTab({ preferences, setPreferences }) {
       <PreferenceEditWizard
         answers={answersFromPreferences(preferences)}
         onCancel={() => setEditing(false)}
-        onFinish={(values) => {
-          setPreferences({
-            interestTags: Array.from(values.interestTags),
-            travelStyle: values.travelStyle,
-            budgetLevel: values.budgetLevel,
-            preferredRegions: Array.from(values.preferredRegions),
-          })
-          setEditing(false)
-        }}
+        onFinish={handleFinish}
+        saving={saving}
+        error={saveError}
       />
     )
   }
@@ -1045,7 +1078,8 @@ export default function MyPageAccountSettings() {
             <>
               {/* Nav바 프로필과 동일하게 닉네임 첫 글자로 표시 — 별도 프로필 사진 업로드 전 기본값 */}
               <Avatar user={user} size={36} />
-              <h1 className="text-[15px] font-extrabold text-slate-900">{user?.name || 'nickname'}</h1>
+              {/* 목업 더미 텍스트("nickname") 대신 값이 없을 때만 옅은 회색 대시로 */}
+              <h1 className={`text-[15px] font-extrabold ${user?.name ? 'text-slate-900' : 'text-slate-300'}`}>{user?.name || '—'}</h1>
             </>
           )}
         </div>

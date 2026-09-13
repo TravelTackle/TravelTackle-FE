@@ -44,19 +44,6 @@ const GROUPS = {
   },
 }
 
-// 피드를 못 불러왔을 때 보여주는 예시 (실 데이터 아님 — 상세로는 연결하지 않는다)
-const FALLBACK = {
-  plan: [
-    { id: 'f1', kind: 'plan', title: '제주 3박 4일 힐링 코스, 이렇게 짜보세요', desc: '3박 4일 · 장소 12곳 · 첫날 협재해수욕장 → 애월 카페거리', meta: '여행에니아 · 2026.07.06', feedbackCount: 12 },
-    { id: 'f4', kind: 'plan', title: '경주 역사&맛집 코스, 동선까지 완벽 정리', desc: '1박 2일 · 장소 8곳 · 첫날 첨성대 → 불국사', meta: 'trip_lover · 2026.07.03', feedbackCount: 7 },
-    { id: 'f7', kind: 'plan', title: '부산 바다 따라 1박 2일', desc: '1박 2일 · 장소 6곳 · 첫날 해운대 → 광안리', meta: 'busan_hero · 2026.07.01', feedbackCount: 4 },
-  ],
-  record: [
-    { id: 'f3', kind: 'record', title: '강릉 카페 투어, 사진으로 기록했어요', desc: '바다가 보이는 카페 5곳을 하루에 돌아본 기록, 동선과 웨이팅 팁까지 담았어요.', meta: '여행하는누나 · 2026.07.04', feedbackCount: 9 },
-    { id: 'f6', kind: 'record', title: '제주 일몰 드라이브, 그 순간의 기록', desc: '서쪽 해안도로를 따라 달리며 만난 노을, 차 안에서 담은 순간들을 기록했어요.', meta: 'wanderlust · 2026.07.01', feedbackCount: 5 },
-    { id: 'f5', kind: 'record', title: '전주 한옥마을, 실제 방문자 평가는?', desc: '골목 순서와 사진 찍기 좋은 시간대까지, 방문자들의 생생한 후기를 모았어요.', meta: '사진작가 · 2026.07.02', feedbackCount: 3 },
-  ],
-}
 
 // 인기 모드: 피드 항목 → 카드. 계획은 첫날 동선을, 기록은 본문을 요약문으로 쓴다. to = 피드 페이지에서 해당 글 상세
 function feedToCard(item) {
@@ -201,7 +188,7 @@ function RankSkeleton() {
   )
 }
 
-function GroupColumn({ group, cards, loading, personal, fallback, caption: captionOverride }) {
+function GroupColumn({ group, cards, loading, personal, caption: captionOverride }) {
   const caption = captionOverride ?? (personal ? group.personalCaption : group.popularCaption)
   return (
     <div className="rounded-3xl border border-slate-100 bg-white p-3 shadow-card">
@@ -215,10 +202,7 @@ function GroupColumn({ group, cards, loading, personal, fallback, caption: capti
             {loading ? (
               <Skeleton className="mt-1 h-2.5 w-28" />
             ) : (
-              <p className="text-[11.5px] text-slate-400">
-                TOP {TOP_N} · {caption}
-                {fallback && <span className="ml-1 text-amber-500">(예시)</span>}
-              </p>
+              <p className="text-[11.5px] text-slate-400">TOP {TOP_N} · {caption}</p>
             )}
           </div>
         </div>
@@ -428,13 +412,13 @@ export default function AiSummaryFeed({ feed }) {
   }, [personalized])
   const showPersonal = mode === 'personal' && personalized
 
-  // 인기: 참견 많은 순으로 이미 정렬된 피드에서 종류별 상위 3개. 피드가 비면 예시로 채운다
+  // 인기: 참견 많은 순으로 이미 정렬된 피드에서 종류별 상위 3개. 피드가 비면 GroupColumn이 자체 빈 상태를 보여준다.
   const popular = useMemo(() => {
     const cards = feed.items.map(feedToCard)
-    const plan = cards.filter((c) => c.kind === 'plan').slice(0, TOP_N)
-    const record = cards.filter((c) => c.kind === 'record').slice(0, TOP_N)
-    const fallback = cards.length === 0
-    return { plan: fallback ? FALLBACK.plan : plan, record: fallback ? FALLBACK.record : record, fallback }
+    return {
+      plan: cards.filter((c) => c.kind === 'plan').slice(0, TOP_N),
+      record: cards.filter((c) => c.kind === 'record').slice(0, TOP_N),
+    }
   }, [feed.items])
 
   // 맞춤: 취향 일치 점수 높은 순으로 상위 3개
@@ -486,7 +470,6 @@ export default function AiSummaryFeed({ feed }) {
                 loading={summarizing}
                 personal={columns[key].personal}
                 caption={columns[key].caption}
-                fallback={!columns[key].personal && popular.fallback}
               />
             </div>
           ))}
