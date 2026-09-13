@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { Link } from 'react-router-dom'
 import Skeleton from '../ui/Skeleton'
@@ -104,6 +104,11 @@ export default function FeedbackDrawer({ target, onClose, onPosted, onDeleted })
   const open = !!target
   const tripId = target?.tripId
   const [state, setState] = useState({ items: [], loading: false, error: false })
+  // 무한 스크롤 — 30건 넘는 참견은 스크롤 끝(sentinel)에 닿을 때마다 다음 페이지를 이어붙인다.
+  const [page, setPage] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const sentinelRef = useRef(null)
   const [draft, setDraft] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -199,14 +204,47 @@ export default function FeedbackDrawer({ target, onClose, onPosted, onDeleted })
     setEditError('')
     setDeleteTarget(null)
     setDeleteError('')
+    setPage(0)
+    setHasMore(true)
     getTripFeedback(tripId, { page: 0, size: PAGE_SIZE })
-      .then((page) => {
+      .then((res) => {
         if (ignore) return
-        setState({ items: Array.isArray(page?.content) ? page.content : [], loading: false, error: false })
+        setState({ items: Array.isArray(res?.content) ? res.content : [], loading: false, error: false })
+        setHasMore(!res?.last)
       })
       .catch(() => { if (!ignore) setState({ items: [], loading: false, error: true }) })
     return () => { ignore = true }
   }, [tripId])
+
+  // 목록 끝(sentinel)이 보이면 다음 페이지를 이어붙인다 — 로딩 중/이미 불러오는 중/더 없음일 땐 무시.
+  const loadMoreFeedback = useCallback(() => {
+    if (!tripId || state.loading || loadingMore || !hasMore) return
+    const nextPage = page + 1
+    setLoadingMore(true)
+    getTripFeedback(tripId, { page: nextPage, size: PAGE_SIZE })
+      .then((res) => {
+        setState((s) => ({ ...s, items: [...s.items, ...(Array.isArray(res?.content) ? res.content : [])] }))
+        setPage(nextPage)
+        setHasMore(!res?.last)
+      })
+      .catch(() => setHasMore(false))
+      .finally(() => setLoadingMore(false))
+  }, [tripId, state.loading, loadingMore, hasMore, page])
+
+  // 드로어는 자체 스크롤 컨테이너(listRef)를 쓰므로, 관찰 기준(root)도 창이 아니라 그 컨테이너로 잡는다.
+  useEffect(() => {
+    const el = sentinelRef.current
+    const root = listRef.current
+    if (!el || !root || !hasMore) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMoreFeedback()
+      },
+      { root, rootMargin: '200px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [loadMoreFeedback, hasMore])
 
   useEffect(() => {
     if (!open) return
@@ -451,6 +489,13 @@ export default function FeedbackDrawer({ target, onClose, onPosted, onDeleted })
                     </li>
                   )})}
                 </ul>
+              )}
+
+              {/* 스크롤이 끝에 닿으면 다음 페이지를 이어붙이는 트리거 — 목록이 비어있거나 로딩 중일 땐 안 보인다 */}
+              {!state.loading && !state.error && state.items.length > 0 && (
+                <div ref={sentinelRef} className="flex h-8 items-center justify-center">
+                  {loadingMore && <Icon icon="mdi:loading" width={16} className="animate-spin text-slate-300" />}
+                </div>
               )}
             </div>
 
