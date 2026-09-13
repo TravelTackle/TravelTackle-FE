@@ -10,7 +10,7 @@ import { shortRegion } from '../lib/homeFormat'
 import { useAuth } from '../context/AuthContext'
 
 const PAGE_SIZE = 9 // 계획·기록 탭 카드 수
-const SPOT_COUNT = 6 // 여행지 탭 카드 수 — 계획·기록 탭과 같은 카드 크기로 데스크톱 2줄, 모바일 3줄
+const SPOT_COUNT = PAGE_SIZE // 여행지 탭도 계획·기록 탭과 같은 9장 — 카드 크기·개수가 같아 탭을 오가도 섹션 높이가 같다
 
 // "전체" 목록의 제목. 백엔드 default 섹션은 관광 API 결과를 무작위로 섞어 주는 것이라(인기 집계가 아님)
 // 서버가 붙인 제목 대신 사실에 맞는 이 문구를 쓴다. 맞춤 추천(personal)만 서버 제목을 그대로 쓴다.
@@ -133,7 +133,7 @@ function RecordCard({ item }) {
   )
 }
 
-// 여행지 탭 스켈레톤 — 캡션(타일+두 줄)과 카드 6장 자리를 실제 그리드와 똑같이 잡아 로딩이 끝나도 레이아웃이 튀지 않는다
+// 여행지 탭 스켈레톤 — 캡션(타일+두 줄)과 카드 9장 자리를 실제 그리드와 똑같이 잡아 로딩이 끝나도 레이아웃이 튀지 않는다
 function SpotSkeletonGrid() {
   return (
     <div className="mt-5" role="status" aria-label="추천 여행지를 불러오는 중">
@@ -323,7 +323,7 @@ export default function ExploreSection({ feed }) {
       .slice(0, PAGE_SIZE)
   }, [feed.items, tab, region])
 
-  const spotItems = spots.items.slice(0, SPOT_COUNT) // 세션 캐시에 이전 개수가 남아 있어도 6장만
+  const spotItems = spots.items.slice(0, SPOT_COUNT)
   const loading = tab === 'spot' ? spots.loading : feed.loading
 
   // 제목 스켈레톤은 섹션이 처음 열릴 때 한 번만 — 탭·지역을 바꿀 땐 카드만 다시 로딩된다
