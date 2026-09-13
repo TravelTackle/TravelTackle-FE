@@ -11,6 +11,10 @@ import { useAuth } from '../context/AuthContext'
 
 const PAGE_SIZE = 9
 
+// "전체" 목록의 제목. 백엔드 default 섹션은 관광 API 결과를 무작위로 섞어 주는 것이라(인기 집계가 아님)
+// 서버가 붙인 제목 대신 사실에 맞는 이 문구를 쓴다. 맞춤 추천(personal)만 서버 제목을 그대로 쓴다.
+const DAILY_TITLE = '오늘의 추천 여행지'
+
 const TABS = [
   { key: 'spot', label: '여행지 탐색', icon: 'solar:map-point-linear', moreTo: '/explore', moreLabel: '관광지 전체보기' },
   { key: 'plan', label: '계획', icon: 'solar:document-text-linear', moreTo: '/feed', moreLabel: '여행자 피드 전체보기' },
@@ -47,20 +51,54 @@ function RegionChip({ children }) {
   )
 }
 
-function SpotCard({ spot }) {
-  return (
-    <Card as={Link} to="/explore" className="group block overflow-hidden">
-      <div className="relative overflow-hidden">
+// 여행지 카드. featured(오늘의 첫 추천)는 그리드에서 2칸×2줄을 차지하고 제목을 사진 위에 얹는다 —
+// 나머지는 사진 비율(4:3)을 고정해 화면 폭이 바뀌어도 줄 높이가 맞는다.
+function SpotCard({ spot, featured = false }) {
+  const region = spot.address ? shortRegion(spot.address) : ''
+
+  if (featured) {
+    return (
+      <Card as={Link} to="/explore" shadow className="group relative block aspect-[16/10] overflow-hidden md:aspect-auto md:h-full">
         {spot.imageUrl ? (
-          <img src={spot.imageUrl} className="w-full h-[150px] object-cover transition-transform duration-500 ease-out group-hover:scale-105" alt={spot.title} loading="lazy" />
+          <img src={spot.imageUrl} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]" alt={spot.title} loading="lazy" />
         ) : (
-          <div className="w-full h-[150px] bg-gradient-to-br from-slate-100 to-slate-200" />
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-light to-slate-200" />
         )}
-        {spot.address && <RegionChip>{shortRegion(spot.address)}</RegionChip>}
+        {/* 제목이 사진 어디에 놓여도 읽히도록 아래쪽만 어둡게 */}
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/25 to-transparent" />
+        {region && <RegionChip>{region}</RegionChip>}
+        <div className="absolute inset-x-0 bottom-0 p-4 md:p-5">
+          <span className="flex items-center gap-1 text-[11px] font-bold text-sky-200">
+            <Icon icon="solar:star-bold" width={11} /> 오늘의 첫 추천
+          </span>
+          <h3 className="mt-1 line-clamp-2 text-[18px] font-extrabold leading-tight text-white [text-wrap:balance] md:text-[21px]">{spot.title}</h3>
+          {spot.address && (
+            <p className="mt-1.5 flex items-center gap-1 text-[12px] text-white/75">
+              <Icon icon="solar:map-point-bold" width={12} className="shrink-0" />
+              <span className="truncate">{spot.address}</span>
+            </p>
+          )}
+        </div>
+      </Card>
+    )
+  }
+
+  return (
+    <Card as={Link} to="/explore" shadow className="group block h-full overflow-hidden">
+      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+        {spot.imageUrl ? (
+          <img src={spot.imageUrl} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" alt={spot.title} loading="lazy" />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200" />
+        )}
+        {region && <RegionChip>{region}</RegionChip>}
       </div>
       <div className="p-3">
-        <div className="text-[13px] font-bold text-slate-900 truncate transition-colors group-hover:text-brand">{spot.title}</div>
-        <div className="text-[11px] text-slate-400 mt-0.5 truncate">{spot.address || ' '}</div>
+        <div className="truncate text-[13px] font-bold text-slate-900 transition-colors group-hover:text-brand">{spot.title}</div>
+        <div className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-400">
+          <Icon icon="solar:map-point-linear" width={11} className="shrink-0" />
+          <span className="truncate">{spot.address || '주소 정보 없음'}</span>
+        </div>
       </div>
     </Card>
   )
@@ -123,6 +161,67 @@ function RecordCard({ item }) {
   )
 }
 
+// 여행지 탭 스켈레톤 — 실제 그리드와 같은 자리(첫 장 2칸×2줄 + 나머지 8장)를 잡아 두어 로딩이 끝나도 레이아웃이 튀지 않는다
+function SpotSkeletonGrid() {
+  return (
+    <div className="mt-5" role="status" aria-label="추천 여행지를 불러오는 중">
+      <div className="mb-3 flex items-center gap-2">
+        <Skeleton className="h-4 w-4 rounded-full" />
+        <Skeleton className="h-3.5 w-32" style={{ animationDelay: '60ms' }} />
+        <Skeleton className="h-3 w-14" style={{ animationDelay: '120ms' }} />
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+        <div className="relative col-span-2 aspect-[16/10] overflow-hidden rounded-2xl border border-slate-100 bg-white md:row-span-2 md:aspect-auto">
+          <Skeleton className="absolute inset-0 rounded-none" />
+          <div className="absolute inset-x-0 bottom-0 p-4 md:p-5">
+            <div className="h-2.5 w-20 rounded bg-white/60" />
+            <div className="mt-2 h-5 w-3/5 rounded bg-white/70" />
+            <div className="mt-2 h-3 w-2/5 rounded bg-white/50" />
+          </div>
+        </div>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="overflow-hidden rounded-2xl border border-slate-100 bg-white">
+            <div className="relative aspect-[4/3]">
+              <Skeleton className="absolute inset-0 rounded-none" style={{ animationDelay: `${(i + 1) * 90}ms` }} />
+              <Skeleton className="absolute left-2 top-2 h-5 w-10 rounded-full" style={{ animationDelay: `${(i + 1) * 90 + 40}ms` }} />
+            </div>
+            <div className="p-3">
+              <Skeleton className="h-4 w-2/3" style={{ animationDelay: `${(i + 1) * 90 + 80}ms` }} />
+              <Skeleton className="mt-2 h-3 w-1/2" style={{ animationDelay: `${(i + 1) * 90 + 120}ms` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// 목록 위 한 줄 — 무엇을 기준으로 고른 목록인지 밝힌다. 맞춤 추천은 보라, 나머지는 브랜드색 나침반
+function SpotCaption({ spots, user, region }) {
+  const today = new Date()
+  const daily = !spots.personal && !region.areaCode
+  return (
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+      <p className={`flex items-center gap-1.5 text-[13px] font-bold ${spots.personal ? 'text-violet-600' : 'text-slate-900'}`}>
+        <Icon icon={spots.personal ? 'solar:magic-stick-3-bold' : 'solar:compass-bold'} width={15} className={spots.personal ? '' : 'text-brand'} />
+        {spots.title}
+        {daily && (
+          <span className="font-semibold text-slate-400">
+            {today.getMonth() + 1}월 {today.getDate()}일
+          </span>
+        )}
+      </p>
+      {spots.personal ? (
+        <span className="text-[12px] text-slate-400">{user?.name || '회원'}님 취향에 맞춰 골랐어요</span>
+      ) : daily && user ? (
+        <Link to="/onboarding/preferences" className="text-[12px] font-semibold text-brand underline underline-offset-2 transition-colors hover:text-brand-dark">
+          취향을 등록하면 맞춤 추천을 받을 수 있어요
+        </Link>
+      ) : null}
+    </div>
+  )
+}
+
 function SkeletonGrid() {
   return (
     <div className="mt-5 grid grid-cols-2 md:grid-cols-3 gap-4" role="status" aria-label="불러오는 중">
@@ -162,13 +261,14 @@ function EmptyState({ icon, title, desc, to, cta }) {
 // 제목은 첫 로딩 뒤 어절이 차례로 떠오른다 (배너 문구와 같은 결)
 const HEADING = [{ text: '좋은 여행은' }, { text: '좋은 참견에서', accent: true }, { text: '시작됩니다.' }]
 
-// 로그인 사용자의 "전체" 탭은 선호도 기반 추천으로 채운다 — 맞춤 추천 섹션이 비면 인기 여행지 섹션으로
+// 로그인 사용자의 "전체" 탭은 선호도 기반 추천으로 채운다 — 맞춤 추천 섹션이 비면 default 섹션(무작위)으로.
+// default 섹션의 서버 제목은 쓰지 않고 DAILY_TITLE로 바꿔 단다.
 function pickRecommended(sections) {
   const bySection = Object.fromEntries((sections || []).map((s) => [s.sectionId, s]))
   const personal = bySection.personal?.items ?? []
   if (personal.length) return { items: personal, title: bySection.personal.title, personal: true }
   const fallback = bySection.default
-  return fallback?.items?.length ? { items: fallback.items, title: fallback.title, personal: false } : null
+  return fallback?.items?.length ? { items: fallback.items, title: DAILY_TITLE, personal: false } : null
 }
 
 export default function ExploreSection({ feed }) {
@@ -199,7 +299,11 @@ export default function ExploreSection({ feed }) {
         arrange: 'O', // 제목순 + 대표이미지 있는 콘텐츠만
         size: PAGE_SIZE,
         page: 1,
-      }).then((data) => ({ items: Array.isArray(data?.items) ? data.items : [], title: null }))
+      }).then((data) => ({
+        items: Array.isArray(data?.items) ? data.items : [],
+        title: region.areaCode ? `${region.label} 여행지` : DAILY_TITLE,
+        personal: false,
+      }))
 
     // 추천 응답이 비거나 실패하면 일반 목록으로 조용히 내려간다
     const request = personalized
@@ -240,7 +344,7 @@ export default function ExploreSection({ feed }) {
   }, [loading])
 
   function renderBody() {
-    if (loading) return <SkeletonGrid />
+    if (loading) return tab === 'spot' ? <SpotSkeletonGrid /> : <SkeletonGrid />
 
     if (tab === 'spot') {
       if (spots.error) {
@@ -266,27 +370,13 @@ export default function ExploreSection({ feed }) {
         )
       }
       return (
-        <div key={spots.title ? 'personal' : regionKey(region)} className="animate-slide-in mt-5">
-          {spots.title && (
-            <p className="mb-3 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12.5px] font-bold text-violet-600">
-              <Icon icon="solar:magic-stick-3-bold" width={14} />
-              {spots.personal ? (
-                <>{spots.title} · {user.name || '회원'}님 취향에 맞춰 골랐어요</>
-              ) : (
-                <>
-                  {spots.title}
-                  <span className="font-semibold text-slate-400">
-                    · 취향을 등록하면 맞춤 추천을 받을 수 있어요{' '}
-                    <Link to="/onboarding/preferences" className="text-brand underline underline-offset-2">취향 등록하기</Link>
-                  </span>
-                </>
-              )}
-            </p>
-          )}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div key={spots.personal ? 'personal' : regionKey(region)} className="animate-slide-in mt-5">
+          <SpotCaption spots={spots} user={user} region={region} />
+          {/* 첫 장은 2칸×2줄(모바일은 2칸×1줄)로 크게, 나머지 8장은 같은 크기로 — 9장이 데스크톱 4줄, 모바일 5줄에 딱 맞는다 */}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
             {spotItems.map((s, i) => (
-              <div key={s.contentId} className="animate-slide-in" style={{ animationDelay: `${i * 60}ms` }}>
-                <SpotCard spot={s} />
+              <div key={s.contentId} className={`animate-slide-in ${i === 0 ? 'col-span-2 md:row-span-2' : ''}`} style={{ animationDelay: `${i * 60}ms` }}>
+                <SpotCard spot={s} featured={i === 0} />
               </div>
             ))}
           </div>
