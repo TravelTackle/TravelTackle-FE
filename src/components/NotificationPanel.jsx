@@ -14,7 +14,6 @@ function RowSkeleton({ i }) {
         <Skeleton className="mt-1.5 h-2.5 w-3/5" style={{ animationDelay: `${i * 80 + 80}ms` }} />
         <Skeleton className="mt-1.5 h-2 w-10" style={{ animationDelay: `${i * 80 + 120}ms` }} />
       </div>
-      <Skeleton className="h-10 w-10 shrink-0 rounded-lg" style={{ animationDelay: `${i * 80 + 60}ms` }} />
     </li>
   )
 }
@@ -90,9 +89,6 @@ export default function NotificationPanel({ onNavigate }) {
                       )}
                       <span className="mt-1 block text-[10.5px] text-slate-400">{timeAgo(n.createdAt)}</span>
                     </span>
-                    {n.trip?.thumbnailUrl && (
-                      <img src={n.trip.thumbnailUrl} alt="" loading="lazy" className="h-10 w-10 shrink-0 rounded-lg object-cover bg-slate-100" />
-                    )}
                   </Link>
                 </li>
               )
