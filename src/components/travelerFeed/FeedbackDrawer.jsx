@@ -501,11 +501,8 @@ export default function FeedbackDrawer({ target, onClose, onPosted, onDeleted })
 
             <div className="border-t border-slate-100 bg-white p-4">
               {isMine ? (
-                <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3">
-                  <p className="text-[12.5px] text-slate-600">내 계획에는 참견을 남길 수 없어요. 다른 여행자의 참견을 여기서 확인하세요.</p>
-                  <Link to="/trips" className="shrink-0 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-[12px] font-bold text-slate-700 transition-colors hover:border-brand/40">
-                    나의 여행
-                  </Link>
+                <div className="rounded-2xl bg-slate-50 px-4 py-3 text-center">
+                  <p className="text-[12.5px] text-slate-600">위 목록은 다른 여행자들이 남긴 참견이에요.</p>
                 </div>
               ) : !authLoading && !user ? (
                 <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3">
