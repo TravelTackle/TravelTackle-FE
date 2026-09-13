@@ -14,8 +14,7 @@ const TONE = {
   ended: 'bg-slate-800/80 text-white',
 }
 
-export default function FestivalCard({ festival, index = 0, onOpen, onAddToCart }) {
-  const [added, setAdded] = useState(false)
+export default function FestivalCard({ festival, index = 0, onOpen, onToggleCart, carted }) {
   const [loading, setLoading] = useState(false)
   const [dragging, setDragging] = useState(false)
 
@@ -24,13 +23,13 @@ export default function FestivalCard({ festival, index = 0, onOpen, onAddToCart 
   const span = formatSpan(festival.startDate, festival.endDate)
   const region = shortRegion(festival.address)
 
-  async function handleQuickAdd(e) {
+  // 이미 담긴 상태에서 다시 누르면 onToggleCart가 담기 대신 빼기로 처리한다
+  async function handleQuickToggle(e) {
     e.stopPropagation()
-    if (added || loading) return
+    if (loading) return
     setLoading(true)
-    const ok = await onAddToCart(festival.contentId)
+    await onToggleCart(festival.contentId)
     setLoading(false)
-    if (ok) setAdded(true)
   }
 
   return (
@@ -83,14 +82,14 @@ export default function FestivalCard({ festival, index = 0, onOpen, onAddToCart 
         </span>
 
         <button
-          onClick={handleQuickAdd}
+          onClick={handleQuickToggle}
           disabled={loading}
-          aria-label="카트에 담기"
-          className={`absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-card transition-colors ${
-            added ? 'text-brand' : 'text-slate-600 hover:text-brand'
+          aria-label={carted ? '카트에서 빼기' : '카트에 담기'}
+          className={`absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full shadow-card transition-colors ${
+            carted ? 'bg-brand text-white' : 'bg-white/95 text-slate-600 hover:text-brand'
           }`}
         >
-          <Icon icon={added ? 'solar:cart-check-bold' : 'solar:cart-large-2-linear'} width={16} />
+          <Icon icon={carted ? 'solar:cart-check-bold' : 'solar:cart-large-2-linear'} width={16} />
         </button>
 
         <div className="absolute bottom-2.5 left-3 flex items-center gap-1.5 text-[11.5px] font-semibold text-white drop-shadow">

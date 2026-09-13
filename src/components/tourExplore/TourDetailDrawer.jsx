@@ -5,10 +5,9 @@ import { getTourContentDetail } from '../../api/tour'
 
 const stripTags = (html) => (html ? html.replace(/<[^>]*>/g, '') : '')
 
-export default function TourDetailDrawer({ contentId, onClose, onAddToCart }) {
+export default function TourDetailDrawer({ contentId, onClose, onToggleCart, carted }) {
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [added, setAdded] = useState(false)
   const [cartLoading, setCartLoading] = useState(false)
   const open = !!contentId
 
@@ -16,7 +15,6 @@ export default function TourDetailDrawer({ contentId, onClose, onAddToCart }) {
     if (!contentId) return
     let ignore = false
     setDetail(null)
-    setAdded(false)
     setLoading(true)
     getTourContentDetail(contentId)
       .then((data) => { if (!ignore) setDetail(data) })
@@ -25,12 +23,12 @@ export default function TourDetailDrawer({ contentId, onClose, onAddToCart }) {
     return () => { ignore = true }
   }, [contentId])
 
-  async function handleAdd() {
-    if (added || cartLoading) return
+  // 이미 담긴 상태에서 다시 누르면 onToggleCart가 담기 대신 빼기로 처리한다
+  async function handleToggle() {
+    if (cartLoading) return
     setCartLoading(true)
-    const ok = await onAddToCart(contentId)
+    await onToggleCart(contentId)
     setCartLoading(false)
-    if (ok) setAdded(true)
   }
 
   return (
@@ -54,12 +52,13 @@ export default function TourDetailDrawer({ contentId, onClose, onAddToCart }) {
                 <Icon icon="solar:alt-arrow-left-linear" width={18} />
               </button>
               <Button
-                onClick={handleAdd}
-                disabled={cartLoading || added}
+                onClick={handleToggle}
+                disabled={cartLoading}
+                variant={carted ? 'light' : 'solid'}
                 className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-bold disabled:opacity-60"
               >
-                <Icon icon={added ? 'solar:check-circle-bold' : 'solar:cart-large-2-bold'} width={14} />
-                {added ? '담음' : '카트에 담기'}
+                <Icon icon={carted ? 'solar:check-circle-bold' : 'solar:cart-large-2-bold'} width={14} />
+                {carted ? '담음 · 빼기' : '카트에 담기'}
               </Button>
             </div>
 

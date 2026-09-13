@@ -10,7 +10,7 @@ import TourDetailDrawer from '../components/tourExplore/TourDetailDrawer'
 import FestivalPeriodBar from '../components/tourExplore/FestivalPeriodBar'
 import { useAuth } from '../context/AuthContext'
 import { getTourContents, getTourFestivals } from '../api/tour'
-import { addCartItem } from '../api/cart'
+import { CART_CHANGED_EVENT, addCartItem, getCartItems, removeCartItem } from '../api/cart'
 import { PAGE_SIZE, toLDongRegnCd } from '../data/tourSpots'
 import { DEFAULT_PRESET, presetRange } from '../lib/festivalPeriod'
 
@@ -36,6 +36,30 @@ export default function TourExplorePage() {
   const [selectedContentId, setSelectedContentId] = useState(null)
   const [toast, setToast] = useState('')
   const toastTimer = useRef(null)
+  // 탐색 카드 "담기" 상태 동기화 — 실제 장바구니 목록을 한 번 받아서, 이미 담긴 콘텐츠는
+  // 세션 첫 진입에도(그리드 카드·상세 패널 모두) "담음"으로 보이게 한다.
+  // contentId → cartItemId 맵으로 들고 있어야, 담긴 걸 다시 눌렀을 때 그 카트 아이템을 바로 지울 수 있다.
+  const [cartMap, setCartMap] = useState(() => new Map())
+
+  useEffect(() => {
+    if (!user) {
+      setCartMap(new Map())
+      return
+    }
+    let ignore = false
+    function sync() {
+      getCartItems()
+        .then((items) => { if (!ignore) setCartMap(new Map(items.map((i) => [i.contentId, i.id]))) })
+        .catch(() => {})
+    }
+    sync()
+    // FloatingCart 패널 등 다른 곳에서 담기/빼기가 일어나도 이 페이지 카드 상태가 같이 바뀌게
+    window.addEventListener(CART_CHANGED_EVENT, sync)
+    return () => {
+      ignore = true
+      window.removeEventListener(CART_CHANGED_EVENT, sync)
+    }
+  }, [user])
 
   const fetchPage = useCallback((pageNum, { append }) => {
     const setBusy = append ? setLoadingMore : setLoading
@@ -96,17 +120,34 @@ export default function TourExplorePage() {
     toastTimer.current = setTimeout(() => setToast(''), 1600)
   }
 
-  async function handleAddToCart(contentId) {
+  // 이미 담긴 콘텐츠를 다시 누르면 담기 대신 빼기 — 장바구니 패널의 삭제와 동일하게 동작한다.
+  async function handleToggleCart(contentId) {
     if (!user) {
       showToast('로그인이 필요해요')
       return false
     }
+    const cartItemId = cartMap.get(contentId)
+    if (cartItemId) {
+      try {
+        await removeCartItem(cartItemId)
+        setCartMap((m) => { const next = new Map(m); next.delete(contentId); return next })
+        showToast('장바구니에서 뺐어요')
+        return true
+      } catch {
+        showToast('장바구니에서 빼지 못했어요')
+        return false
+      }
+    }
     try {
-      await addCartItem(contentId)
+      const created = await addCartItem(contentId)
+      setCartMap((m) => new Map(m).set(contentId, created.id))
       showToast('여행 장바구니에 담았어요')
       return true
     } catch (err) {
       if (err.response?.status === 409) {
+        // 이미 있는데 우리 맵엔 없던 경우(다른 탭 등에서 담김) — 목록을 다시 받아 동기화
+        const items = await getCartItems().catch(() => [])
+        setCartMap(new Map(items.map((i) => [i.contentId, i.id])))
         showToast('이미 장바구니에 있어요')
         return true
       }
@@ -168,7 +209,8 @@ export default function TourExplorePage() {
             hasMore={hasMore}
             onLoadMore={handleLoadMore}
             onOpen={(spot) => setSelectedContentId(spot.contentId)}
-            onAddToCart={handleAddToCart}
+            onToggleCart={handleToggleCart}
+            cartMap={cartMap}
             variant={isFestival ? 'festival' : 'spot'}
             emptyMessage={isFestival ? '이 기간에 열리는 축제·행사가 없어요.' : undefined}
             emptyAction={
@@ -193,7 +235,8 @@ export default function TourExplorePage() {
       <TourDetailDrawer
         contentId={selectedContentId}
         onClose={() => setSelectedContentId(null)}
-        onAddToCart={handleAddToCart}
+        onToggleCart={handleToggleCart}
+        carted={selectedContentId ? cartMap.has(selectedContentId) : false}
       />
 
       <div
