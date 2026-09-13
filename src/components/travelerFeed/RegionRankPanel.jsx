@@ -2,11 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Icon } from '@iconify/react'
 import Card from '../ui/Card'
 import Skeleton from '../ui/Skeleton'
-import { getFeed } from '../../api/feed'
-import { adaptFeedItem } from '../../data/feedAdapter'
+import { getFeedRegionCounts } from '../../api/feed'
 
-const PAGE = 50 // 백엔드 최대 페이지 크기
-const MAX_PAGES = 4 // 이번 달 게시물이 많아도 최대 200건까지만 훑는다
+const TOP_N = 3
 
 // 1위 금 · 2위 은 · 3위 동 — 홈 모아보기 순위와 같은 배지
 const RANK_STYLE = [
@@ -25,25 +23,23 @@ function countRegions(items) {
   return [...counts.entries()].map(([region, count]) => ({ region, count })).sort((a, b) => b.count - a.count)
 }
 
-// 이번 달 인기 지역 TOP 3 — 페이지 목록(검색·정렬 결과)과 별개로 최신순 피드를 따로 받아,
-// 이번 달 1일 이후 게시물(계획·기록)만 지역별로 센다. 백엔드에 지역 집계 API가 없어 프론트에서 세되,
-// 이번 달 게시물이 없으면 다른 기간으로 대체하지 않는다. 같은 세션에서는 한 번만 조회한다.
+// 이번 달 인기 지역 TOP 3 — GET /feed/regions?from=&to= 로 백엔드가 이번 달에 공개된 계획을
+// 첫 일정 지역별로 세어 준다(계획 수 내림차순, 동점은 지역명순). 프론트는 받은 순서를 그대로 쓰고,
+// 이번 달 계획이 없어도 다른 기간으로 대체하지 않는다. 같은 세션에서는 한 번만 조회한다.
 let monthlyCache = null
+
+// 로컬 날짜를 YYYY-MM-DD로 — toISOString은 UTC라 KST 자정 전후에 날짜가 하루 어긋난다
+function toDateParam(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 async function fetchMonthlyRegions() {
   const now = new Date()
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
-  const items = []
-  for (let page = 0; page < MAX_PAGES; page += 1) {
-    const res = await getFeed({ page, size: PAGE, sort: 'latest' })
-    const content = (res?.content ?? []).map(adaptFeedItem)
-    items.push(...content)
-    const last = content[content.length - 1]
-    // 최신순이므로 마지막 항목이 이번 달 이전이면 더 볼 필요가 없다
-    if (content.length < PAGE || !last?.createdAt || new Date(last.createdAt).getTime() < monthStart) break
-  }
-  const thisMonth = items.filter((i) => i.createdAt && new Date(i.createdAt).getTime() >= monthStart)
-  return { top: countRegions(thisMonth).slice(0, 3), month: now.getMonth() + 1 }
+  const from = new Date(now.getFullYear(), now.getMonth(), 1)
+  const to = new Date(now.getFullYear(), now.getMonth() + 1, 0) // 이번 달 마지막 날(양끝 포함)
+  const rows = await getFeedRegionCounts({ from: toDateParam(from), to: toDateParam(to), size: TOP_N })
+  const top = (Array.isArray(rows) ? rows : []).map((r) => ({ region: r.region, count: r.tripCount }))
+  return { top, month: now.getMonth() + 1 }
 }
 
 export function useMonthlyRegions() {
@@ -99,7 +95,7 @@ export default function RegionRankPanel({ monthly, chips, loading, active, onSel
     <Card className="p-4">
       <div className="flex items-center justify-between">
         <div className="text-[13px] font-bold text-slate-900">{title}</div>
-        <span className="text-[10.5px] text-slate-400">이번 달 게시물 기준</span>
+        <span className="text-[10.5px] text-slate-400">이번 달 공개된 계획 기준</span>
       </div>
 
       {monthlyLoading ? (
@@ -112,7 +108,7 @@ export default function RegionRankPanel({ monthly, chips, loading, active, onSel
           ))}
         </div>
       ) : top.length === 0 ? (
-        <p className="mt-3 rounded-xl bg-slate-50 px-3 py-3 text-center text-[12px] text-slate-400">{month}월에 올라온 게시물이 아직 없어요.</p>
+        <p className="mt-3 rounded-xl bg-slate-50 px-3 py-3 text-center text-[12px] text-slate-400">{month}월에 공개된 계획이 아직 없어요.</p>
       ) : (
         <Podium top={top} active={active} onSelect={onSelect} />
       )}
@@ -167,7 +163,7 @@ function Podium({ top, active, onSelect }) {
             type="button"
             onClick={() => onSelect(isActive ? null : r.region)}
             aria-pressed={isActive}
-            aria-label={`${col.rank}위 ${r.region}, 게시물 ${r.count}개`}
+            aria-label={`${col.rank}위 ${r.region}, 계획 ${r.count}개`}
             className="group flex w-full flex-col items-center gap-1.5 rounded-xl px-0.5 pt-1 transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
           >
             {col.rank === 1 && (
