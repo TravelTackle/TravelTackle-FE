@@ -13,6 +13,28 @@ const CODE_EXPIRE_SECONDS = 600 // 백엔드 email-verification-expiration-minut
 const inputClass =
   'w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-[14px] text-slate-900 placeholder:text-slate-400 outline-none focus:border-brand transition-all disabled:bg-slate-50 disabled:text-slate-400'
 
+// MyPageAccountSettings의 알림 설정과 같은 체크 인디케이터 — 기본 브라우저 체크박스 대신 씀
+function NotifToggle({ label, hint, checked, onChange }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      aria-pressed={checked}
+      className="flex items-center gap-1.5 text-[12.5px] font-semibold text-slate-600"
+    >
+      <span
+        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border-2 transition-colors ${
+          checked ? 'border-brand bg-brand' : 'border-slate-200 bg-white'
+        }`}
+      >
+        {checked && <Icon icon="solar:check-bold" width={9} color="white" />}
+      </span>
+      {label}
+      {hint && <span className="font-normal text-slate-400">{hint}</span>}
+    </button>
+  )
+}
+
 export default function SignupPage() {
   const navigate = useNavigate()
   const { login } = useAuth()
@@ -30,6 +52,21 @@ export default function SignupPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [nationality, setNationality] = useState('KR')
+  // 알림 수신 동의 — 기본값은 전부 켜둠(선택 사항). 이메일 동의를 끄면 하위 항목도 같이 꺼진다.
+  const [notifyEmail, setNotifyEmail] = useState(true)
+  const [notifyFeedback, setNotifyFeedback] = useState(true)
+  const [notifyRecommend, setNotifyRecommend] = useState(true)
+  const [notifyEvent, setNotifyEvent] = useState(true)
+
+  function toggleNotifyEmail() {
+    setNotifyEmail((v) => {
+      const next = !v
+      setNotifyFeedback(next)
+      setNotifyRecommend(next)
+      setNotifyEvent(next)
+      return next
+    })
+  }
 
   const [emailError, setEmailError] = useState('')
   const [codeError, setCodeError] = useState('')
@@ -129,6 +166,10 @@ export default function SignupPage() {
     try {
       await authApi.signup({ email, password, name, nationality })
       await login({ email, password })
+      // 알림 동의는 선택 사항이라 실패해도 가입 자체는 막지 않는다
+      await authApi
+        .updateNotificationSettings({ notifyEmail, notifyFeedback, notifyRecommend, notifyEvent })
+        .catch(() => {})
       navigate('/onboarding/welcome')
     } catch (err) {
       if (err.response?.status === 409) {
@@ -281,6 +322,19 @@ export default function SignupPage() {
                 ))}
               </select>
             </label>
+
+            <div>
+              <NotifToggle label="이메일 알림 수신 동의" hint="(선택)" checked={notifyEmail} onChange={toggleNotifyEmail} />
+              <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${notifyEmail ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                <div className="overflow-hidden">
+                  <div className="mt-2.5 flex flex-col gap-2 border-l-2 border-slate-100 pl-3">
+                    <NotifToggle label="피드백 알림" checked={notifyFeedback} onChange={setNotifyFeedback} />
+                    <NotifToggle label="여행 추천" checked={notifyRecommend} onChange={setNotifyRecommend} />
+                    <NotifToggle label="이벤트" checked={notifyEvent} onChange={setNotifyEvent} />
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {formError && <p className="text-[12.5px] text-rose-500 -mt-1">{formError}</p>}
 
