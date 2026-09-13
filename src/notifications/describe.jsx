@@ -10,11 +10,12 @@ export function notificationKind(n) {
   return KINDS[n?.type] ?? KINDS.FEEDBACK
 }
 
-// 눌렀을 때 갈 곳 — 참견은 마이페이지에서 그 계획의 참견 드로어를 바로 열고(?feedback=), 스크랩은 내 계획 갤러리
+// 눌렀을 때 갈 곳 — 마이페이지로 가서 그 계획의 사이드바를 바로 연다.
+// 참견은 상세 위에 참견 드로어까지(?feedback=), 스크랩은 계획 상세 드로어(?open=). MyPageSettings가 읽어 처리한다
 export function notificationTarget(n) {
   const tripId = n?.trip?.id
-  if (n?.type === 'FEEDBACK' && tripId) return `/mypage?feedback=${tripId}`
-  return '/mypage'
+  if (!tripId) return '/mypage'
+  return n?.type === 'FEEDBACK' ? `/mypage?feedback=${tripId}` : `/mypage?open=${tripId}`
 }
 
 // "OO님이 <계획> Day 2 · 장소에 참견을 남겼어요" / "OO님이 <계획>을 스크랩했어요"

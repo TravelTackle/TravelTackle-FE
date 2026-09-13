@@ -127,9 +127,10 @@ function MyProfileGallery({ user, authLoading, planItems, recordItems, loading, 
 export default function MyPageSettings() {
   const { user, loading: authLoading } = useAuth()
   const navigate = useNavigate()
-  // Navbar 알림에서 ?feedback=<tripId>로 들어오면 그 계획의 참견 드로어를 바로 연다
+  // Navbar 알림에서 ?feedback=<tripId>(참견)나 ?open=<tripId>(스크랩)로 들어오면 그 계획의 사이드바를 바로 연다
   const [searchParams, setSearchParams] = useSearchParams()
   const feedbackTripId = searchParams.get('feedback')
+  const openTripId = searchParams.get('open')
   const [feedFilter, setFeedFilter] = useState('plan')
   const [planItems, setPlanItems] = useState([])
   const [recordItems, setRecordItems] = useState([])
@@ -232,6 +233,23 @@ export default function MyPageSettings() {
       { replace: true },
     )
   }, [feedbackTripId, galleryLoading, planItems, openFeedback, setSearchParams])
+
+  // 스크랩 알림 — 참견 드로어 없이 계획 상세 드로어만 연다
+  useEffect(() => {
+    if (!openTripId || galleryLoading) return
+    const target = planItems.find((p) => p.id === openTripId)
+    if (!target) return
+    setFeedFilter('plan')
+    setDrawerItem(target)
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('open')
+        return next
+      },
+      { replace: true },
+    )
+  }, [openTripId, galleryLoading, planItems, setSearchParams])
 
   // 내 계획/기록이라 스크랩은 의미가 없어(FeedActionBar가 본인 글이면 알아서 막는다) 저장 관련 값은 빈 상태로 둔다.
   const feedActions = useMemo(
