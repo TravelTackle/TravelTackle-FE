@@ -468,3 +468,25 @@ body {
   transform-origin: bottom;
   animation: podium-rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+/* 실시간 알림 토스트 — 오른쪽에서 미끄러져 들어온다 */
+@keyframes noti-toast-in {
+  from { opacity: 0; transform: translateX(24px) scale(0.98); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+.noti-toast {
+  animation: noti-toast-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+/* 미읽음 알림이 생기면 종이 한 번 흔들린다 */
+@keyframes bell-ring {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(14deg); }
+  40% { transform: rotate(-12deg); }
+  60% { transform: rotate(8deg); }
+  80% { transform: rotate(-5deg); }
+}
+.bell-ring {
+  transform-origin: 50% 8%;
+  animation: bell-ring 0.7s ease-in-out 1;
+}
+
