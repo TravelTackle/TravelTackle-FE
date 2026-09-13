@@ -22,13 +22,14 @@ const REGIONS = [
   { label: '전체' },
   { label: '서울', areaCode: '1' },
   { label: '부산', areaCode: '6' },
+  { label: '인천', areaCode: '2' },
   { label: '제주', areaCode: '39' },
-  { label: '강릉', areaCode: '32', sigunguCode: '1' },
+  { label: '대구', areaCode: '4' },
   { label: '경주', areaCode: '35', sigunguCode: '2' },
   { label: '전주', areaCode: '37', sigunguCode: '12' },
+  { label: '강릉', areaCode: '32', sigunguCode: '1' },
   { label: '여수', areaCode: '38', sigunguCode: '13' },
   { label: '속초', areaCode: '32', sigunguCode: '5' },
-  { label: '통영', areaCode: '36', sigunguCode: '17' },
 ]
 
 // 캐시 키 → { items, title } — 탭·페이지를 오가도 같은 지역을 다시 부르지 않는다 (세션 유지)
