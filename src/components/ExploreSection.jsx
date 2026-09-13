@@ -162,14 +162,14 @@ function SpotSkeletonGrid() {
   )
 }
 
-// 목록 위 캡션 — 왼쪽 타일이 목록의 기준을 말한다. 오늘의 추천은 달력 타일(월·일), 맞춤 추천은 보라 마법봉,
+// 목록 위 캡션 — 왼쪽 타일이 목록의 기준을 말한다. 오늘의 추천은 달력 타일(월·일), 맞춤 추천은 마법봉,
 // 지역을 골랐을 땐 지도 핀. 제목 아래 한 줄로 무엇을 골랐는지 풀어 쓴다.
 function SpotCaption({ spots, user, region }) {
   const today = new Date()
   const personal = spots.personal
   const daily = !personal && !region.areaCode
   const tile = personal
-    ? { className: 'bg-violet-50 text-violet-600', body: <Icon icon="solar:magic-stick-3-bold" width={19} /> }
+    ? { className: 'bg-brand-light text-brand', body: <Icon icon="solar:magic-stick-3-bold" width={19} /> }
     : daily
       ? {
           className: 'bg-brand-light text-brand',
@@ -194,18 +194,18 @@ function SpotCaption({ spots, user, region }) {
           {tile.body}
         </span>
         <div className="min-w-0">
-          <h3 className={`truncate text-[15px] font-extrabold leading-tight ${personal ? 'text-violet-700' : 'text-slate-900'}`}>{spots.title}</h3>
+          <h3 className="truncate text-[15px] font-extrabold leading-tight text-slate-900">{spots.title}</h3>
           <p className="mt-0.5 truncate text-[12px] text-slate-500">{sub}</p>
         </div>
       </div>
       {daily && user && (
-        // 맞춤 추천 유도 — 위 "전체보기" 알약과 같은 문법(아이콘 원 + 문구, 올리면 색이 왼쪽에서 차오름). 맞춤 추천의 보라색을 쓴다
+        // 맞춤 추천 유도 — 위 "전체보기" 알약과 같은 문법·색(아이콘 원 + 문구, 올리면 브랜드색이 왼쪽에서 차오름)
         <Link
           to="/onboarding/preferences"
-          className="group relative flex shrink-0 items-center gap-2 overflow-hidden rounded-full border border-violet-200 bg-white py-1.5 pl-1.5 pr-4 text-[12px] font-bold text-violet-700 transition-colors duration-300 hover:border-violet-600 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
+          className="group relative flex shrink-0 items-center gap-2 overflow-hidden rounded-full bg-brand-light py-1.5 pl-1.5 pr-4 text-[12px] font-bold text-brand transition-colors duration-300 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         >
-          <span aria-hidden="true" className="absolute inset-0 origin-left scale-x-0 bg-violet-600 transition-transform duration-300 ease-out group-hover:scale-x-100" />
-          <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-violet-50 text-violet-600 transition-colors duration-300 group-hover:bg-white/20 group-hover:text-white">
+          <span aria-hidden="true" className="absolute inset-0 origin-left scale-x-0 bg-brand transition-transform duration-300 ease-out group-hover:scale-x-100" />
+          <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-white text-brand transition-transform duration-300 group-hover:scale-110">
             <Icon icon="solar:magic-stick-3-bold" width={13} />
           </span>
           <span className="relative">취향 등록하고 맞춤 추천 받기</span>
