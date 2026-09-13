@@ -4,6 +4,8 @@ import { Icon } from '@iconify/react'
 import Section from './ui/Section'
 import Button from './ui/Button'
 import logoHorizontal from '../assets/logo-horizontal.svg'
+import logoHorizontalDark from '../assets/logo-horizontal-dark.svg'
+import { useTheme } from '../theme'
 
 const SUPPORT_EMAIL = 'traveltackleteam@gmail.com'
 
@@ -74,6 +76,7 @@ function EmailPopover({ open, onClose }) {
 }
 
 export default function Footer() {
+  const dark = useTheme().resolved === 'dark'
   const [emailOpen, setEmailOpen] = useState(false)
   const emailRef = useRef(null)
 
@@ -89,7 +92,7 @@ export default function Footer() {
     <footer className="border-t border-slate-100 bg-slate-50">
       <Section as="div" className="flex flex-col gap-9 py-9 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <img src={logoHorizontal} alt="트레블 참견" className="h-8 w-auto" />
+          <img src={dark ? logoHorizontalDark : logoHorizontal} alt="트레블 참견" className="h-8 w-auto" />
           <p className="mt-2 text-[11.5px] text-slate-400">함께 만드는 더 좋은 여행</p>
           <p className="mt-6 text-[10.5px] text-slate-400">© 2026 Travel Tackle. All rights reserved.</p>
         </div>
