@@ -33,15 +33,21 @@ function initialOf(user) {
   return source.trim().charAt(0).toUpperCase() || '·'
 }
 
-// 아바타 — 이름 첫 글자를 브랜드 그라디언트 원 안에 (마이페이지 등에서도 재사용)
+// 아바타 — 프로필 사진이 있으면 그 사진, 없거나 못 불러오면 이름 첫 글자를 브랜드 그라디언트 원 안에 (마이페이지 등에서도 재사용)
 export function Avatar({ user, size = 28 }) {
+  const src = user?.profileImageUrl || null
+  const [failed, setFailed] = useState(false)
+  useEffect(() => setFailed(false), [src])
+  const showImage = src && !failed
   return (
     <span
-      className="flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-mid font-extrabold text-white ring-2 ring-surface"
+      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full font-extrabold text-white ring-2 ring-surface ${
+        showImage ? 'bg-slate-100' : 'bg-gradient-to-br from-brand to-brand-mid'
+      }`}
       style={{ width: size, height: size, fontSize: size * 0.42 }}
       aria-hidden="true"
     >
-      {initialOf(user)}
+      {showImage ? <img src={src} alt="" className="h-full w-full object-cover" onError={() => setFailed(true)} /> : initialOf(user)}
     </span>
   )
 }
