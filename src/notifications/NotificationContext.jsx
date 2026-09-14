@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
+import Avatar from '../components/ui/Avatar'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getNotifications, getUnreadCount, markAllNotificationsRead, markNotificationRead, openNotificationStream } from '../api/notifications'
@@ -144,8 +145,11 @@ function Toast({ notification, onDismiss, onOpen }) {
 
   return (
     <div className="noti-toast pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl border border-slate-100 bg-surface p-3 pr-2 shadow-popup ring-1 ring-black/5">
-      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${kind.tone}`}>
-        <Icon icon={kind.icon} width={17} />
+      <span className="relative shrink-0">
+        <Avatar user={{ name: notification.actor?.name || '여행자', profileImageUrl: notification.actor?.profileImageUrl }} size={36} />
+        <span className={`absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-surface ${kind.tone}`}>
+          <Icon icon={kind.icon} width={9} />
+        </span>
       </span>
       <button
         type="button"

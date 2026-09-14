@@ -9,6 +9,7 @@ import Section from '../components/ui/Section'
 import Card from '../components/ui/Card'
 import Skeleton from '../components/ui/Skeleton'
 import OptionCard from '../components/onboarding/OptionCard'
+import ProfilePhotoRow from '../components/mypage/ProfilePhotoRow'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage, LANGUAGES } from '../i18n'
 import { getPreferences, createPreferences, updatePreferences } from '../api/preferences'
@@ -636,15 +637,15 @@ function ProfileTab({ user }) {
         {/* 카드 자체는 nav바 폭에 맞춰 넓어지되, 행 내용은 너무 헐렁해 보이지 않게 폭을 한 번 더 제한 */}
         <div className="max-w-[760px]">
         <SettingRow label="프로필 사진">
-          <Avatar user={{ ...user, name: nickname }} size={44} />
-          <button
-            type="button"
-            disabled
-            title="추후 지원 예정"
-            className="cursor-not-allowed rounded-full border border-slate-200 px-3 py-1.5 text-[12px] font-bold text-slate-300"
-          >
-            변경
-          </button>
+          <ProfilePhotoRow
+            user={user}
+            nickname={nickname}
+            onUpdated={(me, message) => {
+              setUser(me)
+              showToast(message)
+            }}
+            onError={showToast}
+          />
         </SettingRow>
 
         <SettingRow label="닉네임">

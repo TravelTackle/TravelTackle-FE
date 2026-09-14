@@ -10,6 +10,7 @@ import { useNotifications } from '../notifications/NotificationContext'
 import NotificationPanel from './NotificationPanel'
 import { updateProfile } from '../api/auth'
 import Skeleton from './ui/Skeleton'
+import Avatar from './ui/Avatar'
 
 const NAV = [
   { label: '여행지 탐색', to: '/explore', icon: 'solar:map-point-linear' },
@@ -28,23 +29,8 @@ const NAV = [
 const POPOVER_BASE = 'nav-pop z-50 rounded-2xl border border-slate-100 bg-surface shadow-popup ring-1 ring-black/5'
 const POPOVER = `${POPOVER_BASE} absolute right-0 mt-2`
 
-function initialOf(user) {
-  const source = user?.name || user?.email || ''
-  return source.trim().charAt(0).toUpperCase() || '·'
-}
-
-// 아바타 — 이름 첫 글자를 브랜드 그라디언트 원 안에 (마이페이지 등에서도 재사용)
-export function Avatar({ user, size = 28 }) {
-  return (
-    <span
-      className="flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-mid font-extrabold text-white ring-2 ring-surface"
-      style={{ width: size, height: size, fontSize: size * 0.42 }}
-      aria-hidden="true"
-    >
-      {initialOf(user)}
-    </span>
-  )
-}
+// 아바타는 ui/Avatar로 옮겼다 — 기존 import 경로(Navbar의 Avatar) 호환용 재수출
+export { Avatar }
 
 // 가운데 메뉴 — 마우스가 머무는 항목 아래로 알약이 미끄러지고, 손을 떼면 현재 페이지로 돌아간다
 function DesktopNav({ pathname }) {
