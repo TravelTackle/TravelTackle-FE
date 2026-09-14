@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react'
 import { Link } from 'react-router-dom'
 import Section from './ui/Section'
 import Skeleton from './ui/Skeleton'
+import Avatar from './ui/Avatar'
 import { useAuth } from '../context/AuthContext'
 import { createFeedback, getTripFeedback } from '../api/feed'
 import { saveTrip } from '../api/trip'
@@ -388,9 +389,7 @@ export default function ParticipateSection({ feed }) {
               <ul className="mt-4 flex flex-col gap-2.5 border-t border-slate-200/70 pt-4" aria-label="최근 참견">
                 {recent.items.map((f) => (
                   <li key={f.id} className="flex gap-2.5">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-light text-brand">
-                      <Icon icon="solar:user-bold" width={13} />
-                    </span>
+                    <Avatar user={{ name: f.author?.name, profileImageUrl: f.author?.profileImageUrl }} size={28} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline gap-1.5 text-[11px]">
                         <span className="font-bold text-slate-700 truncate">{f.author?.name || '여행자'}</span>

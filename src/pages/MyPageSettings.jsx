@@ -156,7 +156,7 @@ export default function MyPageSettings() {
             const saveCount = typeof detail?.saveCount === 'number' ? detail.saveCount : null
             const plan = detail
               ? {
-                  ...adaptPlanDetail({ ...detail, ownerName: user?.name, region: '' }),
+                  ...adaptPlanDetail({ ...detail, ownerName: user?.name, ownerProfileImageUrl: user?.profileImageUrl, region: '' }),
                   createdAt: detail.createdAt,
                   feedbackCount: feedbackMap.get(t.id) ?? 0,
                   // 나만보기/전체공개 토글(FeedUserHeader)이 이 값이 있을 때만 보인다 — TripDetailResponse에만 있는 필드.

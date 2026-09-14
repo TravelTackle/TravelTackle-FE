@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
 import Cropper from 'react-easy-crop'
-import { Avatar } from '../Navbar'
+import Avatar from '../ui/Avatar'
 import { getCroppedImg } from '../travelerFeed/cropImage'
 import { profileImageErrorMessage, removeProfileImage, updateProfileImage } from '../../api/auth'
 

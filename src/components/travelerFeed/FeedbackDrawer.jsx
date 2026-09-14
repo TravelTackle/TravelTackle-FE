@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
+import Avatar from '../ui/Avatar'
 import { Link } from 'react-router-dom'
 import Skeleton from '../ui/Skeleton'
 import { useAuth } from '../../context/AuthContext'
@@ -362,9 +363,7 @@ export default function FeedbackDrawer({ target, onClose, onPosted, onDeleted })
                       style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }}
                     >
                       <div className="flex items-center gap-2">
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-light text-[11px] font-bold text-brand-dark">
-                          {(f.author?.name || '여').slice(0, 1)}
-                        </span>
+                        <Avatar user={{ name: f.author?.name || '여행자', profileImageUrl: f.author?.profileImageUrl }} size={28} />
                         <span className="truncate text-[12.5px] font-bold text-slate-800">{f.author?.name || '여행자'}</span>
                         <span className={`shrink-0 text-[11px] text-slate-400 ${isAuthor && !editing ? '' : 'ml-auto'}`}>{formatDate(f.createdAt)}</span>
                         {/* 본인 글일 때만 수정 메뉴 — 지금은 삭제는 없이 수정만 */}

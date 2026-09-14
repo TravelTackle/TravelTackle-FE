@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon } from '@iconify/react'
+import Avatar from '../ui/Avatar'
 import Chip from '../ui/Chip'
-import IconBadge from '../ui/IconBadge'
 import { publishTrip, unpublishTrip } from '../../api/trip'
 import { targetTripId, useFeedActions } from './FeedActionsContext'
 
@@ -99,9 +99,7 @@ export function FeedUserHeader({ item, showChip = true }) {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <IconBadge className="h-8 w-8 rounded-full bg-slate-200 text-slate-400">
-          <Icon icon="mdi:account" width={16} />
-        </IconBadge>
+        <Avatar user={{ name: item.user.nickname, profileImageUrl: item.user.profileImageUrl }} size={32} />
         <div>
           <div className="text-[13px] font-bold text-slate-900">{item.user.nickname}</div>
           <div className="text-[11px] text-slate-400">{item.region}</div>
