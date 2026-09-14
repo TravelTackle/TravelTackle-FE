@@ -1,7 +1,15 @@
 import client from './client'
 
 export function requestEmailCode(email) {
-  return client.post('/auth/email-verifications', { email })
+  // 회원가입 전이라 아직 계정(User.preferredLanguage)이 없으므로, 지금 앱에서 선택된 언어를
+  // 바디에 실어 보내야 인증 메일이 올바른 언어로 나간다.
+  let language = 'ko'
+  try {
+    language = localStorage.getItem('tt-language') || 'ko'
+  } catch {
+    // 프라이빗 모드 등 localStorage 접근이 막힌 환경에서는 기본값(ko)으로 요청
+  }
+  return client.post('/auth/email-verifications', { email, language })
 }
 
 export function confirmEmailCode(email, code) {

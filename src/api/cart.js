@@ -19,7 +19,16 @@ export function getCartItems() {
 }
 
 export function addCartItem(contentId) {
-  return client.post('/cart-items', { contentId }).then((res) => {
+  // 언어별 TourAPI 서비스는 contentId 네임스페이스가 서로 달라(예: 경복궁이 한국어/영어 서비스에서
+  // 완전히 다른 contentId) 요청 바디에도 언어를 실어 보내야 한다 — 쿼리파라미터가 아니라 바디라
+  // client.js의 공용 인터셉터가 채워주지 못하므로 여기서 직접 넣는다.
+  let language = 'ko'
+  try {
+    language = localStorage.getItem('tt-language') || 'ko'
+  } catch {
+    // 프라이빗 모드 등 localStorage 접근이 막힌 환경에서는 기본값(ko)으로 요청
+  }
+  return client.post('/cart-items', { contentId, language }).then((res) => {
     notifyCartChanged()
     return res.data
   })

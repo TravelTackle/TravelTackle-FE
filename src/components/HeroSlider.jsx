@@ -4,54 +4,127 @@ import { Link } from 'react-router-dom'
 import Section from './ui/Section'
 import Skeleton from './ui/Skeleton'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../i18n'
 
-const STEPS = [
-  {
-    tag: 'STEP 1 · 계획',
-    title: '가고 싶은 여행을 계획해요',
-    desc: '관심 지역과 취향을 고르면 날짜별 일정을 쉽게 만들 수 있어요.',
-    icon: 'solar:map-linear',
-    bg: 'linear-gradient(135deg,#EFF6FF,#DBEAFE)',
-    color: '#2563EB',
-    cta: { label: '여행 계획 시작하기', to: '/trips', guestLabel: '로그인하고 계획 시작하기', guestTo: '/login' },
+// 언어별 3단계 슬라이드 내용 — 나중에 언어가 늘면 이 함수에 분기 하나만 추가하면 된다.
+function getSteps(language) {
+  if (language !== 'ko') {
+    return [
+      {
+        tag: 'STEP 1 · Plan',
+        title: 'Plan the trip you want',
+        desc: 'Pick regions and interests to build a day-by-day itinerary easily.',
+        icon: 'solar:map-linear',
+        bg: 'linear-gradient(135deg,#EFF6FF,#DBEAFE)',
+        color: '#2563EB',
+        cta: { label: 'Start planning', to: '/trips', guestLabel: 'Log in to start planning', guestTo: '/login' },
+      },
+      {
+        tag: 'STEP 2 · Feedback',
+        title: 'Get feedback from other travelers',
+        desc: 'Sharpen your itinerary with honest feedback from locals and seasoned travelers.',
+        icon: 'solar:chat-round-dots-linear',
+        bg: 'linear-gradient(135deg,#EEF2FF,#E0E7FF)',
+        color: '#4F46E5',
+        cta: { label: 'View traveler feed', to: '/feed' },
+      },
+      {
+        tag: 'STEP 3 · Complete',
+        title: 'Complete your own trip',
+        desc: 'Travel a proven route, then leave a record for the next traveler.',
+        icon: 'solar:check-circle-linear',
+        bg: 'linear-gradient(135deg,#ECFDF5,#D1FAE5)',
+        color: '#0F766E',
+        cta: { label: 'Explore destinations', to: '/explore' },
+      },
+    ]
+  }
+  return [
+    {
+      tag: 'STEP 1 · 계획',
+      title: '가고 싶은 여행을 계획해요',
+      desc: '관심 지역과 취향을 고르면 날짜별 일정을 쉽게 만들 수 있어요.',
+      icon: 'solar:map-linear',
+      bg: 'linear-gradient(135deg,#EFF6FF,#DBEAFE)',
+      color: '#2563EB',
+      cta: { label: '여행 계획 시작하기', to: '/trips', guestLabel: '로그인하고 계획 시작하기', guestTo: '/login' },
+    },
+    {
+      tag: 'STEP 2 · 참견',
+      title: '다른 여행자에게 참견받아요',
+      desc: '현지인과 여행 고수의 솔직한 참견으로 일정을 더 탄탄하게 다듬어요.',
+      icon: 'solar:chat-round-dots-linear',
+      bg: 'linear-gradient(135deg,#EEF2FF,#E0E7FF)',
+      color: '#4F46E5',
+      cta: { label: '여행자 피드 보기', to: '/feed' },
+    },
+    {
+      tag: 'STEP 3 · 완성',
+      title: '나만의 여행을 완성해요',
+      desc: '검증된 코스로 여행을 떠나고, 기록으로 남겨 다음 여행자에게 이어줘요.',
+      icon: 'solar:check-circle-linear',
+      bg: 'linear-gradient(135deg,#ECFDF5,#D1FAE5)',
+      color: '#0F766E',
+      cta: { label: '여행지 탐색하기', to: '/explore' },
+    },
+  ]
+}
+
+// 제목 — 키워드 셋은 각 단계에 묶인다 (step: 슬라이드 인덱스). suffix는 한국어 조사를 앞 단어에
+// 붙이기 위한 자간 보정용이라 영어에는 필요 없다(공백으로 자연히 떨어짐).
+function getHeadline(language) {
+  if (language !== 'ko') {
+    return [
+      { text: 'Plan', step: 0 },
+      { text: 'your trip,' },
+      { text: 'get' },
+      { text: 'feedback', step: 1 },
+      { text: 'from locals,' },
+      { text: 'and' },
+      { text: 'complete', step: 2 },
+      { text: 'your journey.' },
+    ]
+  }
+  return [
+    { text: '계획', step: 0 },
+    { text: '하고,', suffix: true },
+    { text: '참견', step: 1 },
+    { text: '받고,', suffix: true },
+    { text: '여행을' },
+    { text: '완성', step: 2 },
+    { text: '하세요', suffix: true },
+  ]
+}
+
+// Navbar/ChatbotWidget과 같은 패턴 — 언어별 맵으로 모아둬서 나중에 언어가 늘 때 키만 추가하면 되게 한다.
+const T = {
+  ko: {
+    loading: '불러오는 중',
+    headlineAria: '계획하고, 참견받고, 여행을 완성하세요',
+    prevStep: '이전 단계',
+    nextStep: '다음 단계',
+    carouselAria: '트레블 참견 이용 단계',
+    jumpToStep: (n, title) => `${n}단계 ${title}로 이동`,
+    goToStep: (n) => `${n}단계로 이동`,
+    stepAnnounce: (n, title) => `${n}단계: ${title}`,
+    pause: '자동 넘김 일시정지',
+    play: '자동 넘김 재생',
   },
-  {
-    tag: 'STEP 2 · 참견',
-    title: '다른 여행자에게 참견받아요',
-    desc: '현지인과 여행 고수의 솔직한 참견으로 일정을 더 탄탄하게 다듬어요.',
-    icon: 'solar:chat-round-dots-linear',
-    bg: 'linear-gradient(135deg,#EEF2FF,#E0E7FF)',
-    color: '#4F46E5',
-    cta: { label: '여행자 피드 보기', to: '/feed' },
+  en: {
+    loading: 'Loading',
+    headlineAria: 'Plan your trip, get feedback, and complete your journey',
+    prevStep: 'Previous step',
+    nextStep: 'Next step',
+    carouselAria: 'How Travel Tackle works',
+    jumpToStep: (n, title) => `Go to step ${n}: ${title}`,
+    goToStep: (n) => `Go to step ${n}`,
+    stepAnnounce: (n, title) => `Step ${n}: ${title}`,
+    pause: 'Pause autoplay',
+    play: 'Resume autoplay',
   },
-  {
-    tag: 'STEP 3 · 완성',
-    title: '나만의 여행을 완성해요',
-    desc: '검증된 코스로 여행을 떠나고, 기록으로 남겨 다음 여행자에게 이어줘요.',
-    icon: 'solar:check-circle-linear',
-    bg: 'linear-gradient(135deg,#ECFDF5,#D1FAE5)',
-    color: '#0F766E',
-    cta: { label: '여행지 탐색하기', to: '/explore' },
-  },
-]
+}
 
 const INTERVAL = 4500
-// 제목 — 키워드 셋은 각 단계에 묶인다 (step: 슬라이드 인덱스)
-const HEADLINE = [
-  { text: '계획', step: 0 },
-  { text: '하고,', suffix: true }, // 키워드에 붙는 어미 — 한 단어로 읽히게 간격을 당긴다
-  { text: '참견', step: 1 },
-  { text: '받고,', suffix: true },
-  { text: '여행을' },
-  { text: '완성', step: 2 },
-  { text: '하세요', suffix: true },
-]
-// 무한 루프용 트랙: 앞뒤에 복제 한 장씩
-const TRACK = [
-  { step: STEPS[STEPS.length - 1], clone: true },
-  ...STEPS.map((step) => ({ step, clone: false })),
-  { step: STEPS[0], clone: true },
-]
 const MIN_SKELETON_MS = 700 // 로그인 확인이 빨라도 이만큼은 스켈레톤을 보여 배너·카드와 같은 리듬으로 열린다
 let revealedOnce = false // 세션에서 처음 홈을 열 때만 연출, 다시 돌아오면 바로 보인다
 
@@ -79,9 +152,9 @@ function SlideCta({ to, label, icon, color }) {
 }
 
 // 로그인 확인 중 슬라이드 본문 자리
-function SlideSkeleton() {
+function SlideSkeleton({ loadingLabel }) {
   return (
-    <div className="relative flex h-full flex-col justify-center px-14 sm:px-16" role="status" aria-label="불러오는 중">
+    <div className="relative flex h-full flex-col justify-center px-14 sm:px-16" role="status" aria-label={loadingLabel}>
       <Skeleton className="mb-4 h-14 w-14 rounded-2xl" />
       <Skeleton className="h-3 w-20 rounded-full" />
       <Skeleton className="mt-3 h-6 w-[60%] max-w-[320px]" />
@@ -112,6 +185,15 @@ function SideCard({ step, onClick, label }) {
 
 export default function HeroSlider() {
   const { user, loading: authLoading } = useAuth()
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
+  const steps = getSteps(language)
+  const headline = getHeadline(language)
+  const track = [
+    { step: steps[steps.length - 1], clone: true },
+    ...steps.map((step) => ({ step, clone: false })),
+    { step: steps[0], clone: true },
+  ]
   // 트랙은 [3번 복제, 1, 2, 3, 1번 복제] 순. pos는 트랙 위치(1..total이 진짜), idx는 표시용 단계 번호.
   // 3 → 1로 넘어갈 때도 복제 슬라이드로 앞으로 밀린 뒤, 전환 없이 진짜 1번으로 되돌린다.
   const [pos, setPos] = useState(1)
@@ -128,7 +210,7 @@ export default function HeroSlider() {
     return () => clearTimeout(id)
   }, [])
   const pending = authLoading || !minSkeletonOver
-  const total = STEPS.length
+  const total = steps.length
   const idx = (pos - 1 + total) % total
   const go = (distance) => {
     setAnimated(true)
@@ -167,14 +249,14 @@ export default function HeroSlider() {
 
   const prevIdx = (idx - 1 + total) % total
   const nextIdx = (idx + 1) % total
-  const current = STEPS[idx]
+  const current = steps[idx]
 
   return (
     <section className="bg-white">
       <Section as="div" className="pt-8 pb-10 sm:pt-10 sm:pb-12">
         {pending ? (
           // 첫 로딩 — 제목 자리를 어절 단위 스켈레톤으로 잡아 둔다
-          <div className="flex flex-wrap items-center justify-center gap-2" role="status" aria-label="불러오는 중">
+          <div className="flex flex-wrap items-center justify-center gap-2" role="status" aria-label={copy.loading}>
             {[76, 60, 76, 60, 64, 92, 72].map((w, i) => (
               <Skeleton key={i} className="h-8 rounded-full" style={{ width: w, animationDelay: `${i * 70}ms` }} />
             ))}
@@ -182,9 +264,9 @@ export default function HeroSlider() {
         ) : (
           <h1
             className="flex flex-wrap items-baseline justify-center gap-x-[0.22em] gap-y-1 text-center text-[27px] sm:text-[32px] font-extrabold tracking-[-0.02em] text-slate-900"
-            aria-label="계획하고, 참견받고, 여행을 완성하세요"
+            aria-label={copy.headlineAria}
           >
-            {HEADLINE.map((part, i) =>
+            {headline.map((part, i) =>
               part.step == null ? (
                 <span
                   key={i}
@@ -200,7 +282,7 @@ export default function HeroSlider() {
                   key={i}
                   type="button"
                   onClick={() => jumpTo(part.step)}
-                  aria-label={`${part.step + 1}단계 ${STEPS[part.step].title}로 이동`}
+                  aria-label={copy.jumpToStep(part.step + 1, steps[part.step].title)}
                   aria-current={idx === part.step ? 'step' : undefined}
                   className={`ai-word group relative isolate rounded-xl px-1.5 transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
                     idx === part.step ? 'text-white' : 'text-brand hover:text-brand-dark'
@@ -232,12 +314,12 @@ export default function HeroSlider() {
           onMouseEnter={() => setHovering(true)}
           onMouseLeave={() => setHovering(false)}
         >
-          <SideCard step={STEPS[prevIdx]} onClick={() => go(-1)} label="이전 단계" />
+          <SideCard step={steps[prevIdx]} onClick={() => go(-1)} label={copy.prevStep} />
 
           <div
             className="relative w-full max-w-[760px] h-[320px] sm:h-[340px] rounded-[22px] border border-slate-100 shadow-[0_18px_45px_rgba(15,23,42,0.09)] overflow-hidden"
             aria-roledescription="carousel"
-            aria-label="트레블 참견 이용 단계"
+            aria-label={copy.carouselAria}
           >
             {/* 슬라이드 세 장을 한 줄로 두고 트랙을 옆으로 밀어서 넘긴다 */}
             <div
@@ -245,7 +327,7 @@ export default function HeroSlider() {
               style={{ transform: `translateX(-${pos * 100}%)` }}
               onTransitionEnd={handleTrackTransitionEnd}
             >
-              {TRACK.map(({ step, clone }, i) => (
+              {track.map(({ step, clone }, i) => (
                 <div
                   key={`${step.tag}-${i}`}
                   className="relative h-full w-full shrink-0 overflow-hidden"
@@ -259,7 +341,7 @@ export default function HeroSlider() {
                   </div>
 
                   {pending ? (
-                    <SlideSkeleton />
+                    <SlideSkeleton loadingLabel={copy.loading} />
                   ) : (
                     <div className="animate-slide-in relative flex h-full flex-col justify-center px-14 sm:px-16">
                       <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/75 shadow-sm">
@@ -283,26 +365,26 @@ export default function HeroSlider() {
             <button
               onClick={() => go(-1)}
               className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/85 hover:bg-white flex items-center justify-center shadow-sm transition-colors"
-              aria-label="이전 단계"
+              aria-label={copy.prevStep}
             >
               <Icon icon="solar:alt-arrow-left-linear" width={19} className="text-slate-500" />
             </button>
             <button
               onClick={() => go(1)}
               className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/85 hover:bg-white flex items-center justify-center shadow-sm transition-colors"
-              aria-label="다음 단계"
+              aria-label={copy.nextStep}
             >
               <Icon icon="solar:alt-arrow-right-linear" width={19} className="text-slate-500" />
             </button>
 
-            <p className="sr-only" aria-live="polite">{`${idx + 1}단계: ${current.title}`}</p>
+            <p className="sr-only" aria-live="polite">{copy.stepAnnounce(idx + 1, current.title)}</p>
 
             <div className="absolute bottom-5 right-6 flex items-center gap-2">
               <span className="text-[11px] font-bold text-slate-500 tabular-nums">{idx + 1} / {total}</span>
               <button
                 onClick={() => setPlaying((value) => !value)}
                 className="w-6 h-6 rounded-full bg-white/70 hover:bg-white flex items-center justify-center transition-colors"
-                aria-label={playing ? '자동 넘김 일시정지' : '자동 넘김 재생'}
+                aria-label={playing ? copy.pause : copy.play}
                 aria-pressed={!playing}
               >
                 <Icon icon={playing ? 'solar:pause-bold' : 'solar:play-bold'} width={9} className="text-slate-700" />
@@ -310,16 +392,16 @@ export default function HeroSlider() {
             </div>
           </div>
 
-          <SideCard step={STEPS[nextIdx]} onClick={() => go(1)} label="다음 단계" />
+          <SideCard step={steps[nextIdx]} onClick={() => go(1)} label={copy.nextStep} />
         </div>
 
         <div className="mt-5 flex justify-center gap-1.5">
-          {STEPS.map((step, index) => (
+          {steps.map((step, index) => (
             <button
               key={step.tag}
               onClick={() => jumpTo(index)}
               className={`h-1.5 rounded-full transition-all ${index === idx ? 'w-5 bg-brand' : 'w-1.5 bg-slate-300 hover:bg-slate-400'}`}
-              aria-label={`${index + 1}단계로 이동`}
+              aria-label={copy.goToStep(index + 1)}
               aria-current={index === idx}
             />
           ))}

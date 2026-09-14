@@ -23,11 +23,16 @@ export function durationMinutes(startTime, endTime) {
   return Math.max(0, timeToMinutes(endTime) - timeToMinutes(startTime))
 }
 
-// 날짜 문자열(YYYY-MM-DD) 사이 박/일 수 계산
-export function formatNights(startDate, endDate) {
+// 날짜 문자열(YYYY-MM-DD) 사이 박/일 수 계산. language(기본 'ko')를 넘기면 영어 표기로 바뀐다
+// (하위호환: 생략 시 기존과 동일 — 현재 호출부는 전부 트립 플래너 등 이번 단계 미대상 화면이라 ko 그대로 쓴다).
+export function formatNights(startDate, endDate, language = 'ko') {
   const start = new Date(`${startDate}T00:00:00`)
   const end = new Date(`${endDate}T00:00:00`)
   const nights = Math.round((end - start) / (1000 * 60 * 60 * 24))
+  if (language !== 'ko') {
+    if (nights === 0) return '1 day'
+    return `${nights} night${nights > 1 ? 's' : ''}, ${nights + 1} days`
+  }
   return `${nights}박 ${nights + 1}일`
 }
 

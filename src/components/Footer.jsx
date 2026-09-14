@@ -4,25 +4,71 @@ import { Icon } from '@iconify/react'
 import Section from './ui/Section'
 import Button from './ui/Button'
 import logoHorizontal from '../assets/logo-horizontal.svg'
+import { useLanguage } from '../i18n'
 
 const SUPPORT_EMAIL = 'traveltackleteam@gmail.com'
 
 // 서비스 그룹만 2열 그리드 — Navbar 메뉴(여행지 탐색/여행자 피드/나의 계획·보관함)와 마이페이지를 그대로 대응
-const SERVICE_LINKS = [
-  { label: '홈', to: '/' },
-  { label: '여행지 탐색', to: '/explore' },
-  { label: '여행자 피드', to: '/feed' },
-  { label: '나의 계획', to: '/trips' },
-  { label: '보관함', to: '/trips/saved' },
-  { label: '마이페이지', to: '/mypage' },
-]
+function getServiceLinks(language) {
+  if (language !== 'ko') {
+    return [
+      { label: 'Home', to: '/' },
+      { label: 'Explore', to: '/explore' },
+      { label: 'Traveler Feed', to: '/feed' },
+      { label: 'My Trips', to: '/trips' },
+      { label: 'Saved', to: '/trips/saved' },
+      { label: 'My Page', to: '/mypage' },
+    ]
+  }
+  return [
+    { label: '홈', to: '/' },
+    { label: '여행지 탐색', to: '/explore' },
+    { label: '여행자 피드', to: '/feed' },
+    { label: '나의 계획', to: '/trips' },
+    { label: '보관함', to: '/trips/saved' },
+    { label: '마이페이지', to: '/mypage' },
+  ]
+}
 
 // 고객지원 페이지의 세 탭으로 바로 이동 — SupportPage.jsx의 tab 쿼리 파라미터와 짝을 맞춘다
-const SUPPORT_LINKS = [
-  { label: '자주 묻는 질문', to: '/support?tab=faq' },
-  { label: '이용약관', to: '/support?tab=terms' },
-  { label: '개인정보처리방침', to: '/support?tab=privacy' },
-]
+function getSupportLinks(language) {
+  if (language !== 'ko') {
+    return [
+      { label: 'FAQ', to: '/support?tab=faq' },
+      { label: 'Terms of Service', to: '/support?tab=terms' },
+      { label: 'Privacy Policy', to: '/support?tab=privacy' },
+    ]
+  }
+  return [
+    { label: '자주 묻는 질문', to: '/support?tab=faq' },
+    { label: '이용약관', to: '/support?tab=terms' },
+    { label: '개인정보처리방침', to: '/support?tab=privacy' },
+  ]
+}
+
+// Footer 전체 문구 — 언어별 맵으로 모아둬서 나중에 언어가 늘 때 키만 추가하면 되게 한다.
+const T = {
+  ko: {
+    logoAlt: '트레블 참견',
+    tagline: '함께 만드는 더 좋은 여행',
+    service: '서비스',
+    support: '고객지원',
+    contact: 'Contact',
+    emailInquiry: '이메일 문의',
+    close: '닫기',
+    writeEmail: '메일 쓰기',
+  },
+  en: {
+    logoAlt: 'Travel Tackle',
+    tagline: 'Making travel better, together',
+    service: 'Service',
+    support: 'Support',
+    contact: 'Contact',
+    emailInquiry: 'Email us',
+    close: 'Close',
+    writeEmail: 'Write an email',
+  },
+}
 
 // 이미 그 페이지에 있을 때 링크를 눌러도 라우터는 아무 것도 하지 않으므로(같은 경로 이동),
 // 그 경우엔 맨 위로 부드럽게 스크롤해준다 — 모든 푸터 링크에 동일하게 적용.
@@ -46,7 +92,7 @@ function FooterLink({ to, className, children }) {
 
 // FloatingCart 패널과 같은 "아래에서 뿅 하고 뜨는" 전환 — 클릭한 Email 버튼 바로 위에서 열리고,
 // 화면 중앙 모달이 아니라 그 자리에 앵커된 작은 팝오버로 메일 주소를 보여준 뒤 "메일 쓰기"로만 mailto가 열린다.
-function EmailPopover({ open, onClose }) {
+function EmailPopover({ open, onClose, copy }) {
   return (
     <div
       className={`absolute bottom-full right-0 z-50 mb-2 w-[240px] origin-bottom-right rounded-2xl border border-slate-100 bg-white p-4 shadow-popup transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
@@ -54,8 +100,8 @@ function EmailPopover({ open, onClose }) {
       }`}
     >
       <div className="flex items-center justify-between">
-        <span className="text-[11.5px] font-bold text-slate-700">이메일 문의</span>
-        <button type="button" onClick={onClose} className="text-slate-300 hover:text-slate-500" aria-label="닫기">
+        <span className="text-[11.5px] font-bold text-slate-700">{copy.emailInquiry}</span>
+        <button type="button" onClick={onClose} className="text-slate-300 hover:text-slate-500" aria-label={copy.close}>
           <Icon icon="solar:close-circle-linear" width={16} />
         </button>
       </div>
@@ -67,7 +113,7 @@ function EmailPopover({ open, onClose }) {
         href={`mailto:${SUPPORT_EMAIL}`}
         className="mt-3 flex h-9 items-center justify-center rounded-lg text-[12px] font-bold"
       >
-        메일 쓰기
+        {copy.writeEmail}
       </Button>
     </div>
   )
@@ -76,6 +122,10 @@ function EmailPopover({ open, onClose }) {
 export default function Footer() {
   const [emailOpen, setEmailOpen] = useState(false)
   const emailRef = useRef(null)
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
+  const serviceLinks = getServiceLinks(language)
+  const supportLinks = getSupportLinks(language)
 
   useEffect(() => {
     function onClickOutside(e) {
@@ -89,8 +139,8 @@ export default function Footer() {
     <footer className="border-t border-slate-100 bg-[#F4F7FA]">
       <Section as="div" className="flex flex-col gap-9 py-9 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <img src={logoHorizontal} alt="트레블 참견" className="h-8 w-auto" />
-          <p className="mt-2 text-[11.5px] text-slate-400">함께 만드는 더 좋은 여행</p>
+          <img src={logoHorizontal} alt={copy.logoAlt} className="h-8 w-auto" />
+          <p className="mt-2 text-[11.5px] text-slate-400">{copy.tagline}</p>
           <p className="mt-6 text-[10.5px] text-slate-300">© 2026 Travel Tackle. All rights reserved.</p>
         </div>
 
@@ -99,9 +149,9 @@ export default function Footer() {
             하나의 flex 행으로 배치한다. 각 칸은 내용 너비만큼만 차지해 텍스트 정렬은 모두 기본(좌측) 그대로다. */}
         <div className="flex flex-col gap-8 sm:flex-row sm:gap-[5.25rem] lg:gap-[13.5rem]">
           <div>
-            <h2 className="text-[11.5px] font-bold text-slate-700">서비스</h2>
+            <h2 className="text-[11.5px] font-bold text-slate-700">{copy.service}</h2>
             <ul className="mt-3 grid grid-cols-2 gap-x-8 gap-y-2">
-              {SERVICE_LINKS.map((link) => (
+              {serviceLinks.map((link) => (
                 <li key={link.label}>
                   <FooterLink to={link.to} className="text-[10.5px] text-slate-400 transition-colors hover:text-slate-700">
                     {link.label}
@@ -112,9 +162,9 @@ export default function Footer() {
           </div>
 
           <div>
-            <h2 className="text-[11.5px] font-bold text-slate-700">고객지원</h2>
+            <h2 className="text-[11.5px] font-bold text-slate-700">{copy.support}</h2>
             <ul className="mt-3 space-y-2">
-              {SUPPORT_LINKS.map((link) => (
+              {supportLinks.map((link) => (
                 <li key={link.label}>
                   <FooterLink to={link.to} className="text-[10.5px] text-slate-400 transition-colors hover:text-slate-700">
                     {link.label}
@@ -125,7 +175,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h2 className="text-[11.5px] font-bold text-slate-700">Contact</h2>
+            <h2 className="text-[11.5px] font-bold text-slate-700">{copy.contact}</h2>
             <ul className="mt-3 space-y-2">
               <li className="relative inline-block" ref={emailRef}>
                 <button
@@ -135,7 +185,7 @@ export default function Footer() {
                 >
                   Email
                 </button>
-                <EmailPopover open={emailOpen} onClose={() => setEmailOpen(false)} />
+                <EmailPopover open={emailOpen} onClose={() => setEmailOpen(false)} copy={copy} />
               </li>
             </ul>
           </div>

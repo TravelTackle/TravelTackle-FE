@@ -7,6 +7,7 @@ import { formatDate, formatDuration } from '../lib/homeFormat'
 import { useAuth } from '../context/AuthContext'
 import { getRecommendedRecords, getRecommendedTrips } from '../api/feed'
 import { getPreferences } from '../api/preferences'
+import { useLanguage } from '../i18n'
 
 const TOP_N = 3
 const MIN_SPIN_MS = 1200
@@ -17,37 +18,155 @@ let revealedOnce = false
 const recCache = new Map()
 
 // 두 열: 왼쪽은 여행 계획(참견·피드백이 달리는 글), 오른쪽은 다녀온 뒤 남긴 기록
-const GROUPS = {
-  plan: {
-    key: 'plan',
-    title: '여행 계획 · 피드백',
-    icon: 'solar:map-linear',
-    accent: 'text-brand',
-    accentBg: 'bg-brand-light',
-    filter: 'plan',
-    popularCaption: '참견이 많이 달린 계획',
-    personalCaption: '취향과 겹치는 장소가 많은 계획',
-    empty: '아직 올라온 여행 계획이 없어요',
-    fallbackCaption: '취향에 맞는 계획이 아직 없어 인기 계획으로 채웠어요',
+function getGroups(language) {
+  if (language !== 'ko') {
+    return {
+      plan: {
+        key: 'plan',
+        title: 'Trip Plans · Feedback',
+        icon: 'solar:map-linear',
+        accent: 'text-brand',
+        accentBg: 'bg-brand-light',
+        filter: 'plan',
+        popularCaption: 'Plans with the most feedback',
+        personalCaption: 'Plans matching your interests',
+        empty: 'No trip plans yet',
+        fallbackCaption: "No plans match your interests yet, so we filled this with popular plans",
+      },
+      record: {
+        key: 'record',
+        title: 'Records',
+        icon: 'solar:camera-linear',
+        accent: 'text-[#0F766E]',
+        accentBg: 'bg-[#F0FDFA]',
+        filter: 'record',
+        popularCaption: 'Records with the most reactions',
+        personalCaption: 'Records from travelers with similar interests',
+        empty: 'No records yet',
+        fallbackCaption: "No records match your interests yet, so we filled this with popular records",
+      },
+    }
+  }
+  return {
+    plan: {
+      key: 'plan',
+      title: '여행 계획 · 피드백',
+      icon: 'solar:map-linear',
+      accent: 'text-brand',
+      accentBg: 'bg-brand-light',
+      filter: 'plan',
+      popularCaption: '참견이 많이 달린 계획',
+      personalCaption: '취향과 겹치는 장소가 많은 계획',
+      empty: '아직 올라온 여행 계획이 없어요',
+      fallbackCaption: '취향에 맞는 계획이 아직 없어 인기 계획으로 채웠어요',
+    },
+    record: {
+      key: 'record',
+      title: '기록',
+      icon: 'solar:camera-linear',
+      accent: 'text-[#0F766E]',
+      accentBg: 'bg-[#F0FDFA]',
+      filter: 'record',
+      popularCaption: '반응이 많았던 기록',
+      personalCaption: '취향이 비슷한 여행자의 기록',
+      empty: '아직 올라온 기록이 없어요',
+      fallbackCaption: '취향에 맞는 기록이 아직 없어 인기 기록으로 채웠어요',
+    },
+  }
+}
+
+// AiSummaryFeed 전체에서 쓰는 사이트 문구 — 언어별 맵(§다른 언어 추가 시 확장성)
+const T = {
+  ko: {
+    highlights: '모아보기',
+    more: '더보기',
+    summarizingAria: (text) => `${text} (요약하는 중)`,
+    aiSummarizing: 'AI가 요약하는 중',
+    aiDone: 'AI 요약 완료',
+    modeSwitchAria: '모아보기 기준',
+    loading: '불러오는 중',
+    rank: (n) => `${n}위`,
+    matchingSpots: (n) => `겹치는 장소 ${n}곳`,
+    feedbackCount: (n) => `참견 ${n}`,
+    savedCount: (n) => `저장 ${n}`,
+    savedTitle: '내 여행으로 담은 수',
+    placeCount: (n) => `장소 ${n}곳`,
+    firstDay: (route) => `첫날 ${route}`,
   },
-  record: {
-    key: 'record',
-    title: '기록',
-    icon: 'solar:camera-linear',
-    accent: 'text-[#0F766E]',
-    accentBg: 'bg-[#F0FDFA]',
-    filter: 'record',
-    popularCaption: '반응이 많았던 기록',
-    personalCaption: '취향이 비슷한 여행자의 기록',
-    empty: '아직 올라온 기록이 없어요',
-    fallbackCaption: '취향에 맞는 기록이 아직 없어 인기 기록으로 채웠어요',
+  en: {
+    highlights: 'Highlights',
+    more: 'More',
+    summarizingAria: (text) => `${text} (summarizing)`,
+    aiSummarizing: 'AI is summarizing',
+    aiDone: 'AI summary ready',
+    modeSwitchAria: 'Sort by',
+    loading: 'Loading',
+    rank: (n) => `Rank ${n}`,
+    matchingSpots: (n) => `${n} matching spots`,
+    feedbackCount: (n) => `${n} feedback`,
+    savedCount: (n) => `Saved ${n}`,
+    savedTitle: 'Number of times saved to trips',
+    placeCount: (n) => `${n} spots`,
+    firstDay: (route) => `Day 1: ${route}`,
   },
+}
+
+function getHeadlinePopular(language) {
+  if (language !== 'ko') {
+    return [
+      { text: "Here's the" },
+      { text: 'most popular', accent: true },
+      { text: 'trip plans, feedback' },
+      { text: '·', dot: true },
+      { text: 'and records right now.' },
+    ]
+  }
+  return [
+    { text: '현재' },
+    { text: '가장 인기있는', accent: true },
+    { text: '여행 계획 및 피드백' },
+    { text: '·', dot: true },
+    { text: '기록을' },
+    { text: '요약했어요' },
+  ]
+}
+
+function getPersonalHeadline(name, language) {
+  if (language !== 'ko') {
+    return [
+      { text: `Picked for ${name}:` },
+      { text: 'trip plans', accent: true },
+      { text: '·', dot: true },
+      { text: 'and records that match your taste.' },
+    ]
+  }
+  return [
+    { text: `${name}님에게` },
+    { text: '맞는', accent: true },
+    { text: '여행 계획' },
+    { text: '·', dot: true },
+    { text: '기록을' },
+    { text: '가져왔어요' },
+  ]
+}
+
+function getModes(language) {
+  if (language !== 'ko') {
+    return [
+      { key: 'personal', label: 'For You', icon: 'solar:magic-stick-3-bold' },
+      { key: 'popular', label: 'Popular', icon: 'solar:fire-bold' },
+    ]
+  }
+  return [
+    { key: 'personal', label: '맞춤 추천', icon: 'solar:magic-stick-3-bold' },
+    { key: 'popular', label: '인기', icon: 'solar:fire-bold' },
+  ]
 }
 
 
 // 인기 모드: 피드 항목 → 카드. 계획은 첫날 동선을, 기록은 본문을 요약문으로 쓴다. to = 피드 페이지에서 해당 글 상세
-function feedToCard(item) {
-  const meta = [item.user?.nickname, formatDate(item.createdAt)].filter(Boolean).join(' · ')
+function feedToCard(item, language, copy) {
+  const meta = [item.user?.nickname, formatDate(item.createdAt, language)].filter(Boolean).join(' · ')
   if (item.type === 'plan') {
     const firstDay = item.days?.[0]?.places ?? []
     const route = firstDay.slice(0, 2).map((p) => p.name).join(' → ')
@@ -55,7 +174,7 @@ function feedToCard(item) {
       id: item.id,
       kind: 'plan',
       title: item.title,
-      desc: [`${item.duration} · 장소 ${item.placeCount}곳`, route && `첫날 ${route}`].filter(Boolean).join(' · '),
+      desc: [`${item.duration} · ${copy.placeCount(item.placeCount)}`, route && copy.firstDay(route)].filter(Boolean).join(' · '),
       meta,
       imageUrl: firstDay.find((p) => p.imageUrl)?.imageUrl ?? null,
       feedbackCount: item.feedbackCount ?? 0,
@@ -77,26 +196,26 @@ function feedToCard(item) {
 }
 
 // 맞춤 모드: 추천 API 응답 → 카드. matchScore = 내 취향과 겹치는 방문지 수.
-function recTripToCard(t) {
+function recTripToCard(t, language, copy) {
   return {
     id: `rec-${t.tripId}`,
     kind: 'plan',
     title: t.title,
-    desc: [formatDuration(t.startDate, t.endDate), `취향과 겹치는 장소 ${t.matchScore}곳`].filter(Boolean).join(' · '),
-    meta: [t.ownerName, formatDate(t.createdAt)].filter(Boolean).join(' · '),
+    desc: [formatDuration(t.startDate, t.endDate, language), copy.matchingSpots(t.matchScore)].filter(Boolean).join(' · '),
+    meta: [t.ownerName, formatDate(t.createdAt, language)].filter(Boolean).join(' · '),
     imageUrl: t.thumbnailUrl ?? null,
     matchScore: t.matchScore ?? 0,
     to: `/feed?open=${encodeURIComponent(t.tripId)}&filter=plan`,
   }
 }
 
-function recRecordToCard(r) {
+function recRecordToCard(r, language) {
   return {
     id: `rec-${r.recordId}`,
     kind: 'record',
     title: r.tripTitle,
     desc: r.content || '',
-    meta: [r.ownerName, formatDate(r.createdAt)].filter(Boolean).join(' · '),
+    meta: [r.ownerName, formatDate(r.createdAt, language)].filter(Boolean).join(' · '),
     imageUrl: r.thumbnailUrl ?? null,
     matchScore: r.matchScore ?? 0,
     to: `/feed?open=${encodeURIComponent(`${r.tripId}-record`)}&filter=record`,
@@ -110,15 +229,15 @@ const RANK_STYLE = [
 ]
 
 // 순위 한 줄 — 1위는 금, 2위는 은, 3위는 동. 줄 전체가 링크라 어디를 눌러도 해당 글로 간다
-function RankRow({ card, rank, index, personal }) {
+function RankRow({ card, rank, index, personal, copy }) {
   const stat = personal
-    ? { icon: 'solar:magic-stick-3-bold', label: `겹치는 장소 ${card.matchScore}곳`, className: 'bg-violet-50 text-violet-600' }
-    : { icon: 'solar:chat-round-dots-bold', label: `참견 ${card.feedbackCount}`, className: 'bg-rose-50 text-rose-500' }
+    ? { icon: 'solar:magic-stick-3-bold', label: copy.matchingSpots(card.matchScore), className: 'bg-violet-50 text-violet-600' }
+    : { icon: 'solar:chat-round-dots-bold', label: copy.feedbackCount(card.feedbackCount), className: 'bg-rose-50 text-rose-500' }
   const inner = (
     <>
       <span
         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-extrabold tabular-nums transition-transform duration-300 group-hover:scale-110 ${RANK_STYLE[rank - 1]}`}
-        aria-label={`${rank}위`}
+        aria-label={copy.rank(rank)}
       >
         {rank}
       </span>
@@ -140,9 +259,9 @@ function RankRow({ card, rank, index, personal }) {
           {typeof card.saveCount === 'number' && (
             <span
               className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 font-bold tabular-nums text-amber-600"
-              title="내 여행으로 담은 수"
+              title={copy.savedTitle}
             >
-              <Icon icon="solar:bookmark-bold" width={10} /> 저장 {card.saveCount}
+              <Icon icon="solar:bookmark-bold" width={10} /> {copy.savedCount(card.saveCount)}
             </span>
           )}
         </span>
@@ -170,9 +289,9 @@ function RankRow({ card, rank, index, personal }) {
 }
 
 // 순위 리스트 스켈레톤 — 위에서부터 한 줄씩 시차를 두고 반짝인다
-function RankSkeleton() {
+function RankSkeleton({ loadingLabel }) {
   return (
-    <div className="flex flex-col gap-1" role="status" aria-label="불러오는 중">
+    <div className="flex flex-col gap-1" role="status" aria-label={loadingLabel}>
       {Array.from({ length: TOP_N }).map((_, i) => (
         <div key={i} className="flex items-center gap-3 px-3 py-3">
           <Skeleton className="h-7 w-7 rounded-full" style={{ animationDelay: `${i * 120}ms` }} />
@@ -188,7 +307,7 @@ function RankSkeleton() {
   )
 }
 
-function GroupColumn({ group, cards, loading, personal, caption: captionOverride }) {
+function GroupColumn({ group, cards, loading, personal, caption: captionOverride, copy }) {
   const caption = captionOverride ?? (personal ? group.personalCaption : group.popularCaption)
   return (
     <div className="rounded-3xl border border-slate-100 bg-white p-3 shadow-card">
@@ -210,12 +329,12 @@ function GroupColumn({ group, cards, loading, personal, caption: captionOverride
           to={`/feed?filter=${group.filter}`}
           className="shrink-0 rounded-full border border-slate-200 px-3 py-1.5 text-[12px] font-bold text-slate-500 transition-colors hover:border-brand hover:text-brand"
         >
-          더보기
+          {copy.more}
         </Link>
       </div>
 
       {loading ? (
-        <RankSkeleton />
+        <RankSkeleton loadingLabel={copy.loading} />
       ) : cards.length === 0 ? (
         <div className="flex flex-col items-center px-6 py-10 text-center">
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-50 text-slate-300">
@@ -226,7 +345,7 @@ function GroupColumn({ group, cards, loading, personal, caption: captionOverride
       ) : (
         <div key={personal ? 'personal' : 'popular'} className="flex flex-col gap-1">
           {cards.map((card, i) => (
-            <RankRow key={card.id} card={card} rank={i + 1} index={i} personal={personal} />
+            <RankRow key={card.id} card={card} rank={i + 1} index={i} personal={personal} copy={copy} />
           ))}
         </div>
       )}
@@ -235,32 +354,14 @@ function GroupColumn({ group, cards, loading, personal, caption: captionOverride
 }
 
 // 배너 문구. 요약 중엔 흰 스켈레톤 두 줄이 반짝이고, 끝나면 어절이 차례로 떠오른 뒤 빛이 한 번 훑고 지나간다
-const HEADLINE_POPULAR = [
-  { text: '현재' },
-  { text: '가장 인기있는', accent: true },
-  { text: '여행 계획 및 피드백' },
-  { text: '·', dot: true },
-  { text: '기록을' },
-  { text: '요약했어요' },
-]
+// (getHeadlinePopular/getPersonalHeadline/getModes로 언어별로 뽑아 쓴다 — 위 T 딕셔너리 옆에서 정의)
 
-function personalHeadline(name) {
-  return [
-    { text: `${name}님에게` },
-    { text: '맞는', accent: true },
-    { text: '여행 계획' },
-    { text: '·', dot: true },
-    { text: '기록을' },
-    { text: '가져왔어요' },
-  ]
-}
-
-function AiHeadline({ summarizing, words }) {
+function AiHeadline({ summarizing, words, copy }) {
   const full = words.map((w) => w.text).join(' ')
   if (summarizing) {
     return (
       <h2 className="min-w-0 flex-1">
-        <span className="sr-only">{full} (요약하는 중)</span>
+        <span className="sr-only">{copy.summarizingAria(full)}</span>
         <span className="flex items-center gap-2" aria-hidden="true">
           <span className="skeleton-on-brand h-3 w-[38%] max-w-[260px] rounded-full" />
           <span className="skeleton-on-brand h-3 w-[22%] max-w-[150px] rounded-full" style={{ animationDelay: '0.25s' }} />
@@ -293,12 +394,12 @@ function AiHeadline({ summarizing, words }) {
 }
 
 // 요약 중: 별 아이콘과 링이 돈다 → 요약 끝: 흰 원 안에 체크가 톡 튀어나온다
-function AiStatusBadge({ summarizing }) {
+function AiStatusBadge({ summarizing, copy }) {
   return (
     <span
       className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
       role="status"
-      aria-label={summarizing ? 'AI가 요약하는 중' : 'AI 요약 완료'}
+      aria-label={summarizing ? copy.aiSummarizing : copy.aiDone}
     >
       {summarizing ? (
         <>
@@ -316,22 +417,17 @@ function AiStatusBadge({ summarizing }) {
   )
 }
 
-const MODES = [
-  { key: 'personal', label: '맞춤 추천', icon: 'solar:magic-stick-3-bold' },
-  { key: 'popular', label: '인기', icon: 'solar:fire-bold' },
-]
-
 // 맞춤 / 인기 세그먼트 스위치 — 흰 썸이 선택 쪽으로 미끄러진다. 맞춤 추천이 잡힌 회원에게만 보인다.
-function ModeSwitch({ mode, onChange }) {
-  const index = MODES.findIndex((m) => m.key === mode)
+function ModeSwitch({ mode, onChange, modes, copy }) {
+  const index = modes.findIndex((m) => m.key === mode)
   return (
-    <div role="tablist" aria-label="모아보기 기준" className="relative grid shrink-0 grid-cols-2 rounded-full bg-white/15 p-1 ring-1 ring-white/20">
+    <div role="tablist" aria-label={copy.modeSwitchAria} className="relative grid shrink-0 grid-cols-2 rounded-full bg-white/15 p-1 ring-1 ring-white/20">
       <span
         aria-hidden="true"
         className="mode-thumb absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-white shadow-card"
         style={{ transform: `translateX(${index * 100}%)` }}
       />
-      {MODES.map((m) => {
+      {modes.map((m) => {
         const active = m.key === mode
         return (
           <button
@@ -355,6 +451,10 @@ function ModeSwitch({ mode, onChange }) {
 
 export default function AiSummaryFeed({ feed }) {
   const { user } = useAuth()
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
+  const groups = getGroups(language)
+  const modes = getModes(language)
   const [mode, setMode] = useState('popular')
 
   // 배지는 피드 로딩이 끝나도 최소 MIN_SPIN_MS 동안은 "요약 중"으로 두어 회전이 보이게 한다 — 첫 방문에만
@@ -414,24 +514,29 @@ export default function AiSummaryFeed({ feed }) {
 
   // 인기: 참견 많은 순으로 이미 정렬된 피드에서 종류별 상위 3개. 피드가 비면 GroupColumn이 자체 빈 상태를 보여준다.
   const popular = useMemo(() => {
-    const cards = feed.items.map(feedToCard)
+    const cards = feed.items.map((item) => feedToCard(item, language, copy))
     return {
       plan: cards.filter((c) => c.kind === 'plan').slice(0, TOP_N),
       record: cards.filter((c) => c.kind === 'record').slice(0, TOP_N),
     }
-  }, [feed.items])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feed.items, language])
 
   // 맞춤: 취향 일치 점수 높은 순으로 상위 3개
   const personal = useMemo(
     () => ({
-      plan: rec.trips.map(recTripToCard).sort((a, b) => b.matchScore - a.matchScore).slice(0, TOP_N),
-      record: rec.records.map(recRecordToCard).sort((a, b) => b.matchScore - a.matchScore).slice(0, TOP_N),
+      plan: rec.trips.map((t) => recTripToCard(t, language, copy)).sort((a, b) => b.matchScore - a.matchScore).slice(0, TOP_N),
+      record: rec.records.map((r) => recRecordToCard(r, language)).sort((a, b) => b.matchScore - a.matchScore).slice(0, TOP_N),
     }),
-    [rec.trips, rec.records],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rec.trips, rec.records, language],
   )
 
   const summarizing = feed.loading || rec.loading || !minSpinOver
-  const headline = showPersonal ? personalHeadline(user?.name || '회원') : HEADLINE_POPULAR
+  const memberFallback = language !== 'ko' ? 'you' : '회원'
+  const headline = showPersonal
+    ? getPersonalHeadline(user?.name || memberFallback, language)
+    : getHeadlinePopular(language)
   // 열마다: 맞춤 글이 있으면 그것, 없으면 인기 글로 채우고 캡션으로 알린다
   const columns = Object.fromEntries(
     ['plan', 'record'].map((key) => {
@@ -441,7 +546,7 @@ export default function AiSummaryFeed({ feed }) {
         {
           cards: own ? personal[key] : popular[key],
           personal: own,
-          caption: showPersonal && !own ? GROUPS[key].fallbackCaption : undefined,
+          caption: showPersonal && !own ? groups[key].fallbackCaption : undefined,
         },
       ]
     }),
@@ -451,12 +556,12 @@ export default function AiSummaryFeed({ feed }) {
     <section id="community" className="bg-white">
       <Section as="div" className="py-14 sm:py-16">
         <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-blue-700 via-blue-600 to-blue-400">
-          <span className="absolute left-5 top-0 bg-sky-400 text-white text-[10px] font-bold px-3 py-1.5 rounded-b-lg">모아보기</span>
+          <span className="absolute left-5 top-0 bg-sky-400 text-white text-[10px] font-bold px-3 py-1.5 rounded-b-lg">{copy.highlights}</span>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-3 pl-20 pr-5 sm:pr-6 py-5">
-            <AiHeadline key={showPersonal ? 'personal' : 'popular'} summarizing={summarizing} words={headline} />
+            <AiHeadline key={showPersonal ? 'personal' : 'popular'} summarizing={summarizing} words={headline} copy={copy} />
             <div className="ml-auto flex items-center gap-3">
-              {personalized && !summarizing && <ModeSwitch mode={mode} onChange={setMode} />}
-              <AiStatusBadge summarizing={summarizing} />
+              {personalized && !summarizing && <ModeSwitch mode={mode} onChange={setMode} modes={modes} copy={copy} />}
+              <AiStatusBadge summarizing={summarizing} copy={copy} />
             </div>
           </div>
         </div>
@@ -465,11 +570,12 @@ export default function AiSummaryFeed({ feed }) {
           {['plan', 'record'].map((key, i) => (
             <div key={key} className="min-w-0 animate-slide-in" style={{ animationDelay: `${i * 120}ms` }}>
               <GroupColumn
-                group={GROUPS[key]}
+                group={groups[key]}
                 cards={columns[key].cards}
                 loading={summarizing}
                 personal={columns[key].personal}
                 caption={columns[key].caption}
+                copy={copy}
               />
             </div>
           ))}

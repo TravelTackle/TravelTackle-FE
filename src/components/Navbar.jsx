@@ -9,19 +9,92 @@ import { updateProfile } from '../api/auth'
 import { formatDate } from '../lib/homeFormat'
 import Skeleton from './ui/Skeleton'
 
-const NAV = [
-  { label: '여행지 탐색', to: '/explore', icon: 'solar:map-point-linear' },
-  { label: '여행자 피드', to: '/feed', icon: 'solar:gallery-wide-linear' },
-  {
-    label: '나의 여행',
-    icon: 'solar:suitcase-tag-linear',
-    match: (p) => p === '/trips' || p === '/trips/saved',
-    children: [
-      { label: '나의 계획', to: '/trips', icon: 'solar:suitcase-tag-linear' },
-      { label: '보관함', to: '/trips/saved', icon: 'solar:bookmark-linear' },
-    ],
+// 화면 구조는 언어와 무관하게 동일(대안 A) — 메뉴도 같은 3개 항목을 그대로 두고 라벨만 번역한다.
+function getNav(language) {
+  if (language !== 'ko') {
+    return [
+      { label: 'Explore', to: '/explore', icon: 'solar:map-point-linear' },
+      { label: 'Traveler Feed', to: '/feed', icon: 'solar:gallery-wide-linear' },
+      {
+        label: 'My Trips',
+        icon: 'solar:suitcase-tag-linear',
+        match: (p) => p === '/trips' || p === '/trips/saved',
+        children: [
+          { label: 'My Plans', to: '/trips', icon: 'solar:suitcase-tag-linear' },
+          { label: 'Saved', to: '/trips/saved', icon: 'solar:bookmark-linear' },
+        ],
+      },
+    ]
+  }
+  return [
+    { label: '여행지 탐색', to: '/explore', icon: 'solar:map-point-linear' },
+    { label: '여행자 피드', to: '/feed', icon: 'solar:gallery-wide-linear' },
+    {
+      label: '나의 여행',
+      icon: 'solar:suitcase-tag-linear',
+      match: (p) => p === '/trips' || p === '/trips/saved',
+      children: [
+        { label: '나의 계획', to: '/trips', icon: 'solar:suitcase-tag-linear' },
+        { label: '보관함', to: '/trips/saved', icon: 'solar:bookmark-linear' },
+      ],
+    },
+  ]
+}
+
+// Navbar 전체(모든 페이지 공용 헤더)에 노출되는 문자열 — 언어별 맵으로 모아둬서
+// 나중에 언어가 늘 때 각 키에 한 줄씩만 추가하면 되게 한다.
+const T = {
+  ko: {
+    homeAria: '트레블 참견 홈',
+    logoAlt: '트레블 참견',
+    notifications: '알림',
+    notificationsUnread: (n) => `알림 · 읽지 않은 참견 ${n}개`,
+    receivedFeedbackTitle: '내 계획에 달린 참견',
+    newFeedback: (n) => `새 참견 ${n}`,
+    clearAll: '전체 지우기',
+    loadError: '알림을 불러오지 못했어요.',
+    empty: '아직 달린 참견이 없어요. 계획을 공개하면 다른 여행자의 참견을 받을 수 있어요.',
+    feedbackCount: (n) => `참견 ${n}개`,
+    newFeedbackInline: (n) => ` · 새 참견 ${n}`,
+    dismissAria: (title) => `${title} 알림 지우기`,
+    languageSelect: '언어 선택',
+    myPage: '마이페이지',
+    myTrips: '나의 여행',
+    logout: '로그아웃',
+    login: '로그인',
+    accountMenuAria: (name) => `${name} 계정 메뉴`,
+    memberFallback: '회원',
+    openMenu: '메뉴 열기',
+    closeMenu: '메뉴 닫기',
+    loginCta: '로그인하고 참견 시작하기',
+    checkingLogin: '로그인 정보를 확인하는 중',
   },
-]
+  en: {
+    homeAria: 'Travel Tackle Home',
+    logoAlt: 'Travel Tackle',
+    notifications: 'Notifications',
+    notificationsUnread: (n) => `Notifications · ${n} unread`,
+    receivedFeedbackTitle: 'Feedback on My Trips',
+    newFeedback: (n) => `${n} new`,
+    clearAll: 'Clear all',
+    loadError: 'Could not load notifications.',
+    empty: 'No feedback yet. Publish a trip to get feedback from other travelers.',
+    feedbackCount: (n) => `${n} feedback`,
+    newFeedbackInline: (n) => ` · ${n} new`,
+    dismissAria: (title) => `Dismiss notification for ${title}`,
+    languageSelect: 'Language',
+    myPage: 'My Page',
+    myTrips: 'My Trips',
+    logout: 'Log out',
+    login: 'Log in',
+    accountMenuAria: (name) => `${name} account menu`,
+    memberFallback: 'Member',
+    openMenu: 'Open menu',
+    closeMenu: 'Close menu',
+    loginCta: 'Log in to get started',
+    checkingLogin: 'Checking your login status',
+  },
+}
 
 const POPOVER_BASE = 'nav-pop z-50 rounded-2xl border border-slate-100 bg-white shadow-popup ring-1 ring-black/5'
 const POPOVER = `${POPOVER_BASE} absolute right-0 mt-2`
@@ -45,14 +118,14 @@ export function Avatar({ user, size = 28 }) {
 }
 
 // 가운데 메뉴 — 마우스가 머무는 항목 아래로 알약이 미끄러지고, 손을 떼면 현재 페이지로 돌아간다
-function DesktopNav({ pathname }) {
+function DesktopNav({ pathname, nav }) {
   const itemRefs = useRef([])
   const [hover, setHover] = useState(null)
   const [pill, setPill] = useState({ left: 0, width: 0, visible: false })
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef(null)
 
-  const activeIdx = NAV.findIndex((n) => (n.match ? n.match(pathname) : n.to === pathname))
+  const activeIdx = nav.findIndex((n) => (n.match ? n.match(pathname) : n.to === pathname))
   const target = hover ?? (activeIdx >= 0 ? activeIdx : null)
   const trackRef = useRef(null)
 
@@ -63,7 +136,7 @@ function DesktopNav({ pathname }) {
   // content box 위치와 안 맞아 알약이 어긋나 보이는 문제가 있었다.
   const DROPDOWN_ITEM_HEIGHT = 36
   const DROPDOWN_ITEM_GAP = 4
-  const dropdownGroup = NAV.find((n) => n.children)
+  const dropdownGroup = nav.find((n) => n.children)
   const [childHover, setChildHover] = useState(null)
   const childActiveIdx = dropdownGroup ? dropdownGroup.children.findIndex((c) => c.to === pathname) : -1
   const childTarget = childHover ?? (childActiveIdx >= 0 ? childActiveIdx : null)
@@ -133,7 +206,7 @@ function DesktopNav({ pathname }) {
         }`}
         style={{ transform: `translateX(${pill.left}px)`, width: pill.width, left: 0 }}
       />
-      {NAV.map((n, i) => {
+      {nav.map((n, i) => {
         const active = i === activeIdx
         const itemClass = `relative z-10 flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-[13.5px] font-bold transition-colors duration-200 ${
           active ? 'text-brand' : 'text-slate-600 hover:text-slate-900'
@@ -250,6 +323,8 @@ export default function Navbar() {
   const [received, setReceived] = useState({ items: [], loading: false, error: false })
   const { user, loading: authLoading, logout, setUser } = useAuth()
   const { language, setLanguage } = useLanguage()
+  const copy = T[language] ?? T.en
+  const nav = getNav(language)
   const profileRef = useRef(null)
   const location = useLocation()
   const navigate = useNavigate()
@@ -358,17 +433,17 @@ export default function Navbar() {
       }`}
     >
       <div className="relative mx-auto flex h-16 max-w-[1200px] items-center gap-5 px-4 sm:px-6">
-        <Link to="/" className="flex shrink-0 items-center transition-transform hover:scale-[1.02]" aria-label="트레블 참견 홈">
-          <img src={logoHorizontal} alt="트레블 참견" className="h-8 w-auto sm:h-9" />
+        <Link to="/" className="flex shrink-0 items-center transition-transform hover:scale-[1.02]" aria-label={copy.homeAria}>
+          <img src={logoHorizontal} alt={copy.logoAlt} className="h-8 w-auto sm:h-9" />
         </Link>
 
-        <DesktopNav pathname={location.pathname} />
+        <DesktopNav pathname={location.pathname} nav={nav} />
 
         {/* 우측 */}
         <div className="ml-auto flex shrink-0 items-center gap-2">
           {authLoading ? (
             // 로그인 확인 중 — "로그인" 버튼이 떴다가 이름으로 바뀌는 깜빡임 대신 자리를 잡아 둔다
-            <div className="flex items-center gap-2" role="status" aria-label="로그인 정보를 확인하는 중">
+            <div className="flex items-center gap-2" role="status" aria-label={copy.checkingLogin}>
               <Skeleton className="hidden h-9 w-9 rounded-full sm:block" />
               <Skeleton className="hidden h-9 w-[76px] rounded-full sm:block" />
               <Skeleton className="h-9 w-[92px] rounded-full" />
@@ -388,7 +463,7 @@ export default function Navbar() {
                       })
                     }}
                     className={`${iconButton} ${notiOpen ? 'bg-slate-900/5 text-slate-900' : ''}`}
-                    aria-label={unreadTotal > 0 ? `알림 · 읽지 않은 참견 ${unreadTotal}개` : '알림'}
+                    aria-label={unreadTotal > 0 ? copy.notificationsUnread(unreadTotal) : copy.notifications}
                     aria-expanded={notiOpen}
                     aria-haspopup="dialog"
                   >
@@ -401,24 +476,24 @@ export default function Navbar() {
                   </button>
 
                   {notiOpen && (
-                    <div role="dialog" aria-label="내 계획에 달린 참견" className={`${POPOVER} w-72 py-2`}>
+                    <div role="dialog" aria-label={copy.receivedFeedbackTitle} className={`${POPOVER} w-72 py-2`}>
                       <div className="flex items-center justify-between border-b border-slate-100 px-3.5 pb-2">
-                        <span className="text-[12.5px] font-bold text-slate-800">내 계획에 달린 참견</span>
+                        <span className="text-[12.5px] font-bold text-slate-800">{copy.receivedFeedbackTitle}</span>
                         <div className="flex items-center gap-2.5">
-                          {unreadTotal > 0 && <span className="text-[11px] font-bold text-rose-500">새 참견 {unreadTotal}</span>}
+                          {unreadTotal > 0 && <span className="text-[11px] font-bold text-rose-500">{copy.newFeedback(unreadTotal)}</span>}
                           {received.items.length > 0 && (
                             <button
                               type="button"
                               onClick={dismissAllReceived}
                               className="text-[11px] font-semibold text-slate-400 transition-colors hover:text-slate-600"
                             >
-                              전체 지우기
+                              {copy.clearAll}
                             </button>
                           )}
                         </div>
                       </div>
                       {received.loading && received.items.length === 0 ? (
-                        <ul className="flex flex-col gap-2.5 px-3.5 py-3" role="status" aria-label="알림을 불러오는 중">
+                        <ul className="flex flex-col gap-2.5 px-3.5 py-3" role="status" aria-label={copy.notifications}>
                           {[0, 1].map((i) => (
                             <li key={i} className="flex items-start gap-2.5">
                               <Skeleton className="mt-1.5 h-2 w-2 rounded-full" />
@@ -430,10 +505,10 @@ export default function Navbar() {
                           ))}
                         </ul>
                       ) : received.error ? (
-                        <p className="px-3.5 py-4 text-[12px] text-rose-500">알림을 불러오지 못했어요.</p>
+                        <p className="px-3.5 py-4 text-[12px] text-rose-500">{copy.loadError}</p>
                       ) : received.items.length === 0 ? (
                         <p className="px-3.5 py-4 text-[12px] leading-relaxed text-slate-400">
-                          아직 달린 참견이 없어요. 계획을 공개하면 다른 여행자의 참견을 받을 수 있어요.
+                          {copy.empty}
                         </p>
                       ) : (
                         <ul className="max-h-[320px] overflow-y-auto py-1">
@@ -452,16 +527,16 @@ export default function Navbar() {
                                 <span className="min-w-0 flex-1">
                                   <span className="block truncate text-[12.5px] font-bold text-slate-800">{t.tripTitle}</span>
                                   <span className="block text-[11px] text-slate-400">
-                                    참견 {t.totalFeedbackCount}개
-                                    {t.unreadCount > 0 && <span className="font-semibold text-rose-500"> · 새 참견 {t.unreadCount}</span>}
-                                    {t.latestFeedbackAt && ` · ${formatDate(t.latestFeedbackAt)}`}
+                                    {copy.feedbackCount(t.totalFeedbackCount)}
+                                    {t.unreadCount > 0 && <span className="font-semibold text-rose-500">{copy.newFeedbackInline(t.unreadCount)}</span>}
+                                    {t.latestFeedbackAt && ` · ${formatDate(t.latestFeedbackAt, language)}`}
                                   </span>
                                 </span>
                               </Link>
                               <button
                                 type="button"
                                 onClick={(e) => dismissReceived(e, t.tripId)}
-                                aria-label={`${t.tripTitle} 알림 지우기`}
+                                aria-label={copy.dismissAria(t.tripTitle)}
                                 className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-slate-300 opacity-0 transition-all hover:bg-slate-100 hover:text-slate-500 group-hover:opacity-100 focus-visible:opacity-100"
                               >
                                 <Icon icon="solar:close-circle-linear" width={15} />
@@ -484,7 +559,7 @@ export default function Navbar() {
                     setLangOpen((v) => !v)
                   }}
                   className={`${pillButton} ${langOpen ? 'border-slate-300 shadow-card' : ''}`}
-                  aria-label="언어 선택"
+                  aria-label={copy.languageSelect}
                   aria-expanded={langOpen}
                   aria-haspopup="listbox"
                 >
@@ -498,7 +573,7 @@ export default function Navbar() {
                 </button>
 
                 {langOpen && (
-                  <ul role="listbox" aria-label="언어 선택" className={`${POPOVER} max-h-[320px] w-44 overflow-y-auto py-1.5`}>
+                  <ul role="listbox" aria-label={copy.languageSelect} className={`${POPOVER} max-h-[320px] w-44 overflow-y-auto py-1.5`}>
                     {LANGUAGES.map((lang) => {
                       const active = lang.code === language
                       return (
@@ -536,10 +611,10 @@ export default function Navbar() {
                     className={`${pillButton} pl-1 pr-2.5 ${profileOpen ? 'border-slate-300 shadow-card' : ''}`}
                     aria-expanded={profileOpen}
                     aria-haspopup="menu"
-                    aria-label={`${user.name || user.email || '회원'} 계정 메뉴`}
+                    aria-label={copy.accountMenuAria(user.name || user.email || copy.memberFallback)}
                   >
                     <Avatar user={user} />
-                    <span className="hidden max-w-[96px] truncate sm:inline">{user.name || user.email || '회원'}</span>
+                    <span className="hidden max-w-[96px] truncate sm:inline">{user.name || user.email || copy.memberFallback}</span>
                     <Icon
                       icon="solar:alt-arrow-down-linear"
                       width={11}
@@ -552,7 +627,7 @@ export default function Navbar() {
                       <div className="flex items-center gap-2.5 border-b border-slate-100 px-3.5 pb-2.5 pt-1.5">
                         <Avatar user={user} size={32} />
                         <div className="min-w-0">
-                          <div className="truncate text-[13px] font-bold text-slate-800">{user.name || '회원'}</div>
+                          <div className="truncate text-[13px] font-bold text-slate-800">{user.name || copy.memberFallback}</div>
                           {user.email && <div className="truncate text-[11px] text-slate-400">{user.email}</div>}
                         </div>
                       </div>
@@ -562,7 +637,7 @@ export default function Navbar() {
                         onClick={() => setProfileOpen(false)}
                         className="mt-1 flex items-center gap-2 px-3.5 py-2 text-[13px] text-slate-600 transition-colors hover:bg-slate-50"
                       >
-                        <Icon icon="solar:user-circle-linear" width={16} /> 마이페이지
+                        <Icon icon="solar:user-circle-linear" width={16} /> {copy.myPage}
                       </Link>
                       <Link
                         to="/trips"
@@ -570,14 +645,14 @@ export default function Navbar() {
                         onClick={() => setProfileOpen(false)}
                         className="flex items-center gap-2 px-3.5 py-2 text-[13px] text-slate-600 transition-colors hover:bg-slate-50"
                       >
-                        <Icon icon="solar:suitcase-tag-linear" width={16} /> 나의 여행
+                        <Icon icon="solar:suitcase-tag-linear" width={16} /> {copy.myTrips}
                       </Link>
                       <button
                         role="menuitem"
                         onClick={handleLogout}
                         className="flex w-full items-center gap-2 px-3.5 py-2 text-[13px] text-rose-500 transition-colors hover:bg-rose-50"
                       >
-                        <Icon icon="solar:logout-2-linear" width={16} /> 로그아웃
+                        <Icon icon="solar:logout-2-linear" width={16} /> {copy.logout}
                       </button>
                     </div>
                   )}
@@ -595,7 +670,7 @@ export default function Navbar() {
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20">
                     <Icon icon="solar:user-rounded-bold" width={12} />
                   </span>
-                  로그인
+                  {copy.login}
                 </Link>
               )}
             </>
@@ -606,7 +681,7 @@ export default function Navbar() {
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
             className={`${iconButton} md:hidden`}
-            aria-label={menuOpen ? '메뉴 닫기' : '메뉴 열기'}
+            aria-label={menuOpen ? copy.closeMenu : copy.openMenu}
             aria-expanded={menuOpen}
           >
             <span className={`flex transition-transform duration-300 ${menuOpen ? 'rotate-90' : ''}`}>
@@ -620,7 +695,7 @@ export default function Navbar() {
       {menuOpen && (
         <div className="nav-sheet border-t border-slate-100 bg-white px-4 pb-4 pt-2 md:hidden">
           <div className="flex flex-col">
-            {NAV.flatMap((n) => (n.children ? n.children : [n])).map((n) => {
+            {nav.flatMap((n) => (n.children ? n.children : [n])).map((n) => {
               const active = location.pathname === n.to
               return (
                 <Link
@@ -645,9 +720,9 @@ export default function Navbar() {
           {/* 데스크톱 선택기가 sm 미만에서 숨겨지므로 모바일에서는 여기서 언어를 바꾼다 */}
           <div className="mt-3 border-t border-slate-100 pt-3">
             <p className="flex items-center gap-1.5 px-3 text-[12px] font-bold text-slate-400">
-              <Icon icon="solar:global-linear" width={14} /> 언어 선택
+              <Icon icon="solar:global-linear" width={14} /> {copy.languageSelect}
             </p>
-            <div className="mt-2 flex flex-wrap gap-1.5 px-3" role="listbox" aria-label="언어 선택">
+            <div className="mt-2 flex flex-wrap gap-1.5 px-3" role="listbox" aria-label={copy.languageSelect}>
               {LANGUAGES.map((lang) => {
                 const active = lang.code === language
                 return (
@@ -676,7 +751,7 @@ export default function Navbar() {
                 <div className="flex items-center gap-3 px-3">
                   <Avatar user={user} size={36} />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-[13.5px] font-bold text-slate-800">{user.name || '회원'}</div>
+                    <div className="truncate text-[13.5px] font-bold text-slate-800">{user.name || copy.memberFallback}</div>
                     {user.email && <div className="truncate text-[11.5px] text-slate-400">{user.email}</div>}
                   </div>
                   <button
@@ -684,7 +759,7 @@ export default function Navbar() {
                     onClick={handleLogout}
                     className="rounded-full border border-slate-200 px-3 py-1.5 text-[12px] font-bold text-slate-600 transition-colors hover:bg-slate-50"
                   >
-                    로그아웃
+                    {copy.logout}
                   </button>
                 </div>
               ) : (
@@ -694,7 +769,7 @@ export default function Navbar() {
                   className="flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-brand-mid to-brand text-[13.5px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28)] transition-colors hover:from-brand hover:to-brand-dark"
                 >
                   <Icon icon="solar:user-rounded-bold" width={15} />
-                  로그인하고 참견 시작하기
+                  {copy.loginCta}
                 </Link>
               )}
             </div>

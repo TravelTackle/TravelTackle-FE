@@ -5,8 +5,51 @@ import Button from './ui/Button'
 import { sendChatMessage } from '../api/chat'
 import { useLanguage } from '../i18n'
 
-const GREETING = { id: 'greeting', from: 'bot', text: '안녕하세요! 트레블봇이에요 😊 여행 계획 짜는 거 도와드릴까요?' }
+// 다른 컴포넌트(예: TravelerHome Hero CTA)가 챗봇을 열도록 신호를 보낼 때 쓰는 이벤트
+export const CHATBOT_OPEN_EVENT = 'chatbot:open'
+
+// 인사말 텍스트는 아직 안 보이는 동안(reveal 전)엔 의미가 없다 — 실제 문구는 reveal 시점에
+// 그때의 언어(copy.greeting)로 채운다. 그래야 열기 전에 언어를 바꿔도 바뀐 언어로 인사한다.
+const EMPTY_GREETING = { id: 'greeting', from: 'bot', text: '' }
 const GREETING_DELAY_MS = 900 // 처음 열면 이만큼 "입력 중"을 보여준 뒤 인사말을 써 내려간다
+
+// 챗봇 위젯 전체 UI 문구 — 언어별 맵으로 모아둬서 나중에 언어가 늘 때 키만 추가하면 되게 한다.
+const T = {
+  ko: {
+    botName: '트레블봇',
+    greeting: '안녕하세요! 트레블봇이에요 😊 여행 계획 짜는 거 도와드릴까요?',
+    typingStatus: '트레블봇이 입력 중…',
+    answering: '답변 작성 중',
+    online: '온라인',
+    newConversation: '새 대화',
+    closeChat: '챗봇 닫기',
+    openChat: '챗봇 열기',
+    inputPlaceholderWaiting: '답변을 기다리는 중…',
+    inputPlaceholder: '메시지를 입력하세요...',
+    send: '전송',
+    loginRequired: '로그인 후 트레블봇을 이용할 수 있어요.',
+    rateLimited: '요청이 많아요. 잠시 후 다시 시도해주세요.',
+    genericError: '답변을 불러오지 못했어요. 잠시 후 다시 시도해주세요.',
+    typingBubbleAria: '트레블봇이 답변을 작성 중',
+  },
+  en: {
+    botName: 'Travel Bot',
+    greeting: "Hi! I'm Travel Bot 😊 Want help planning your trip?",
+    typingStatus: 'Travel Bot is typing…',
+    answering: 'Replying',
+    online: 'Online',
+    newConversation: 'New chat',
+    closeChat: 'Close chatbot',
+    openChat: 'Open chatbot',
+    inputPlaceholderWaiting: 'Waiting for reply…',
+    inputPlaceholder: 'Type a message...',
+    send: 'Send',
+    loginRequired: 'Please sign in to use Travel Bot.',
+    rateLimited: 'Too many requests. Please try again shortly.',
+    genericError: 'Could not load a reply. Please try again shortly.',
+    typingBubbleAria: 'Travel Bot is composing a reply',
+  },
+}
 
 function createConversationId() {
   return globalThis.crypto?.randomUUID?.() || `chat-${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -60,9 +103,9 @@ function BotAvatar() {
 }
 
 // 입력 중 말풍선 — 점 세 개가 파도처럼 튀고, 아래에 작은 안내가 따라온다
-function TypingBubble() {
+function TypingBubble({ copy }) {
   return (
-    <div className="chat-in-left flex flex-col items-start" role="status" aria-label="트레블봇이 답변을 작성 중">
+    <div className="chat-in-left flex flex-col items-start" role="status" aria-label={copy.typingBubbleAria}>
       <div className="flex">
         <BotAvatar />
         <div className="flex h-9 items-center gap-1 rounded-2xl rounded-tl-sm border border-slate-100 bg-white px-3.5">
@@ -75,17 +118,18 @@ function TypingBubble() {
           ))}
         </div>
       </div>
-      <span className="ml-8 mt-1 text-[10.5px] text-slate-400">트레블봇이 입력 중…</span>
+      <span className="ml-8 mt-1 text-[10.5px] text-slate-400">{copy.typingStatus}</span>
     </div>
   )
 }
 
 export default function ChatbotWidget() {
-  // UI 문구는 한국어 고정 — 선택 언어는 챗봇 답변 언어(API language 파라미터)에만 쓴다
+  // 선택 언어를 챗봇 UI 문구와 답변 언어(API language 파라미터) 둘 다에 쓴다
   const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [open, setOpen] = useState(false)
   const [openCount, setOpenCount] = useState(0) // 열 때마다 대화가 다시 스르륵 쌓이도록 목록을 새로 마운트
-  const [messages, setMessages] = useState([GREETING])
+  const [messages, setMessages] = useState([EMPTY_GREETING])
   const [greeted, setGreeted] = useState(false) // 인사말이 "도착"했는지 — 그 전엔 입력 중 말풍선만 보인다
   const openCountRef = useRef(0) // 비동기 응답에서 현재 열림 회차를 읽기 위한 거울
   const [input, setInput] = useState('')
@@ -106,16 +150,19 @@ export default function ChatbotWidget() {
     scrollToBottom(true)
   }, [messages, sending, open, greeted])
 
-  // 처음 열렸을 때: 잠깐 입력 중을 보여주고 나서 인사말이 타이핑되며 도착한다
+  // 처음 열렸을 때: 잠깐 입력 중을 보여주고 나서 인사말이 타이핑되며 도착한다.
+  // 텍스트는 여기, reveal 시점의 언어(copy.greeting)로 채운다 — 열기 전에 언어를 바꿔도
+  // 마운트 시점 언어가 아니라 그때의 언어로 인사하게 하기 위함.
   useEffect(() => {
     if (!open || greeted) return undefined
     const id = setTimeout(() => {
-      // 인사말이 이번 열림에서 도착했다고 표시 — 이 회차에만 타이핑 효과를 낸다
-      setMessages((prev) => prev.map((m, i) => (i === 0 ? { ...m, typed: true, openSeq: openCountRef.current } : m)))
+      setMessages((prev) =>
+        prev.map((m, i) => (i === 0 ? { ...m, text: copy.greeting, typed: true, openSeq: openCountRef.current } : m))
+      )
       setGreeted(true)
     }, reduceMotion.current ? 0 : GREETING_DELAY_MS)
     return () => clearTimeout(id)
-  }, [open, greeted])
+  }, [open, greeted, copy.greeting])
 
   // 인사말이 도착해 입력이 가능해지면 입력창에 커서를 둔다
   useEffect(() => {
@@ -135,6 +182,22 @@ export default function ChatbotWidget() {
       return !v
     })
   }
+
+  // TravelerHome의 Hero CTA 등 다른 컴포넌트에서 챗봇을 열 수 있도록 커스텀 이벤트를 듣는다
+  // (장바구니의 CART_CHANGED_EVENT와 같은 패턴).
+  useEffect(() => {
+    function onExternalOpen() {
+      setOpen((v) => {
+        if (!v) {
+          openCountRef.current += 1
+          setOpenCount(openCountRef.current)
+        }
+        return true
+      })
+    }
+    window.addEventListener(CHATBOT_OPEN_EVENT, onExternalOpen)
+    return () => window.removeEventListener(CHATBOT_OPEN_EVENT, onExternalOpen)
+  }, [])
 
   const handleSend = async () => {
     const text = input.trim()
@@ -165,11 +228,11 @@ export default function ChatbotWidget() {
       // 새 대화로 넘어가며 중단된 요청 — 새 대화 상태를 건드리지 않는다.
       if (controller.signal.aborted) return
       if (err.response?.status === 401) {
-        setError('로그인 후 트레블봇을 이용할 수 있어요.')
+        setError(copy.loginRequired)
       } else if (err.response?.status === 429) {
-        setError('요청이 많아요. 잠시 후 다시 시도해주세요.')
+        setError(copy.rateLimited)
       } else {
-        setError('답변을 불러오지 못했어요. 잠시 후 다시 시도해주세요.')
+        setError(copy.genericError)
       }
     } finally {
       if (!controller.signal.aborted) setSending(false)
@@ -183,7 +246,7 @@ export default function ChatbotWidget() {
   const handleNewConversation = () => {
     abortRef.current?.abort()
     conversationId.current = createConversationId()
-    setMessages([{ ...GREETING, id: `greeting-${Date.now()}` }])
+    setMessages([{ ...EMPTY_GREETING, id: `greeting-${Date.now()}` }])
     setGreeted(false) // 새 대화도 인사말부터 다시 도착한다
     setInput('')
     setError('')
@@ -209,20 +272,20 @@ export default function ChatbotWidget() {
               <Icon icon="solar:chat-round-dots-bold" width={16} color="white" />
             </IconBadge>
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-bold text-white leading-tight">트레블봇</div>
+              <div className="text-[13px] font-bold text-white leading-tight">{copy.botName}</div>
               <div className="flex items-center gap-1.5 text-[10.5px] text-blue-50/90">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="chat-ping absolute inset-0 rounded-full bg-emerald-300" />
                   <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-300" />
                 </span>
-                {sending || !greeted ? '답변 작성 중' : '온라인'}
+                {sending || !greeted ? copy.answering : copy.online}
               </div>
             </div>
             <IconBadge
               as="button"
               onClick={handleNewConversation}
               className="w-7 h-7 rounded-full text-white/80 hover:bg-white/10 hover:rotate-180 transition-all duration-500 shrink-0"
-              aria-label="새 대화"
+              aria-label={copy.newConversation}
             >
               <Icon icon="solar:restart-linear" width={17} />
             </IconBadge>
@@ -230,7 +293,7 @@ export default function ChatbotWidget() {
               as="button"
               onClick={() => setOpen(false)}
               className="w-7 h-7 rounded-full text-white/80 hover:bg-white/10 transition-all shrink-0"
-              aria-label="챗봇 닫기"
+              aria-label={copy.closeChat}
             >
               <Icon icon="solar:close-circle-linear" width={18} />
             </IconBadge>
@@ -242,7 +305,7 @@ export default function ChatbotWidget() {
               const isUser = m.from === 'user'
               const isGreeting = i === 0 && m.from === 'bot'
               // 인사말이 아직 도착 전이면 그 자리엔 입력 중 말풍선
-              if (isGreeting && !greeted) return <TypingBubble key={`${m.id}-typing`} />
+              if (isGreeting && !greeted) return <TypingBubble key={`${m.id}-typing`} copy={copy} />
               // 타이핑 효과는 그 메시지가 도착한 열림 회차에서만 — 닫았다 다시 열면 그냥 보인다
               const typed = Boolean(m.typed) && m.openSeq === openCount && !reduceMotion.current
               return (
@@ -264,7 +327,7 @@ export default function ChatbotWidget() {
                 </div>
               )
             })}
-            {sending && <TypingBubble />}
+            {sending && <TypingBubble copy={copy} />}
           </div>
 
           {/* Composer */}
@@ -281,7 +344,7 @@ export default function ChatbotWidget() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={sending ? '답변을 기다리는 중…' : '메시지를 입력하세요...'}
+                placeholder={sending ? copy.inputPlaceholderWaiting : copy.inputPlaceholder}
                 disabled={sending || !greeted}
                 className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-full px-3.5 py-2 text-[12.5px] outline-none transition-all focus:border-brand/50 focus:bg-white focus:ring-4 focus:ring-brand/10 disabled:opacity-60"
               />
@@ -291,7 +354,7 @@ export default function ChatbotWidget() {
                 className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40 ${
                   input.trim() && !sending ? 'scale-100 hover:scale-110 active:scale-95' : 'scale-95'
                 }`}
-                aria-label="전송"
+                aria-label={copy.send}
               >
                 <Icon icon="solar:plain-2-bold" width={14} color="white" className={input.trim() && !sending ? '-rotate-12 transition-transform' : 'transition-transform'} />
               </Button>
@@ -306,7 +369,7 @@ export default function ChatbotWidget() {
         className={`pointer-events-auto w-14 h-14 rounded-full border-[3px] border-white shadow-float flex items-center justify-center hover:scale-105 hover:shadow-float-hover ${
           open ? '' : 'animate-float'
         }`}
-        aria-label={open ? '챗봇 닫기' : '챗봇 열기'}
+        aria-label={open ? copy.closeChat : copy.openChat}
         aria-expanded={open}
       >
         <span className={`flex transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${open ? 'rotate-90' : 'rotate-0'}`}>
