@@ -20,7 +20,7 @@ export default function Avatar({ user, size = 28, className = '' }) {
       style={{ width: size, height: size, fontSize: size * 0.42 }}
       aria-hidden="true"
     >
-      {showImage ? <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" onError={() => setFailed(true)} /> : initialOf(user)}
+      {showImage ? <img src={src} alt="" className="h-full w-full object-cover" onError={() => setFailed(true)} /> : initialOf(user)}
     </span>
   )
 }
