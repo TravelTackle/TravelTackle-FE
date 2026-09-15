@@ -40,7 +40,8 @@ const STEPS = [
     multiple: true,
     title: '이번 여행에서 가장 끌리는 것은 무엇인가요?',
     options: INTEREST_TAGS,
-    grid: 'grid-cols-2 sm:grid-cols-3',
+    // 2열이면 모바일 폭에서 라벨 텍스트(nowrap)가 카드 밖으로 넘쳐 잘려 보여서 1열로
+    grid: 'grid-cols-1 sm:grid-cols-3',
   },
   {
     key: 'travelStyle',
@@ -88,10 +89,12 @@ function optionIcon(options, value) {
 }
 
 // 라벨 : 값 한 줄, 좌측 정렬 — 장식 없이 구분선만으로 행을 나눈다
+// 라벨:값이 원래 한 줄인데, 모바일에서는 라벨 폭(w-24)에 값까지 욱여넣으면 값 쪽이 너무 좁아져서
+// 세로로 쌓는다 — sm 이상에서는 기존처럼 한 줄.
 function SettingRow({ label, icon, children }) {
   return (
-    <div className="flex flex-wrap items-center gap-6 border-t border-slate-100 py-10 first:border-t-0 first:pt-0">
-      <span className="flex w-24 shrink-0 items-center gap-1.5 text-[13.5px] font-bold text-slate-700">
+    <div className="flex flex-col gap-2 border-t border-slate-100 py-10 first:border-t-0 first:pt-0 sm:flex-row sm:flex-wrap sm:items-center sm:gap-6">
+      <span className="flex items-center gap-1.5 text-[13.5px] font-bold text-slate-700 sm:w-24 sm:shrink-0">
         {icon && <Icon icon={icon} width={15} className="shrink-0 text-brand" />}
         {label}
       </span>
@@ -1000,6 +1003,16 @@ function PreferenceTab({ preferences, setPreferences }) {
     <Card className="p-8">
       {/* 프로필 설정과 달리 여긴 좌우 대칭인 2x2 박스라 가운데 정렬 */}
       <div className="mx-auto max-w-[900px]">
+      {/* 수정하기 버튼 — 예전엔 그리드 맨 아래에 있어서 눌러 보려면 다 스크롤해야 했다. 위로 올렸다. */}
+      <div className="mb-5 flex justify-end border-b border-slate-100 pb-5">
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="rounded-xl bg-brand px-5 py-2.5 text-[12.5px] font-bold text-white hover:bg-brand-dark"
+        >
+          수정하기
+        </button>
+      </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {summaryRows.map((row) => (
           <div key={row.title} className="rounded-2xl border border-slate-100 p-6">
@@ -1024,15 +1037,6 @@ function PreferenceTab({ preferences, setPreferences }) {
             </div>
           </div>
         ))}
-      </div>
-      <div className="mt-6 flex justify-end border-t border-slate-100 pt-5">
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          className="rounded-xl bg-brand px-5 py-2.5 text-[12.5px] font-bold text-white hover:bg-brand-dark"
-        >
-          수정하기
-        </button>
       </div>
       </div>
     </Card>

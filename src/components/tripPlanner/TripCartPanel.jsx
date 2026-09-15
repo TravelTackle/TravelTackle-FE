@@ -6,7 +6,10 @@ import { CART_TABS, areaName, cartTheme, themeKey } from '../../lib/cartThemes'
 // 계획 편집 화면 우측의 여행 장바구니 사이드바 패널. FloatingCart와 같은 실 데이터(api/cart.js)를 쓴다.
 // 접힌 상태는 이 컴포넌트가 아니라 부모(TripPlannerPage)가 아예 마운트를 안 하는 식으로 처리하고,
 // 대신 우측 하단에 뜨는 전용 플로팅 버튼(TripCartFloatingButton)이 그 자리를 대신한다.
-export default function TripCartPanel({ onToggle }) {
+export default function TripCartPanel({ onToggle, onAddItem, targetDayLabel }) {
+  // 모바일(터치)에서 draggable="true"인 요소는 탭이 드래그 제스처 인식기에 먼저 먹혀서 클릭이
+  // 씹히는 경우가 있다 — 데스크톱(마우스)에서만 드래그를 켜고, 모바일에서는 탭으로만 담게 한다.
+  const [isDesktop] = useState(() => window.matchMedia('(min-width: 640px)').matches)
   const [items, setItems] = useState([])
   const [tab, setTab] = useState('all')
   const [query, setQuery] = useState('')
@@ -97,7 +100,8 @@ export default function TripCartPanel({ onToggle }) {
     .filter((i) => !q || i.title?.toLowerCase().includes(q) || areaName(i.areaCode).toLowerCase().includes(q))
 
   return (
-    <div className="flex max-h-[calc(100vh-160px)] w-[340px] shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-100 bg-surface shadow-card">
+    // 모바일에서는 챗봇/장바구니 위젯처럼 화면 전체를 채우고(28px 라운드), sm 이상에서는 기존 사이드 패널 크기로 되돌아온다.
+    <div className="flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-slate-100 bg-surface shadow-card sm:h-auto sm:max-h-[calc(100vh-160px)] sm:w-[340px] sm:shrink-0 sm:rounded-2xl">
       <div className="flex items-center justify-between px-4 pt-4">
         <h2 className="text-[14px] font-bold text-slate-800">여행 장바구니</h2>
         <div className="flex items-center gap-2">
@@ -112,6 +116,12 @@ export default function TripCartPanel({ onToggle }) {
           </button>
         </div>
       </div>
+
+      {onAddItem && targetDayLabel && (
+        <p className="mx-4 mt-2 rounded-lg bg-brand-light px-3 py-2 text-[11.5px] font-bold text-brand">
+          {targetDayLabel}에 추가할 장소를 선택하세요
+        </p>
+      )}
 
       <div className="px-4 pt-3">
         <div className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5">
@@ -185,14 +195,23 @@ export default function TripCartPanel({ onToggle }) {
             {visibleItems.map((item) => (
               <li
                 key={item.id}
-                draggable
-                onDragStart={(e) => {
-                  e.dataTransfer.effectAllowed = 'copy'
-                  e.dataTransfer.setData(CART_ITEM_DRAG_TYPE, JSON.stringify(item))
-                  const rect = e.currentTarget.getBoundingClientRect()
-                  e.dataTransfer.setDragImage(e.currentTarget, e.clientX - rect.left, e.clientY - rect.top)
-                }}
-                className="flex cursor-grab items-center gap-3 rounded-xl border border-slate-100 p-2.5 shadow-card active:cursor-grabbing"
+                // 모바일에서는 탭으로만 담게 하므로 draggable 속성 자체를 안 붙인다 — 데스크톱에서만 카트에서
+                // Day로 직접 끌어다 놓는 것도 가능하게 켠다.
+                {...(isDesktop
+                  ? {
+                      draggable: true,
+                      onDragStart: (e) => {
+                        e.dataTransfer.effectAllowed = 'copy'
+                        e.dataTransfer.setData(CART_ITEM_DRAG_TYPE, JSON.stringify(item))
+                        const rect = e.currentTarget.getBoundingClientRect()
+                        e.dataTransfer.setDragImage(e.currentTarget, e.clientX - rect.left, e.clientY - rect.top)
+                      },
+                    }
+                  : {})}
+                onClick={() => onAddItem?.(item)}
+                className={`flex items-center gap-3 rounded-xl border border-slate-100 p-2.5 shadow-card ${
+                  isDesktop ? 'cursor-grab active:cursor-grabbing' : ''
+                } ${onAddItem ? 'cursor-pointer hover:border-brand/30 hover:bg-brand-light/20' : ''}`}
               >
                 {item.imageUrl ? (
                   <img src={item.imageUrl} alt="" className="h-12 w-12 shrink-0 rounded-lg bg-slate-100 object-cover" />
@@ -208,7 +227,10 @@ export default function TripCartPanel({ onToggle }) {
                   <p className="text-[11px] text-slate-400">{areaName(item.areaCode)}</p>
                 </div>
                 <button
-                  onClick={() => handleRemove(item)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleRemove(item)
+                  }}
                   aria-label={`${item.title} 빼기`}
                   className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-100"
                 >

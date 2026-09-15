@@ -48,14 +48,18 @@ export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDe
     <div
       ref={cardRef}
       data-item-card
-      className="relative flex items-start gap-2.5 rounded-2xl border border-slate-100 bg-surface p-3.5 shadow-card"
+      draggable={!readOnly}
+      onDragStart={readOnly ? undefined : handleDragStart}
+      className={`relative flex items-start gap-2.5 rounded-2xl border border-slate-100 bg-surface p-3.5 shadow-card ${
+        readOnly ? '' : 'cursor-grab active:cursor-grabbing'
+      }`}
     >
       {!readOnly && (
+        // 핸들 아이콘은 그대로 두되 누를 수 있는 영역(h-9 w-9)은 훨씬 넓게 잡는다 — 실제 드래그는
+        // 이제 카드 전체(위 div)에서 시작되므로, 이 span은 "여기를 잡으면 된다"는 시각적 표시일 뿐이다.
         <span
-          draggable
-          onDragStart={handleDragStart}
-          className="mt-0.5 flex h-6 w-6 shrink-0 cursor-grab items-center justify-center text-slate-300 hover:text-slate-500 active:cursor-grabbing"
-          aria-label="순서 변경 핸들"
+          className="-ml-1.5 -mt-1 flex h-9 w-9 shrink-0 items-center justify-center text-slate-300"
+          aria-hidden="true"
         >
           <Icon icon="mdi:drag" width={18} />
         </span>
@@ -72,6 +76,7 @@ export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDe
           ) : (
             <button
               type="button"
+              draggable={false}
               onClick={() => setTimePopupOpen((v) => !v)}
               className="rounded-md text-[12px] font-semibold text-slate-500 hover:text-brand"
             >
@@ -114,6 +119,7 @@ export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDe
             >
               <p
                 ref={memoRef}
+                draggable={false}
                 onDoubleClick={readOnly ? undefined : startMemoEdit}
                 className={`line-clamp-2 text-[12px] text-slate-400 ${readOnly ? '' : 'cursor-text'}`}
               >
@@ -137,6 +143,7 @@ export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDe
 
       {!readOnly && (
         <button
+          draggable={false}
           onClick={onDelete}
           aria-label={deleteLocked ? `${item.cachedTitle} — 공개 중인 계획의 마지막 일정이라 지울 수 없어요` : `${item.cachedTitle} 삭제`}
           title={deleteLocked ? '공개 중인 계획은 각 일차에 일정이 하나 이상 남아야 해요' : undefined}

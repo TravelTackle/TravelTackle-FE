@@ -146,7 +146,7 @@ export default function TripHeader({
           </button>
 
           {menuOpen && (
-            <div className="absolute left-0 top-full z-30 mt-2 w-96 rounded-2xl border border-slate-100 bg-surface py-1.5 shadow-popup">
+            <div className="absolute left-0 top-full z-30 mt-2 w-96 rounded-2xl border border-slate-100 bg-surface py-1.5 shadow-popup max-sm:fixed max-sm:inset-x-3 max-sm:top-[68px] max-sm:mt-0 max-sm:w-auto">
               {orderedTrips.map((t) => (
                 <div
                   key={t.id}
@@ -305,9 +305,13 @@ export default function TripHeader({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2">
-          <DatePill label="출발일" value={trip.startDate} max={trip.endDate} onChange={(v) => handleDateChange(v, trip.endDate)} disabled={trip.published} />
-          <DatePill label="종료일" value={trip.endDate} min={trip.startDate} onChange={(v) => handleDateChange(trip.startDate, v)} disabled={trip.published} />
+        {/* 모바일에서는 날짜 두 개 아래로 잠금 안내가 한 줄 더 붙지만(2줄), sm 이상에서는 원래처럼
+            전부 한 줄에 나란히 놓인다. */}
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+          <div className="flex items-center gap-2">
+            <DatePill label="출발일" value={trip.startDate} max={trip.endDate} onChange={(v) => handleDateChange(v, trip.endDate)} disabled={trip.published} />
+            <DatePill label="종료일" value={trip.endDate} min={trip.startDate} onChange={(v) => handleDateChange(trip.startDate, v)} disabled={trip.published} />
+          </div>
           {trip.published && (
             <span
               className="flex items-center gap-1 text-[11px] font-semibold text-slate-400"
