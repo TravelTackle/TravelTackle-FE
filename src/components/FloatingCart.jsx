@@ -239,17 +239,21 @@ export default function FloatingCart() {
         </div>
       </div>
 
+      {/* 모바일(<sm)에서는 화면 전체(네비바 포함)를 채우고, sm 이상에서는 기존처럼 버튼 위에 뜨는
+          작은 패널 — 챗봇과 동일한 패턴, 모서리 라운드도 그대로 유지한다 */}
       <div
-        className={`relative mb-3 origin-bottom-right transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          open ? 'pointer-events-auto translate-y-0 scale-100 opacity-100' : 'pointer-events-none translate-y-3 scale-90 opacity-0'
+        className={`fixed inset-0 z-[70] origin-bottom-right transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] sm:static sm:z-auto sm:mb-3 sm:inset-auto ${
+          open
+            ? 'translate-y-0 opacity-100 pointer-events-auto sm:scale-100'
+            : 'translate-y-full opacity-0 pointer-events-none sm:translate-y-3 sm:scale-90'
         }`}
       >
-        {/* 떠 있는 느낌을 주는 부드러운 접지 그림자 */}
-        <div className="absolute -bottom-4 left-8 right-8 -z-10 h-9 rounded-full bg-slate-900/25 blur-2xl" />
+        {/* 떠 있는 느낌을 주는 부드러운 접지 그림자 — 전체화면에선 의미 없어서 sm 이상에서만 */}
+        <div className="hidden sm:block absolute -bottom-4 left-8 right-8 -z-10 h-9 rounded-full bg-slate-900/25 blur-2xl" />
 
         <div
           {...dropZoneProps}
-          className="relative flex h-[min(620px,calc(100vh-200px))] w-[340px] flex-col overflow-hidden rounded-2xl border border-slate-100 bg-surface shadow-popup"
+          className="relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-slate-100 bg-surface shadow-popup sm:h-[min(620px,calc(100vh-200px))] sm:w-[340px]"
         >
           {/* 헤더 · 검색 · 칩 — 나의 여행 사이드바(TripCartPanel)와 같은 디자인 */}
           <div className="flex items-center justify-between px-4 pt-4">
@@ -463,10 +467,14 @@ export default function FloatingCart() {
         </div>
       )}
 
+      {/* 열려 있을 때 모바일에서는 패널 자체 헤더에 닫기 버튼이 있으므로 원형 버튼은 숨긴다
+          (sm 이상에서는 기존처럼 작은 패널 옆에 계속 보여준다) */}
       <button
         {...dropZoneProps}
         onClick={() => setOpen((v) => !v)}
-        className={`pointer-events-auto relative flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-surface bg-brand text-white shadow-float transition-all hover:scale-105 hover:bg-brand-dark hover:shadow-float-hover ${
+        className={`pointer-events-auto relative h-14 w-14 items-center justify-center rounded-full border-[3px] border-surface bg-brand text-white shadow-float transition-all hover:scale-105 hover:bg-brand-dark hover:shadow-float-hover ${
+          open ? 'hidden sm:flex' : 'flex'
+        } ${
           dragActive
             ? dragOver
               ? 'scale-125 shadow-float-hover ring-4 ring-brand/40'

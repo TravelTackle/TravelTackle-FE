@@ -43,7 +43,7 @@ export default function TourCard({ spot, carted, onOpen, onToggleCart }) {
           onClick={handleQuickToggle}
           disabled={loading}
           aria-label={carted ? '카트에서 빼기' : '카트에 담기'}
-          className={`absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full shadow-card transition-colors ${
+          className={`absolute top-2.5 left-2.5 flex h-8 w-8 items-center justify-center rounded-full shadow-card transition-colors ${
             carted ? 'bg-brand text-white' : 'bg-white/95 text-ink hover:text-ink-brand'
           }`}
         >

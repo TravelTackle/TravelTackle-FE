@@ -71,11 +71,13 @@ export default function FestivalCard({ festival, index = 0, onOpen, onToggleCart
           {status.label}
         </span>
 
+        {/* 왼쪽 세로 중앙 — 위 상태 배지·아래 날짜 텍스트와 겹치지 않으면서, 화면 우측 하단의
+            장바구니·챗봇 플로팅 버튼과도 스크롤 위치와 무관하게 절대 겹치지 않는 자리 */}
         <button
           onClick={handleQuickToggle}
           disabled={loading}
           aria-label={carted ? '카트에서 빼기' : '카트에 담기'}
-          className={`absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full shadow-card transition-colors ${
+          className={`absolute left-2.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full shadow-card transition-colors ${
             carted ? 'bg-brand text-white' : 'bg-white/95 text-ink hover:text-ink-brand'
           }`}
         >

@@ -97,6 +97,7 @@ export default function TripMapView({
   selectedDayId,
   onSelectDay,
   onAddCartItem,
+  onOpenCart,
   onReorderItem,
   onMoveItem,
   onSaveTime,
@@ -179,7 +180,7 @@ export default function TripMapView({
         </Map>
       </div>
 
-      <div className="w-[260px] shrink-0">
+      <div className="w-full sm:w-[260px] sm:shrink-0">
         <div className="mb-1.5 flex items-center justify-between">
           <button type="button" aria-label="이전 Day" onClick={() => goDay(-1)} disabled={dayIndex <= 0} className={NAV_BUTTON_CLASS}>
             <Icon icon="solar:alt-arrow-left-linear" width={14} />
@@ -202,6 +203,7 @@ export default function TripMapView({
               selected
               onSelect={() => onSelectDay(activeDay.id)}
               onAddCartItem={onAddCartItem}
+              onOpenCart={onOpenCart}
               onReorderItem={onReorderItem}
               onMoveItem={onMoveItem}
               onSaveTime={onSaveTime}

@@ -148,9 +148,12 @@ export default function FeedFilterBar({ filter, onFilterChange, view, onViewChan
           })}
         </div>
 
+        {/* 모바일에서는 이 줄 전체가 필터탭과 같이 스티키로 고정되는데, 기록 업로드까지 같이
+            고정되면 화면을 계속 차지해서 답답하다 — 모바일에서는 스티키 영역 밖(페이지 쪽)에
+            따로 두고, 여기서는 sm 이상에서만 보여준다. */}
         <Button
           onClick={onUploadClick}
-          className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[12.5px] font-bold shadow-card hover:shadow-card-hover"
+          className="hidden items-center gap-1.5 rounded-full px-4 py-2 text-[12.5px] font-bold shadow-card hover:shadow-card-hover sm:flex"
         >
           <Icon icon="mdi:cloud-upload-outline" width={16} />
           기록 업로드

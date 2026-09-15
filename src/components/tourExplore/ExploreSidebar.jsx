@@ -131,8 +131,11 @@ export default function ExploreSidebar({
   const [areas, setAreas] = useState(() => sortAreasByPopularity(FALLBACK_AREAS))
   const [showMoreRegions, setShowMoreRegions] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
-  const [themeOpen, setThemeOpen] = useState(true)
-  const [regionOpen, setRegionOpen] = useState(true)
+  // 모바일에서는 사이드바가 카드 그리드 위에 세로로 먼저 오는데, 테마·지역이 펼쳐진 채로 시작하면
+  // 관광지가 스크롤해야만 보여서 접어서 시작한다. md 이상(사이드바가 옆으로 붙는 레이아웃)에서는
+  // 기존처럼 펼친 채로 시작한다.
+  const [themeOpen, setThemeOpen] = useState(() => window.matchMedia('(min-width: 768px)').matches)
+  const [regionOpen, setRegionOpen] = useState(() => window.matchMedia('(min-width: 768px)').matches)
   const isAll = !theme && !region
 
   useEffect(() => {
@@ -183,10 +186,12 @@ export default function ExploreSidebar({
           )}
         </div>
 
+        {/* 모바일에선 기본값 자체가 "전체보기"라 굳이 버튼으로 안 둬도 되고, 테마를 고르면 그 테마만
+            보이는 걸로 충분히 알 수 있어서 뺐다. 사이드바가 옆에 붙는 데스크톱(md 이상)에서는 그대로 둔다. */}
         <button
           onMouseDown={(e) => e.preventDefault()}
           onClick={onSelectAll}
-          className={`flex w-full shrink-0 items-center gap-2 rounded-[10px] px-3 py-2 text-[12.5px] font-bold transition-colors ${
+          className={`hidden w-full shrink-0 items-center gap-2 rounded-[10px] px-3 py-2 text-[12.5px] font-bold transition-colors md:flex ${
             isAll ? 'bg-brand text-white' : 'bg-surface text-slate-700 border border-slate-200 hover:bg-slate-50'
           }`}
         >

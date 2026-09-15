@@ -39,12 +39,14 @@ export default function DayColumn({
   selected,
   onSelect,
   onAddCartItem,
+  onOpenCart,
   onReorderItem,
   onMoveItem,
   onSaveTime,
   onSaveMemo,
   onDeleteItem,
   deleteLocked = false, // 공개 중인 계획에서 이 날의 마지막 일정일 때 — 삭제 버튼을 잠근다(TRIP_023)
+  className = '',
 }) {
   const [dragOver, setDragOver] = useState(false)
   const [dropIndex, setDropIndex] = useState(null)
@@ -102,7 +104,7 @@ export default function DayColumn({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`flex min-w-[260px] flex-1 flex-col rounded-xl p-2 transition-colors ${dragOver ? 'bg-brand-light/30' : ''}`}
+      className={`flex min-w-[260px] flex-1 flex-col rounded-xl p-2 transition-colors ${dragOver ? 'bg-brand-light/30' : ''} ${className}`}
     >
       <button
         type="button"
@@ -154,13 +156,17 @@ export default function DayColumn({
           <div className="flex w-4 shrink-0 justify-center">
             <div className="border-l border-dotted border-slate-200" />
           </div>
-          <div className="flex flex-1 flex-col items-center gap-1 py-3 text-center">
+          <button
+            type="button"
+            onClick={() => onOpenCart?.()}
+            className="flex flex-1 flex-col items-center gap-1 rounded-lg py-3 text-center transition-colors hover:bg-brand-light/40"
+          >
             <p className="text-[11px] text-slate-400">{day.items.length}개의 장소</p>
             <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
               <Icon icon="solar:widget-add-linear" width={13} />
-              드래그하여 장소 추가
+              탭하거나 드래그하여 장소 추가
             </p>
-          </div>
+          </button>
         </div>
       </div>
     </div>

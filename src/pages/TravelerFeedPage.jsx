@@ -6,6 +6,7 @@ import Footer from '../components/Footer'
 import ChatbotWidget from '../components/ChatbotWidget'
 import FloatingCart from '../components/FloatingCart'
 import Section from '../components/ui/Section'
+import Button from '../components/ui/Button'
 import FeedFilterBar from '../components/travelerFeed/FeedFilterBar'
 import RegionRankPanel, { useMonthlyRegions, useRegionChips } from '../components/travelerFeed/RegionRankPanel'
 import Skeleton from '../components/ui/Skeleton'
@@ -335,6 +336,16 @@ export default function TravelerFeedPage() {
             onUploadClick={() => setUploadOpen(true)}
           />
         </div>
+
+        {/* 기록 업로드 — 모바일 전용. FeedFilterBar 안의 같은 버튼은 sm 이상에서만 보이고(스티키 필터탭과
+            같이 고정), 모바일에서는 스티키 영역 밖인 여기에 따로 둬서 페이지와 함께 자연스럽게 스크롤된다. */}
+        <Button
+          onClick={() => setUploadOpen(true)}
+          className="flex items-center justify-center gap-1.5 self-start rounded-full px-4 py-2 text-[12.5px] font-bold shadow-card hover:shadow-card-hover sm:hidden"
+        >
+          <Icon icon="mdi:cloud-upload-outline" width={16} />
+          기록 업로드
+        </Button>
 
         {/* 인기 지역은 필터탭과 달리 스크롤하면 같이 흘러가도록 sticky 래퍼 밖에 둠 */}
         {view === 'gallery' && (

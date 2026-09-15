@@ -175,6 +175,48 @@ export default function HeroSlider() {
   const nextIdx = (idx + 1) % total
   const current = STEPS[idx]
 
+  // 제목 한 단어(또는 키워드 버튼) 렌더링 — 일반 span과 슬라이드 이동 버튼을 여기서 나눠 그린다.
+  // 아래 h1에서 그룹으로 묶어 렌더링할 때도 재사용한다("여행을 완성하세요"가 줄바꿈될 때
+  // 항상 통째로 다음 줄로 넘어가도록 묶어야 해서 map을 두 번 나눠 부른다).
+  function renderHeadlinePart(part, i) {
+    if (part.step == null) {
+      return (
+        <span key={i} className={`ai-word ${part.suffix ? '-ml-[0.16em]' : ''}`} style={{ animationDelay: `${i * 80}ms` }} aria-hidden="true">
+          {part.text}
+        </span>
+      )
+    }
+    // 키워드는 현재 슬라이드와 함께 켜지고, 누르면 그 단계로 이동한다
+    return (
+      <button
+        key={i}
+        type="button"
+        onClick={() => jumpTo(part.step)}
+        aria-label={`${part.step + 1}단계 ${STEPS[part.step].title}로 이동`}
+        aria-current={idx === part.step ? 'step' : undefined}
+        className={`ai-word group relative isolate rounded-xl px-1.5 transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+          idx === part.step ? 'text-white' : 'text-brand hover:text-brand-dark'
+        }`}
+        style={{ animationDelay: `${i * 80}ms` }}
+      >
+        {/* 채움은 크기가 아니라 투명도로 오가서, 넘어가는 순간 흰 글자가 흰 배경에 묻히지 않는다 */}
+        <span
+          aria-hidden="true"
+          className={`absolute inset-0 -z-10 rounded-xl bg-gradient-to-br from-brand-mid to-brand transition-all duration-300 ease-out ${
+            idx === part.step ? 'scale-100 opacity-100 shadow-[0_8px_20px_rgba(37,99,235,0.3)]' : 'scale-90 opacity-0'
+          }`}
+        />
+        <span
+          aria-hidden="true"
+          className={`absolute inset-0 -z-20 rounded-xl bg-brand-light transition-opacity duration-200 ${
+            idx === part.step ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
+          }`}
+        />
+        {part.text}
+      </button>
+    )
+  }
+
   return (
     <section className="bg-surface">
       <Section as="div" className="pt-8 pb-10 sm:pt-10 sm:pb-12">
@@ -190,46 +232,13 @@ export default function HeroSlider() {
             className="flex flex-wrap items-baseline justify-center gap-x-[0.22em] gap-y-1 text-center text-[27px] sm:text-[32px] font-extrabold tracking-[-0.02em] text-slate-900"
             aria-label="계획하고, 참견받고, 여행을 완성하세요"
           >
-            {HEADLINE.map((part, i) =>
-              part.step == null ? (
-                <span
-                  key={i}
-                  className={`ai-word ${part.suffix ? '-ml-[0.16em]' : ''}`}
-                  style={{ animationDelay: `${i * 80}ms` }}
-                  aria-hidden="true"
-                >
-                  {part.text}
-                </span>
-              ) : (
-                // 키워드는 현재 슬라이드와 함께 켜지고, 누르면 그 단계로 이동한다
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => jumpTo(part.step)}
-                  aria-label={`${part.step + 1}단계 ${STEPS[part.step].title}로 이동`}
-                  aria-current={idx === part.step ? 'step' : undefined}
-                  className={`ai-word group relative isolate rounded-xl px-1.5 transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
-                    idx === part.step ? 'text-white' : 'text-brand hover:text-brand-dark'
-                  }`}
-                  style={{ animationDelay: `${i * 80}ms` }}
-                >
-                  {/* 채움은 크기가 아니라 투명도로 오가서, 넘어가는 순간 흰 글자가 흰 배경에 묻히지 않는다 */}
-                  <span
-                    aria-hidden="true"
-                    className={`absolute inset-0 -z-10 rounded-xl bg-gradient-to-br from-brand-mid to-brand transition-all duration-300 ease-out ${
-                      idx === part.step ? 'scale-100 opacity-100 shadow-[0_8px_20px_rgba(37,99,235,0.3)]' : 'scale-90 opacity-0'
-                    }`}
-                  />
-                  <span
-                    aria-hidden="true"
-                    className={`absolute inset-0 -z-20 rounded-xl bg-brand-light transition-opacity duration-200 ${
-                      idx === part.step ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
-                    }`}
-                  />
-                  {part.text}
-                </button>
-              ),
-            )}
+            {HEADLINE.slice(0, 4).map((part, i) => renderHeadlinePart(part, i))}
+            {/* "여행을 완성 하세요"는 한 덩어리로 묶어서, 줄바꿈이 필요할 때 셋이 통째로 다음 줄로
+                넘어가게 한다 — 묶지 않으면 "완성"만 첫 줄에 남고 "하세요"만 둘째 줄에 떨어지는 등
+                문구 중간이 어색하게 갈렸다. */}
+            <span className="inline-flex flex-nowrap items-baseline gap-x-[0.22em]">
+              {HEADLINE.slice(4).map((part, i) => renderHeadlinePart(part, i + 4))}
+            </span>
           </h1>
         )}
 

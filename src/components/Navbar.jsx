@@ -231,6 +231,8 @@ function DesktopNav({ pathname }) {
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [sheetLangOpen, setSheetLangOpen] = useState(false) // 모바일 시트 안 "언어" 줄을 눌러 펼친 상태
+  const [sheetThemeOpen, setSheetThemeOpen] = useState(false) // 모바일 시트 안 "화면 모드" 줄을 눌러 펼친 상태
   const [profileOpen, setProfileOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
   const [notiOpen, setNotiOpen] = useState(false)
@@ -284,6 +286,14 @@ export default function Navbar() {
     setMenuOpen(false)
   }, [location.pathname])
 
+  // 메뉴를 닫으면 안에서 펼쳐뒀던 화면 모드·언어 줄도 접어 둔다 — 다음에 열었을 때 항상 접힌 채로 시작
+  useEffect(() => {
+    if (!menuOpen) {
+      setSheetThemeOpen(false)
+      setSheetLangOpen(false)
+    }
+  }, [menuOpen])
+
   async function handleLogout() {
     try {
       await logout()
@@ -312,10 +322,21 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`sticky top-0 z-40 border-b backdrop-blur-md transition-[background-color,box-shadow,border-color] duration-300 ${
-        scrolled ? 'border-slate-200/80 bg-surface/90 shadow-[0_8px_24px_rgba(15,23,42,0.06)]' : 'border-transparent bg-slate-50/85'
-      }`}
+      className={`sticky top-0 border-b backdrop-blur-md transition-[background-color,box-shadow,border-color] duration-300 ${
+        menuOpen ? 'z-[60]' : 'z-40'
+      } ${scrolled ? 'border-slate-200/80 bg-surface/90 shadow-[0_8px_24px_rgba(15,23,42,0.06)]' : 'border-transparent bg-slate-50/85'}`}
     >
+      {/* 모바일 메뉴가 열려 있는 동안 그 아래(시트~화면 끝)만 딤 처리 — top-16(탑바 높이)부터 시작해야
+          한다. inset-0으로 탑바까지 덮으면, 탑바 안쪽 빈 공간(로고·아이콘 사이 여백)엔 배경색이 없어서
+          그 밑에 깔린 이 딤이 비쳐 보여 탑바 전체가 살짝 어두운 회색으로 보이는 문제가 있었다. */}
+      {menuOpen && (
+        <div
+          className="fixed inset-x-0 top-16 bottom-0 bg-black/40 md:hidden"
+          onClick={() => setMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       <div className="relative mx-auto flex h-16 max-w-[1200px] items-center gap-5 px-4 sm:px-6">
         <Link to="/" className="flex shrink-0 items-center transition-transform hover:scale-[1.02]" aria-label="트레블 참견 홈">
           <img src={theme === 'dark' ? logoHorizontalDark : logoHorizontal} alt="트레블 참견" className="h-8 w-auto sm:h-9" />
@@ -375,7 +396,8 @@ export default function Navbar() {
                 </div>
               )}
 
-              {/* 라이트/다크 전환 — 지금 보이는 모드의 반대편 아이콘(다크면 해, 라이트면 달). 시스템 따라가기는 모바일 시트에서 */}
+              {/* 라이트/다크 전환 — 지금 보이는 모드의 반대편 아이콘(다크면 해, 라이트면 달). sm 미만
+                  (모바일)에서는 아래 시트 안에 언어와 같은 축약형 줄로 넣고, 상단바에서는 뺐다. */}
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -388,6 +410,9 @@ export default function Navbar() {
                 </span>
               </button>
 
+              {/* 언어 선택 — sm 미만(모바일)에서는 상단바에서 빼고 아래 모바일 시트 안에 축약형으로
+                  넣는다. 아이콘만 있는 버튼으로 상단바에 올려봤는데, 다크모드와 달리 언어는 매번
+                  누를 일이 적어 시트 안에 있는 게 더 자연스럽다는 피드백으로 되돌렸다 */}
               <div className="relative hidden sm:block" ref={langRef}>
                 <button
                   type="button"
@@ -461,7 +486,10 @@ export default function Navbar() {
                   </button>
 
                   {profileOpen && (
-                    <div role="menu" className={`${POPOVER} w-52 py-1.5`}>
+                    <div
+                      role="menu"
+                      className={`${POPOVER} w-52 py-1.5 max-sm:fixed max-sm:inset-x-3 max-sm:top-[68px] max-sm:w-auto max-sm:mt-0`}
+                    >
                       <div className="flex items-center gap-2.5 border-b border-slate-100 px-3.5 pb-2.5 pt-1.5">
                         <Avatar user={user} size={32} />
                         <div className="min-w-0">
@@ -529,9 +557,12 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* 모바일 시트 */}
+      {/* 모바일 시트 — 챗봇·장바구니 패널처럼 기존 콘텐츠 위에 한 겹 얹히는 오버레이다. 원래는 nav의
+          보통 흐름 안에 있어서 펼쳐지는 만큼 아래 콘텐츠를 밀어냈는데, fixed로 빼서 탑바(h-16) 바로
+          아래에 떠 있게 하고 페이지 자체는 그대로 둔다. 뒤 콘텐츠와 확실히 구분되도록 아래쪽에
+          그림자를 준다. */}
       {menuOpen && (
-        <div className="nav-sheet border-t border-slate-100 bg-surface px-4 pb-4 pt-2 md:hidden">
+        <div className="nav-sheet fixed inset-x-0 top-16 z-10 max-h-[calc(100vh-4rem)] overflow-y-auto border-t border-slate-100 bg-surface px-4 pb-4 pt-2 shadow-popup md:hidden">
           <div className="flex flex-col">
             {NAV.flatMap((n) => (n.children ? n.children : [n])).map((n) => {
               const active = location.pathname === n.to
@@ -555,90 +586,100 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* 화면 모드 — 라이트 / 다크 / 시스템. 데스크톱 토글은 sm 미만에서 숨겨지므로 여기서 고른다 */}
+          {/* 화면 모드 — 현재 모드만 한 줄로 보여주고, 누르면 라이트/다크/시스템 3버튼이 펼쳐진다. */}
           <div className="mt-3 border-t border-slate-100 pt-3">
-            <p className="flex items-center gap-1.5 px-3 text-[12px] font-bold text-slate-400">
-              <Icon icon="solar:pallete-2-linear" width={14} /> 화면 모드
-            </p>
-            <div className="mt-2 flex gap-1.5 px-3" role="radiogroup" aria-label="화면 모드">
-              {THEME_MODES.map((m) => {
-                const active = themeMode === m.key
-                return (
-                  <button
-                    key={m.key}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    onClick={() => setThemeMode(m.key)}
-                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-                      active ? 'border-brand bg-brand-light font-bold text-brand' : 'border-slate-200 bg-surface text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <Icon icon={m.icon} width={14} />
-                    {m.label}
-                  </button>
-                )
-              })}
-            </div>
+            <button
+              type="button"
+              onClick={() => setSheetThemeOpen((v) => !v)}
+              aria-expanded={sheetThemeOpen}
+              className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-[13px] font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              <span className="flex items-center gap-2">
+                <Icon icon="solar:pallete-2-linear" width={16} className="text-slate-400" />
+                화면 모드
+              </span>
+              <span className="flex items-center gap-1 text-slate-400">
+                {THEME_MODES.find((m) => m.key === themeMode)?.label}
+                <Icon
+                  icon="solar:alt-arrow-down-linear"
+                  width={12}
+                  className={`transition-transform duration-300 ${sheetThemeOpen ? 'rotate-180' : ''}`}
+                />
+              </span>
+            </button>
+            {sheetThemeOpen && (
+              <div className="mt-2 flex gap-1.5 px-3" role="radiogroup" aria-label="화면 모드">
+                {THEME_MODES.map((m) => {
+                  const active = themeMode === m.key
+                  return (
+                    <button
+                      key={m.key}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setThemeMode(m.key)}
+                      className={`flex flex-1 items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+                        active ? 'border-brand bg-brand-light font-bold text-brand' : 'border-slate-200 bg-surface text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Icon icon={m.icon} width={14} />
+                      {m.label}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
-          {/* 데스크톱 선택기가 sm 미만에서 숨겨지므로 모바일에서는 여기서 언어를 바꾼다 */}
+          {/* 언어 선택 — 현재 언어만 한 줄로 보여주고, 누르면 그 아래에 목록이 펼쳐진다.
+              전체 언어를 칩으로 펼쳐서 항상 보여줬더니 목록이 길어져 화면을 다 가렸던 문제가
+              있어 접어 뒀다. 로그인한 회원 정보·로그아웃, 로그인 버튼은 탑바에 그대로 있어
+              (아바타 드롭다운 / 로그인 버튼) 여기서는 뺐다. */}
           <div className="mt-3 border-t border-slate-100 pt-3">
-            <p className="flex items-center gap-1.5 px-3 text-[12px] font-bold text-slate-400">
-              <Icon icon="solar:global-linear" width={14} /> 언어 선택
-            </p>
-            <div className="mt-2 flex flex-wrap gap-1.5 px-3" role="listbox" aria-label="언어 선택">
-              {LANGUAGES.map((lang) => {
-                const active = lang.code === language
-                return (
-                  <button
-                    key={lang.code}
-                    role="option"
-                    aria-selected={active}
-                    onClick={() => {
-                      handleLanguageSelect(lang.code)
-                      setMenuOpen(false)
-                    }}
-                    className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-                      active ? 'border-brand bg-brand-light font-bold text-brand' : 'border-slate-200 bg-surface text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    {lang.label}
-                  </button>
-                )
-              })}
-            </div>
+            <button
+              type="button"
+              onClick={() => setSheetLangOpen((v) => !v)}
+              aria-expanded={sheetLangOpen}
+              className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-[13px] font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              <span className="flex items-center gap-2">
+                <Icon icon="solar:global-linear" width={16} className="text-slate-400" />
+                언어
+              </span>
+              <span className="flex items-center gap-1 text-slate-400">
+                {currentLang.label}
+                <Icon
+                  icon="solar:alt-arrow-down-linear"
+                  width={12}
+                  className={`transition-transform duration-300 ${sheetLangOpen ? 'rotate-180' : ''}`}
+                />
+              </span>
+            </button>
+            {sheetLangOpen && (
+              <div className="mt-2 flex flex-wrap gap-1.5 px-3" role="listbox" aria-label="언어 선택">
+                {LANGUAGES.map((lang) => {
+                  const active = lang.code === language
+                  return (
+                    <button
+                      key={lang.code}
+                      role="option"
+                      aria-selected={active}
+                      onClick={() => {
+                        handleLanguageSelect(lang.code)
+                        setSheetLangOpen(false)
+                      }}
+                      className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+                        active ? 'border-brand bg-brand-light font-bold text-brand' : 'border-slate-200 bg-surface text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {lang.label}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
-          {!authLoading && (
-            <div className="mt-3 border-t border-slate-100 pt-3">
-              {user ? (
-                <div className="flex items-center gap-3 px-3">
-                  <Avatar user={user} size={36} />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[13.5px] font-bold text-slate-800">{user.name || '회원'}</div>
-                    {user.email && <div className="truncate text-[11.5px] text-slate-400">{user.email}</div>}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="rounded-full border border-slate-200 px-3 py-1.5 text-[12px] font-bold text-slate-600 transition-colors hover:bg-slate-50"
-                  >
-                    로그아웃
-                  </button>
-                </div>
-              ) : (
-                <Link
-                  to="/login"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-brand-mid to-brand text-[13.5px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28)] transition-colors hover:from-brand hover:to-brand-dark"
-                >
-                  <Icon icon="solar:user-rounded-bold" width={15} />
-                  로그인하고 참견 시작하기
-                </Link>
-              )}
-            </div>
-          )}
         </div>
       )}
     </nav>

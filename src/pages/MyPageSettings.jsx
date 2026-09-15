@@ -33,7 +33,9 @@ const PROFILE_FILTERS = FILTERS.filter((f) => f.value !== 'all')
 // 3열로 그대로 배치한다 — 새 카드 UI를 따로 만들지 않는다.
 function MyProfileGallery({ user, authLoading, planItems, recordItems, loading, filter, onFilterChange, onOpenSettings, onOpenCard }) {
   const items = filter === 'plan' ? planItems : recordItems
-  const columns = Array.from({ length: GALLERY_COLUMNS }, (_, c) => items.filter((_, i) => i % GALLERY_COLUMNS === c))
+  // 모바일(<sm)에서는 3열이 각 칸을 너무 좁게 눌러서 카드가 찌부러지므로 1열로 — 데스크톱은 기존처럼 3열
+  const [columnCount] = useState(() => (window.matchMedia('(min-width: 640px)').matches ? GALLERY_COLUMNS : 1))
+  const columns = Array.from({ length: columnCount }, (_, c) => items.filter((_, i) => i % columnCount === c))
 
   function findPlan(planId) {
     return planItems.find((p) => p.id === planId) ?? null
@@ -100,7 +102,7 @@ function MyProfileGallery({ user, authLoading, planItems, recordItems, loading, 
 
       {loading ? (
         <div className="flex gap-5">
-          {Array.from({ length: GALLERY_COLUMNS }).map((_, c) => (
+          {Array.from({ length: columnCount }).map((_, c) => (
             <div key={c} className="flex min-w-0 flex-1 flex-col gap-5">
               <Skeleton className="h-56 w-full rounded-2xl" style={{ animationDelay: `${c * 80}ms` }} />
               <Skeleton className="h-56 w-full rounded-2xl" style={{ animationDelay: `${c * 80 + 120}ms` }} />
