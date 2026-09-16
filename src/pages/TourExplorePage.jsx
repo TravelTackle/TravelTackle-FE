@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import ChatbotWidget from '../components/ChatbotWidget'
@@ -9,7 +10,7 @@ import TourCardGrid from '../components/tourExplore/TourCardGrid'
 import TourDetailDrawer from '../components/tourExplore/TourDetailDrawer'
 import FestivalPeriodBar from '../components/tourExplore/FestivalPeriodBar'
 import { useAuth } from '../context/AuthContext'
-import { getTourContents, getTourFestivals } from '../api/tour'
+import { getTourContentDetail, getTourContents, getTourFestivals } from '../api/tour'
 import { CART_CHANGED_EVENT, addCartItem, getCartItems, removeCartItem } from '../api/cart'
 import { PAGE_SIZE, toLDongRegnCd } from '../data/tourSpots'
 import { DEFAULT_PRESET, presetRange } from '../lib/festivalPeriod'
@@ -35,8 +36,12 @@ export default function TourExplorePage() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [selectedContentId, setSelectedContentId] = useState(null)
+  // 홈 등에서 ?open=<contentId>로 들어온 여행지 — 그리드 맨 위에 고정해서 보여준다
+  const [pinnedSpot, setPinnedSpot] = useState(null)
   const [toast, setToast] = useState('')
   const toastTimer = useRef(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const openContentId = searchParams.get('open')
   // 탐색 카드 "담기" 상태 동기화 — 실제 장바구니 목록을 한 번 받아서, 이미 담긴 콘텐츠는
   // 세션 첫 진입에도(그리드 카드·상세 패널 모두) "담음"으로 보이게 한다.
   // contentId → cartItemId 맵으로 들고 있어야, 담긴 걸 다시 눌렀을 때 그 카트 아이템을 바로 지울 수 있다.
@@ -95,6 +100,31 @@ export default function TourExplorePage() {
       })
       .finally(() => setBusy(false))
   }, [theme, region, sigungu, searchKeyword, isFestival, period.start, period.end])
+
+  // 홈 "여행지 탐색" 카드 등에서 ?open=<contentId>로 들어오면 상세를 바로 열고, 목록엔 없을 수도
+  // 있으니(다른 지역/테마 결과라) 그 여행지 정보를 따로 받아 그리드 맨 위에도 꽂아 보여준다.
+  useEffect(() => {
+    if (!openContentId) return
+    setSelectedContentId(openContentId)
+    let ignore = false
+    getTourContentDetail(openContentId)
+      .then((data) => {
+        if (ignore) return
+        setPinnedSpot({ contentId: openContentId, title: data.title, imageUrl: data.imageUrl, address: data.address })
+      })
+      .catch(() => {})
+      // 쿼리 제거는 조회가 끝난 뒤에 — 먼저 지우면 openContentId가 바뀌어 이 이펙트가 곧장 재실행되고,
+      // 그 cleanup이 위 ignore를 먼저 true로 만들어버려 응답이 와도 pinnedSpot이 반영되지 않는다.
+      .finally(() => {
+        if (ignore) return
+        setSearchParams((prev) => {
+          const next = new URLSearchParams(prev)
+          next.delete('open')
+          return next
+        }, { replace: true })
+      })
+    return () => { ignore = true }
+  }, [openContentId, setSearchParams])
 
   // 프리셋을 고르면 날짜를 여기서 계산하고, 직접 고른 날짜는 그대로 받는다
   function handlePeriodChange(next) {
@@ -159,6 +189,11 @@ export default function TourExplorePage() {
   }
 
   const hasMore = spots.length < totalCount
+  // 축제 탭은 필드 형태가 달라 핀 고정을 적용하지 않는다(일반 여행지 탐색에서만 홈 딥링크로 들어온다)
+  const gridSpots = useMemo(() => {
+    if (!pinnedSpot || isFestival) return spots
+    return [pinnedSpot, ...spots.filter((s) => s.contentId !== pinnedSpot.contentId)]
+  }, [spots, pinnedSpot, isFestival])
 
   return (
     <div className="bg-surface text-slate-900">
@@ -205,7 +240,7 @@ export default function TourExplorePage() {
             />
           )}
           <TourCardGrid
-            spots={spots}
+            spots={gridSpots}
             loading={loading}
             loadingMore={loadingMore}
             hasMore={hasMore}
