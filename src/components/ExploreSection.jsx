@@ -57,7 +57,7 @@ function RegionChip({ children }) {
 function SpotCard({ spot }) {
   const region = spot.address ? shortRegion(spot.address) : ''
   return (
-    <Card as={Link} to="/explore" shadow className="group block overflow-hidden">
+    <Card as={Link} to={`/explore?open=${encodeURIComponent(spot.contentId)}`} shadow className="group block overflow-hidden">
       <div className="relative h-[150px] overflow-hidden bg-slate-100">
         <CardImage src={spot.imageUrl} alt={spot.title} className="absolute inset-0 h-full w-full" imgClassName="transition-transform duration-500 ease-out group-hover:scale-105" />
         {region && <RegionChip>{region}</RegionChip>}
