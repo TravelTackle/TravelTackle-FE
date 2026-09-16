@@ -39,12 +39,6 @@ import {
   updateTripTitle,
 } from '../lib/tripMutations'
 
-// 13인치(1440px 기준) 화면에서 보이는 좌우 여백을 그대로 최댓값으로 고정한다 — 그보다 큰 화면에서는 여백이
-// 계속 커지는 대신 헤더/Day 영역의 폭 자체가 늘어난다. 566 = (헤더 콘텐츠 폭 1180px - 좌우 패딩 24px*2)/2.
-const SIDE_PADDING = 'clamp(1.5rem, calc(50vw - 566px), 9.625rem)'
-// Day 박스의 최대 폭 = 헤더의 콘텐츠 폭과 항상 같다 — 카트가 닫혀 있어도 day 우측이 헤더(제목/토글)의
-// 우측 경계를 넘지 않게 하기 위함.
-const DAY_BOX_MAX_WIDTH = `calc(100vw - 2 * (${SIDE_PADDING}))`
 
 // 마지막으로 보고 있던 계획을 기억해뒀다가 다음 진입 시 그대로 열어준다.
 const LAST_TRIP_ID_KEY = 'tripPlanner:lastActiveTripId'
@@ -520,10 +514,11 @@ export default function TripPlannerPage() {
       {activeTrip ? (
         // sticky는 자기 "부모"의 박스 높이만큼만 붙어있을 수 있다 — 예전엔 이 헤더가 Section 하나만 감싸고 있어서
         // Section 높이 = 헤더 높이라 붙어있을 여유가 사실상 없었다(그래서 스크롤하면 카트와 어긋나 보였음).
-        // Day+카트도 함께 담고 있는 페이지 루트를 부모로 삼도록 Section 밖으로 빼고, 1180px 정렬만 안쪽에서 그대로 재현한다.
+        // Day+카트도 함께 담고 있는 페이지 루트를 부모로 삼도록 Section 밖으로 빼고, 안쪽 래퍼는 Navbar 컨테이너(max-w-1200 · px-4 sm:px-6)와
+        // 같은 클래스를 써서 제목 시작점이 로고, 오른쪽 끝이 프로필 알약과 정확히 맞는다.
         // 모바일에서는 제목 영역이 스티키로 붙으면 자리를 너무 많이 차지해서, sm 이상에서만 스티키로 둔다.
         <div className="z-30 bg-surface pb-5 pt-2.5 sm:sticky sm:top-16">
-          <div style={{ paddingLeft: SIDE_PADDING, paddingRight: SIDE_PADDING }}>
+          <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
             <TripHeader
               trip={activeTrip}
               trips={tripSummaries}
@@ -540,7 +535,7 @@ export default function TripPlannerPage() {
           </div>
         </div>
       ) : detailError ? (
-        <Section as="main" className="flex flex-col gap-5 pt-8 pb-5">
+        <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-col gap-5 pt-8 pb-5">
           <div className="flex flex-col items-center gap-3 py-24 text-center">
             <Icon icon="solar:danger-triangle-bold" width={26} className="text-rose-300" />
             <p className="text-[13px] text-slate-400">계획을 불러오지 못했어요.</p>
@@ -555,7 +550,7 @@ export default function TripPlannerPage() {
         </Section>
       ) : (
         !showDetailLoading && (
-          <Section as="main" className="flex flex-col gap-5 pt-8 pb-5">
+          <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-col gap-5 pt-8 pb-5">
             {showEmpty ? (
               <EmptyTripState onCreate={() => setCreateModalOpen(true)} />
             ) : (
@@ -570,18 +565,13 @@ export default function TripPlannerPage() {
         )
       )}
 
-      {/* 헤더는 다른 페이지처럼 1180px로 맞추되, Day+장바구니 영역만 따로 빼서 창 폭 전체(좌우 여백만 유지)를
-          쓰게 한다 — 그래야 장바구니가 진짜 창 우측 끝에 붙고 Day 박스가 남는 폭을 최대로 쓸 수 있다. */}
+      {/* Day+장바구니 영역도 헤더·Navbar와 같은 1200px 컨테이너 안에 둔다 — 왼쪽은 로고, 오른쪽은 프로필 알약 끝과 맞고,
+          카트가 열리면 Day 박스가 그만큼 줄어든다. */}
       {activeTrip && (
-        // 좌측은 Section(max-w-1180px mx-auto px-6)과 똑같은 계산식으로 맞추고, 우측만 고정 24px로 열어둬서
-        // 창이 넓어질수록 Day 박스만 그만큼 넓어지고 왼쪽 시작점은 헤더의 제목과 항상 일치한다.
-        <div className="pb-8" style={{ paddingLeft: SIDE_PADDING, paddingRight: '1.5rem' }}>
+        <div className="mx-auto w-full max-w-[1200px] px-4 pb-8 sm:px-6">
           <div className="flex items-start gap-2">
-            {/* DAY_BOX_MAX_WIDTH = 헤더 콘텐츠 폭과 동일 — 카트가 닫혀 폭이 남아돌아도 day 우측이 헤더
-                (제목/리스트·지도 토글)의 우측 경계를 넘지 않는다. transition으로 카트 열림/닫힘에 따른
-                폭 변화가 순간 스냅되지 않고 부드럽게 이어지게 한다. */}
             {view === 'list' ? (
-              <div className="flex min-w-0 flex-1 flex-col gap-2" style={{ maxWidth: DAY_BOX_MAX_WIDTH }}>
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
                 {/* 모바일에서는 Day를 옆으로 스크롤하는 대신, 항상 보이는 이전/다음 버튼으로 한 번에
                     하루씩만 보여준다 — sm 이상에서는 이 바를 숨기고 기존 가로 스크롤 방식 그대로 쓴다. */}
                 <div className="flex items-center justify-between gap-2 sm:hidden">
@@ -639,7 +629,6 @@ export default function TripPlannerPage() {
               <div
                 // 모바일에서는 지도가 위, Day 목록이 그 아래로 세로 배치 — sm 이상에서는 기존처럼 좌우로 나란히 놓인다.
                 className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 rounded-2xl border border-slate-200 bg-surface p-6 transition-all duration-300 sm:min-h-[720px] sm:flex-row"
-                style={{ maxWidth: DAY_BOX_MAX_WIDTH }}
               >
                 <TripMapView
                   trip={activeTrip}
