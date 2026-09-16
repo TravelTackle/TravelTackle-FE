@@ -37,8 +37,12 @@ const T = {
   },
 }
 
-// 하위호환 — 다른 파일에서 FILTERS를 직접 import해 쓰는 곳(예: 마이페이지 프로필 탭)은 한국어 기본값을 쓴다.
+// 하위호환 — 언어를 모르는 옛 호출부를 위한 한국어 기본값. 새 코드는 getFilters(language)를 쓸 것.
 export const FILTERS = T.ko.filters
+
+export function getFilters(language) {
+  return (T[language] ?? T.en).filters
+}
 
 // 전체/계획/기록 세그먼트 — 흰 썸이 선택 쪽으로 미끄러지고, 활성 라벨만 브랜드 색.
 // 마이페이지 프로필 탭에서도 이 토글을 그대로 재사용한다(스켈레톤/보기방식/업로드 버튼 없이 이 부분만).

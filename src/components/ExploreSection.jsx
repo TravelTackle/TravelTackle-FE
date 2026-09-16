@@ -7,7 +7,7 @@ import Chip from './ui/Chip'
 import Skeleton from './ui/Skeleton'
 import CardImage, { ImagePlaceholder } from './ui/CardImage'
 import { getRecommendedSpots, getTourContents } from '../api/tour'
-import { shortRegion } from '../lib/homeFormat'
+import { regionLabel, shortRegion } from '../lib/homeFormat'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n'
 
@@ -150,7 +150,8 @@ function RegionChip({ children }) {
 
 // 여행지 카드 — 계획·기록 탭 카드와 같은 크기(이미지 150px + 제목·주소)라 탭을 오가도 줄 높이가 같다
 function SpotCard({ spot, copy }) {
-  const region = spot.address ? shortRegion(spot.address) : ''
+  const { language } = useLanguage()
+  const region = spot.address ? shortRegion(spot.address, language) : ''
   return (
     <Card as={Link} to={`/explore?open=${encodeURIComponent(spot.contentId)}`} shadow className="group block overflow-hidden">
       <div className="relative h-[150px] overflow-hidden bg-slate-100">
@@ -169,6 +170,8 @@ function SpotCard({ spot, copy }) {
 }
 
 function PlanCard({ item }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const photos = (item.days?.[0]?.places ?? []).filter((p) => p.imageUrl).slice(0, 3)
   return (
     <Card as={Link} to={`/feed?open=${encodeURIComponent(item.id)}&filter=plan`} className="group block overflow-hidden">
@@ -184,12 +187,12 @@ function PlanCard({ item }) {
             <ImagePlaceholder />
           </div>
         )}
-        {item.region && <RegionChip>{item.region}</RegionChip>}
+        {item.region && <RegionChip>{regionLabel(item.region, language)}</RegionChip>}
       </div>
       <div className="p-3">
         <div className="text-[13px] font-bold text-slate-900 truncate transition-colors group-hover:text-brand">{item.title}</div>
         <div className="text-[11px] text-slate-400 mt-0.5 truncate">
-          {item.user.nickname} · {item.duration} · 장소 {item.placeCount}곳
+          {item.user.nickname} · {item.duration} · {copy.placeCount(item.placeCount)}
           {typeof item.saveCount === 'number' && (
             <span className="ml-1.5 inline-flex items-center gap-0.5 font-semibold text-amber-600">
               <Icon icon="solar:bookmark-bold" width={10} /> {item.saveCount}
@@ -202,11 +205,12 @@ function PlanCard({ item }) {
 }
 
 function RecordCard({ item }) {
+  const { language } = useLanguage()
   return (
     <Card as={Link} to={`/feed?open=${encodeURIComponent(item.id)}&filter=record`} className="group block overflow-hidden">
       <div className="relative overflow-hidden">
         <CardImage src={item.imageUrl} className="h-[150px] w-full" imgClassName="bg-slate-100 transition-transform duration-500 ease-out group-hover:scale-105" />
-        {item.region && <RegionChip>{item.region}</RegionChip>}
+        {item.region && <RegionChip>{regionLabel(item.region, language)}</RegionChip>}
       </div>
       <div className="p-3">
         <div className="text-[13px] font-bold text-slate-900 truncate transition-colors group-hover:text-brand">{item.title}</div>

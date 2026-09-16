@@ -740,6 +740,7 @@ function FeedbackSkeleton({ copy }) {
 
 // 추천 장소 고르기 — 관광지 검색(TourAPI) 또는 내 장바구니에서 골라 참견에 붙인다. 최대 5곳.
 function PlacePicker({ user, selected, onPick, onClose, copy }) {
+  const { language } = useLanguage()
   const [tab, setTab] = useState('search') // 'search' | 'cart'
   const [query, setQuery] = useState('')
   const [results, setResults] = useState({ items: [], loading: false, searched: false })
@@ -869,7 +870,7 @@ function PlacePicker({ user, selected, onPick, onClose, copy }) {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[12.5px] font-bold text-slate-800">{place.title}</div>
-                      <div className="truncate text-[11px] text-slate-400">{place.address ? shortRegion(place.address) : ''} {place.address || ''}</div>
+                      <div className="truncate text-[11px] text-slate-400">{place.address ? shortRegion(place.address, language) : ''} {place.address || ''}</div>
                     </div>
                     <Icon
                       icon={picked ? 'solar:check-circle-bold' : 'solar:add-circle-linear'}

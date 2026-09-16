@@ -7,7 +7,7 @@ import ChatbotWidget from '../components/ChatbotWidget'
 import FloatingCart from '../components/FloatingCart'
 import Section from '../components/ui/Section'
 import Skeleton from '../components/ui/Skeleton'
-import { FeedTypeFilter, FILTERS } from '../components/travelerFeed/FeedFilterBar'
+import { FeedTypeFilter, getFilters } from '../components/travelerFeed/FeedFilterBar'
 import PlanFeedCard from '../components/travelerFeed/PlanFeedCard'
 import RecordFeedCard from '../components/travelerFeed/RecordFeedCard'
 import FeedDetailDrawer from '../components/travelerFeed/FeedDetailDrawer'
@@ -43,15 +43,14 @@ function buildFeedbackMap(list) {
   return new Map((list || []).map((f) => [f.tripId, f.totalFeedbackCount]))
 }
 
-// 내 것만 관리하는 페이지라 여행자 피드의 "전체"는 빼고 계획/기록 두 개만 둔다.
-const PROFILE_FILTERS = FILTERS.filter((f) => f.value !== 'all')
-
 // 새 프로필 탭 — 맨 위 큰 프로필(좌측 정렬) + 계획/기록 개수, 여행자 피드와 같은 계획/기록 토글
 // (전체는 제외), 그 아래는 나의 여행 보관함(SavedTripsPage)과 완전히 같은 PlanFeedCard/RecordFeedCard를
 // 3열로 그대로 배치한다 — 새 카드 UI를 따로 만들지 않는다.
 function MyProfileGallery({ user, authLoading, planItems, recordItems, loading, filter, onFilterChange, onOpenSettings, onOpenCard }) {
   const { language } = useLanguage()
   const copy = T[language] ?? T.en
+  // 내 것만 관리하는 페이지라 여행자 피드의 "전체"는 빼고 계획/기록 두 개만 둔다.
+  const PROFILE_FILTERS = getFilters(language).filter((f) => f.value !== 'all')
   const items = filter === 'plan' ? planItems : recordItems
   // 모바일(<sm)에서는 3열이 각 칸을 너무 좁게 눌러서 카드가 찌부러지므로 1열로 — 데스크톱은 기존처럼 3열
   const [columnCount] = useState(() => (window.matchMedia('(min-width: 640px)').matches ? GALLERY_COLUMNS : 1))

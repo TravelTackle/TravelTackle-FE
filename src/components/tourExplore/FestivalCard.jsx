@@ -38,7 +38,7 @@ export default function FestivalCard({ festival, index = 0, onOpen, onToggleCart
   const status = festivalStatus(festival.startDate, festival.endDate, language)
   const range = formatRange(festival.startDate, festival.endDate, language)
   const span = formatSpan(festival.startDate, festival.endDate, language)
-  const region = shortRegion(festival.address)
+  const region = shortRegion(festival.address, language)
 
   // 이미 담긴 상태에서 다시 누르면 onToggleCart가 담기 대신 빼기로 처리한다
   async function handleQuickToggle(e) {

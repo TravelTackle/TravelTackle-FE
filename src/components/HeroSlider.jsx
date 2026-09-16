@@ -317,13 +317,26 @@ export default function HeroSlider() {
             className="flex flex-wrap items-baseline justify-center gap-x-[0.22em] gap-y-1 text-center text-[27px] sm:text-[32px] font-extrabold tracking-[-0.02em] text-slate-900"
             aria-label={copy.headlineAria}
           >
-            {headline.slice(0, headline.length - 3).map((part, i) => renderHeadlinePart(part, i))}
-            {/* 마지막 3어절(한국어 "여행을 완성 하세요")은 한 덩어리로 묶어서, 줄바꿈이 필요할 때 셋이 통째로
-                다음 줄로 넘어가게 한다 — 묶지 않으면 "완성"만 첫 줄에 남고 "하세요"만 둘째 줄에 떨어지는 등
-                문구 중간이 어색하게 갈렸다. */}
-            <span className="inline-flex flex-nowrap items-baseline gap-x-[0.22em]">
-              {headline.slice(headline.length - 3).map((part, i) => renderHeadlinePart(part, headline.length - 3 + i))}
-            </span>
+            {language === 'ko' ? (
+              <>
+                {headline.slice(0, headline.length - 3).map((part, i) => renderHeadlinePart(part, i))}
+                {/* 마지막 3어절("여행을 완성 하세요")은 한 덩어리로 묶어서, 줄바꿈이 필요할 때 셋이 통째로
+                    다음 줄로 넘어가게 한다 — 묶지 않으면 "완성"만 첫 줄에 남고 "하세요"만 둘째 줄에 떨어지는 등
+                    문구 중간이 어색하게 갈렸다. */}
+                <span className="inline-flex flex-nowrap items-baseline gap-x-[0.22em]">
+                  {headline.slice(headline.length - 3).map((part, i) => renderHeadlinePart(part, headline.length - 3 + i))}
+                </span>
+              </>
+            ) : (
+              // 영문(및 en 폴백 언어)은 모바일에서 "Plan your trip," / "get feedback from locals," /
+              // "and complete your journey."로 줄이 나뉘도록 세 덩어리를 각각 w-full로 강제 줄바꿈한다.
+              // sm 이상에서는 sm:contents로 래퍼가 사라지고 원래처럼 한 줄로 자연스럽게 흐른다.
+              [[0, 2], [2, 5], [5, headline.length]].map(([start, end], g) => (
+                <span key={g} className="flex w-full flex-wrap items-baseline justify-center gap-x-[0.22em] sm:contents">
+                  {headline.slice(start, end).map((part, i) => renderHeadlinePart(part, start + i))}
+                </span>
+              ))
+            )}
           </h1>
         )}
 

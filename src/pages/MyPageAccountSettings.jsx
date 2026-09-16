@@ -16,7 +16,7 @@ import { getPreferences, createPreferences, updatePreferences } from '../api/pre
 import { updateProfile, changePassword, updateNotificationSettings, deleteAccount } from '../api/auth'
 import { getMyTrips } from '../api/trip'
 import { getReceivedFeedback } from '../api/feed'
-import { INTEREST_TAGS, TRAVEL_STYLES, BUDGET_LEVELS, PREFERRED_REGIONS } from '../data/preferenceOptions'
+import { getPreferenceOptions } from '../data/preferenceOptions'
 
 // 이 파일 전체(프로필/계정 설정)에서 쓰는 문구 — Footer.jsx와 동일한 ko/en 맵 패턴.
 const T = {
@@ -194,13 +194,14 @@ function getLoginProviders(copy) {
 }
 
 // 온보딩 PreferenceWizard와 동일한 스텝 구성 — 수정 흐름도 완전히 같은 화면으로 보여준다.
-function getSteps(copy) {
+// options는 getPreferenceOptions(language) 결과 — value는 언어와 무관, label/description만 바뀐다.
+function getSteps(copy, options) {
   return [
     {
       key: 'interestTags',
       multiple: true,
       title: copy.stepInterestTitle,
-      options: INTEREST_TAGS,
+      options: options.INTEREST_TAGS,
       // 2열이면 모바일 폭에서 라벨 텍스트(nowrap)가 카드 밖으로 넘쳐 잘려 보여서 1열로
       grid: 'grid-cols-1 sm:grid-cols-3',
     },
@@ -208,7 +209,7 @@ function getSteps(copy) {
       key: 'travelStyle',
       multiple: false,
       title: copy.stepStyleTitle,
-      options: TRAVEL_STYLES,
+      options: options.TRAVEL_STYLES,
       grid: 'grid-cols-1',
     },
     {
@@ -216,14 +217,14 @@ function getSteps(copy) {
       multiple: false,
       title: copy.stepBudgetTitle,
       subtitle: copy.stepBudgetSubtitle,
-      options: BUDGET_LEVELS,
+      options: options.BUDGET_LEVELS,
       grid: 'grid-cols-1 sm:grid-cols-2',
     },
     {
       key: 'preferredRegions',
       multiple: true,
       title: copy.stepRegionTitle,
-      options: PREFERRED_REGIONS,
+      options: options.PREFERRED_REGIONS,
       grid: 'grid-cols-2 sm:grid-cols-3',
     },
   ]
@@ -993,7 +994,7 @@ function ProfileTab({ user }) {
 function PreferenceEditWizard({ answers, onCancel, onFinish, saving, error }) {
   const { language } = useLanguage()
   const copy = T[language] ?? T.en
-  const STEPS = getSteps(copy)
+  const STEPS = getSteps(copy, getPreferenceOptions(language))
   const [stepIndex, setStepIndex] = useState(0)
   const [values, setValues] = useState(answers)
 
@@ -1157,24 +1158,25 @@ function PreferenceTab({ preferences, setPreferences }) {
     )
   }
 
+  const preferenceOptions = getPreferenceOptions(language)
   const summaryRows = [
-    { title: copy.summaryInterest, icon: 'solar:heart-bold', options: INTEREST_TAGS, values: preferences?.interestTags || [] },
+    { title: copy.summaryInterest, icon: 'solar:heart-bold', options: preferenceOptions.INTEREST_TAGS, values: preferences?.interestTags || [] },
     {
       title: copy.summaryStyle,
       icon: 'solar:routing-2-bold',
-      options: TRAVEL_STYLES,
+      options: preferenceOptions.TRAVEL_STYLES,
       values: preferences?.travelStyle ? [preferences.travelStyle] : [],
     },
     {
       title: copy.summaryBudget,
       icon: 'solar:wallet-money-bold',
-      options: BUDGET_LEVELS,
+      options: preferenceOptions.BUDGET_LEVELS,
       values: preferences?.budgetLevel ? [preferences.budgetLevel] : [],
     },
     {
       title: copy.summaryRegion,
       icon: 'solar:map-point-bold',
-      options: PREFERRED_REGIONS,
+      options: preferenceOptions.PREFERRED_REGIONS,
       values: preferences?.preferredRegions || [],
     },
   ]

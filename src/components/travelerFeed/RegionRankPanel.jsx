@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react'
 import Card from '../ui/Card'
 import Skeleton from '../ui/Skeleton'
 import { getFeedRegionCounts } from '../../api/feed'
+import { regionLabel } from '../../lib/homeFormat'
 import { useLanguage } from '../../i18n'
 
 const TOP_N = 3
@@ -182,6 +183,7 @@ const PODIUM = [
 ]
 
 function Podium({ top, active, onSelect, copy }) {
+  const { language } = useLanguage()
   return (
     <div className="mt-3 flex items-end justify-center gap-2 px-1">
       {PODIUM.map((col, i) => {
@@ -194,13 +196,13 @@ function Podium({ top, active, onSelect, copy }) {
             type="button"
             onClick={() => onSelect(isActive ? null : r.region)}
             aria-pressed={isActive}
-            aria-label={copy.podiumAria(col.rank, r.region, r.count)}
+            aria-label={copy.podiumAria(col.rank, regionLabel(r.region, language), r.count)}
             className="group flex w-full flex-col items-center gap-1.5 rounded-xl px-0.5 pt-1 transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
           >
             {col.rank === 1 && (
               <Icon icon="solar:crown-bold" width={16} className="ai-pop text-amber-400" style={{ animationDelay: '500ms' }} />
             )}
-            <span className={`max-w-full truncate text-[12.5px] font-extrabold ${isActive ? 'text-brand-dark' : col.label}`}>{r.region}</span>
+            <span className={`max-w-full truncate text-[12.5px] font-extrabold ${isActive ? 'text-brand-dark' : col.label}`}>{regionLabel(r.region, language)}</span>
             <div
               className={`podium-rise flex w-full flex-col items-center justify-end rounded-t-xl rounded-b-md pb-1.5 transition-shadow ${col.bar} ${
                 isActive ? 'ring-2 ring-brand ring-offset-2' : ''
@@ -218,6 +220,7 @@ function Podium({ top, active, onSelect, copy }) {
 }
 
 function RegionChip({ region, count, rank, active, onSelect, small = false }) {
+  const { language } = useLanguage()
   return (
     <button
       type="button"
@@ -230,7 +233,7 @@ function RegionChip({ region, count, rank, active, onSelect, small = false }) {
       {rank && (
         <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[9.5px] font-extrabold ${RANK_STYLE[rank - 1]}`}>{rank}</span>
       )}
-      {region}
+      {regionLabel(region, language)}
       <span className={`text-[10px] font-semibold tabular-nums ${active ? 'text-white/80' : 'text-slate-400'}`}>{count}</span>
     </button>
   )

@@ -7,7 +7,7 @@ import ChatbotWidget from '../components/ChatbotWidget'
 import FloatingCart from '../components/FloatingCart'
 import Section from '../components/ui/Section'
 import Skeleton from '../components/ui/Skeleton'
-import { FeedTypeFilter, FILTERS } from '../components/travelerFeed/FeedFilterBar'
+import { FeedTypeFilter, getFilters } from '../components/travelerFeed/FeedFilterBar'
 import PlanFeedCard from '../components/travelerFeed/PlanFeedCard'
 import RecordFeedCard from '../components/travelerFeed/RecordFeedCard'
 import FeedDetailDrawer from '../components/travelerFeed/FeedDetailDrawer'
@@ -20,8 +20,6 @@ import { getUserFeed, getUserProfile } from '../api/feed'
 import { adaptFeedItem } from '../data/feedAdapter'
 
 const GALLERY_COLUMNS = 3
-// 남의 프로필이라 관리 대상은 계획/기록뿐 — 여행자 피드의 "전체"는 빼고 마이페이지와 같은 두 탭만 둔다.
-const PROFILE_FILTERS = FILTERS.filter((f) => f.value !== 'all')
 const PAGE_SIZE = 30
 
 const T = {
@@ -63,6 +61,8 @@ export default function PublicProfilePage() {
   const navigate = useNavigate()
   const { language } = useLanguage()
   const copy = T[language] ?? T.en
+  // 남의 프로필이라 관리 대상은 계획/기록뿐 — 여행자 피드의 "전체"는 빼고 마이페이지와 같은 두 탭만 둔다.
+  const PROFILE_FILTERS = getFilters(language).filter((f) => f.value !== 'all')
   const isSelf = !authLoading && !!user && String(user.userId) === String(userId)
 
   // 본인 프로필로 들어오면 편집 가능한 마이페이지로 보낸다 — 이 화면은 읽기 전용이라 자기 글도 편집할 수 없다.

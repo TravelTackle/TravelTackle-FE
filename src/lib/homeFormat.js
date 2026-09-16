@@ -46,17 +46,47 @@ const PROVINCE_SHORT = {
   전라북도: '전북',
 }
 
+// shortRegion()이 만드는 짧은 지역명(제주/경남/서울…)과 백엔드가 이미 짧게 내려주는 plan/record의
+// region 필드가 같은 값 집합을 쓴다 — 어느 쪽이든 이 맵 하나로 표시용 영문 라벨을 고른다.
+// 실제 필터링·API 호출에는 원래 한국어 값을 그대로 쓰고, 화면에 보일 때만 이 함수를 거친다.
+const REGION_SHORT_EN = {
+  서울: 'Seoul',
+  부산: 'Busan',
+  인천: 'Incheon',
+  대구: 'Daegu',
+  광주: 'Gwangju',
+  대전: 'Daejeon',
+  울산: 'Ulsan',
+  세종: 'Sejong',
+  세종특별자치시: 'Sejong',
+  경기: 'Gyeonggi',
+  강원: 'Gangwon',
+  충북: 'Chungbuk',
+  충남: 'Chungnam',
+  경북: 'Gyeongbuk',
+  경남: 'Gyeongnam',
+  전북: 'Jeonbuk',
+  전남: 'Jeonnam',
+  제주: 'Jeju',
+}
+
+export function regionLabel(name, language = 'ko') {
+  if (!name) return ''
+  return language !== 'ko' ? (REGION_SHORT_EN[name] ?? name) : name
+}
+
 // 주소 첫 토큰을 칩에 들어갈 짧은 지역명으로 — "제주특별자치도 서귀포시 …" → "제주", "경상남도 …" → "경남".
 // EngService2 등 영어 주소는 "161 Sajik-ro, Jongno-gu, Seoul"처럼 콤마로 구분되고 시/도 이름이
 // 맨 끝에 온다 — 이 형식이면 마지막 콤마 토큰을 그대로 쓴다(공백 split을 쓰면 "161" 같은 번지수만 나옴).
-export function shortRegion(address) {
+export function shortRegion(address, language = 'ko') {
   if (!address) return ''
   if (address.includes(',')) {
     const parts = address.split(',').map((p) => p.trim()).filter(Boolean)
     return parts[parts.length - 1] ?? ''
   }
   const first = address.split(' ')[0]
-  return PROVINCE_SHORT[first] ?? first.replace(/(통합특별시|특별자치도|특별자치시|광역시|특별시|도)$/, '')
+  const short = PROVINCE_SHORT[first] ?? first.replace(/(통합특별시|특별자치도|특별자치시|광역시|특별시|도)$/, '')
+  return regionLabel(short, language)
 }
 
 // "2026-08-26" ~ "2026-08-28" → "2박 3일" (ko) / "2 nights, 3 days" (en)
