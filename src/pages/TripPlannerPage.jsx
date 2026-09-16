@@ -535,8 +535,8 @@ export default function TripPlannerPage() {
           </div>
         </div>
       ) : detailError ? (
-        <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-col gap-5 pt-8 pb-5">
-          <div className="flex flex-col items-center gap-3 py-24 text-center">
+        <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-1 flex-col gap-5 pt-8 pb-5">
+          <div className="flex min-h-[500px] flex-1 flex-col items-center justify-center gap-3 text-center">
             <Icon icon="solar:danger-triangle-bold" width={26} className="text-rose-300" />
             <p className="text-[13px] text-slate-400">계획을 불러오지 못했어요.</p>
             <button
@@ -550,12 +550,12 @@ export default function TripPlannerPage() {
         </Section>
       ) : (
         !showDetailLoading && (
-          <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-col gap-5 pt-8 pb-5">
+          <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-1 flex-col gap-5 pt-8 pb-5">
             {showEmpty ? (
               <EmptyTripState onCreate={() => setCreateModalOpen(true)} />
             ) : (
               !loadingTrips && (
-                <div className="flex flex-col items-center gap-2 py-24 text-center">
+                <div className="flex min-h-[500px] flex-1 flex-col items-center justify-center gap-2 text-center">
                   <Icon icon="mdi:loading" width={22} className="animate-spin text-slate-300" />
                   <p className="text-[13px] text-slate-400">불러오는 중이에요...</p>
                 </div>
