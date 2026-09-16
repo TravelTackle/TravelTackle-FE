@@ -68,11 +68,13 @@ export function getPreferenceOptions(language) {
         { value: 'MODERATE', label: 'Moderate pace', description: '3–4 spots per day', icon: 'solar:map-linear' },
         { value: 'ACTIVE', label: 'Packed schedule', description: 'As many spots as possible', icon: 'solar:fire-linear' },
       ],
+      // 원화 표기(하루 5만/10만/20만원)를 그대로 옮기지 않고 대략적인 환율(1,330원/$ 기준)로
+      // 반올림한 달러 표기로 바꿔서 보여준다 — value(백엔드 전송값)는 원화 구간 그대로라 바뀌지 않는다.
       BUDGET_LEVELS: [
-        { value: 'LOW', label: 'Budget-friendly', description: 'Under ₩50,000/day', icon: 'solar:wallet-linear' },
-        { value: 'MEDIUM', label: 'Moderate', description: '₩50,000–100,000/day', icon: 'solar:wallet-money-linear' },
-        { value: 'HIGH', label: 'Invest more', description: '₩100,000–200,000/day', icon: 'solar:card-linear' },
-        { value: 'LUXURY', label: 'Luxury', description: 'Over ₩200,000/day', icon: 'solar:crown-linear' },
+        { value: 'LOW', label: 'Budget-friendly', description: 'Under $40/day', icon: 'solar:wallet-linear' },
+        { value: 'MEDIUM', label: 'Moderate', description: '$40–75/day', icon: 'solar:wallet-money-linear' },
+        { value: 'HIGH', label: 'Invest more', description: '$75–150/day', icon: 'solar:card-linear' },
+        { value: 'LUXURY', label: 'Luxury', description: 'Over $150/day', icon: 'solar:crown-linear' },
       ],
       PREFERRED_REGIONS: [
         { value: 'SEOUL', label: 'Seoul' },
