@@ -19,6 +19,17 @@ export function formatDay(iso) {
   return DAY_FMT.format(d)
 }
 
+// 피드 카드용 작성/수정일 — 올해면 "09.16", 작년 이전이면 "2024.09.16"
+export function formatFeedDate(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  if (d.getFullYear() === new Date().getFullYear()) return `${mm}.${dd}`
+  return `${d.getFullYear()}.${mm}.${dd}`
+}
+
 const PROVINCE_SHORT = {
   경상남도: '경남',
   경상북도: '경북',

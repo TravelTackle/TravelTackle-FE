@@ -5,6 +5,7 @@ import Avatar from '../ui/Avatar'
 import Chip from '../ui/Chip'
 import { publishTrip, unpublishTrip } from '../../api/trip'
 import { targetTripId, useFeedActions } from './FeedActionsContext'
+import { formatFeedDate } from '../../lib/homeFormat'
 
 const TYPE_CHIP = {
   plan: { label: '여행 계획', className: 'bg-brand-light text-brand-dark' },
@@ -96,13 +97,16 @@ export function FeedUserHeader({ item, showChip = true }) {
   const chip = TYPE_CHIP[item.type]
   // item.published는 내 계획(마이페이지 프로필 탭)에서만 채워 넣는 값 — 남의 계획엔 없어서 자연히 안 보인다.
   const showPublishToggle = showChip && item.type === 'plan' && typeof item.published === 'boolean'
+  // 계획은 수정된 적 있으면 최신 수정일, 없으면 작성일. 기록은 항상 작성일.
+  const feedDate = formatFeedDate(item.type === 'plan' ? item.updatedAt ?? item.createdAt : item.createdAt)
+  const meta = [item.region, feedDate].filter(Boolean).join(' · ')
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
         <Avatar user={{ name: item.user.nickname, profileImageUrl: item.user.profileImageUrl }} size={32} />
         <div>
           <div className="text-[13px] font-bold text-slate-900">{item.user.nickname}</div>
-          <div className="text-[11px] text-slate-400">{item.region}</div>
+          <div className="text-[11px] text-slate-400">{meta}</div>
         </div>
       </div>
       {showChip && (
