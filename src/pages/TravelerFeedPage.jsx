@@ -19,8 +19,8 @@ import FeedbackDrawer from '../components/travelerFeed/FeedbackDrawer'
 import { FeedActionsProvider, targetTripId } from '../components/travelerFeed/FeedActionsContext'
 import { useAuth } from '../context/AuthContext'
 import { getSavedTrips, saveTrip, unsaveTrip } from '../api/trip'
-import { getFeed } from '../api/feed'
-import { adaptFeedItem } from '../data/feedAdapter'
+import { getFeed, getFeedDetail } from '../api/feed'
+import { adaptFeedItem, adaptPlanDetail, adaptRecordDetail } from '../data/feedAdapter'
 
 const SORT_OPTIONS = [
   { value: 'relevance', label: '관련도순' },
@@ -153,19 +153,46 @@ export default function TravelerFeedPage() {
   const [filter, setFilter] = useState(initialFilter)
   const [region, setRegion] = useState(null)
   const [drawerItem, setDrawerItem] = useState(null)
+  // 홈 등에서 ?open=으로 들어온 아이템 — 목록 맨 위에 고정해서 보여준다
+  const [pinnedItem, setPinnedItem] = useState(null)
 
+  // openId가 지금 로드된 페이지(최대 50개, 현재 검색·정렬 조건)에 없을 수 있다 — 오래됐거나
+  // 다른 정렬 조건 밖의 글이면 못 찾으므로, 그럴 땐 상세를 직접 조회해서 연다.
   useEffect(() => {
     if (!openId) return
-    const target = realItems.find((i) => i.id === openId)
-    if (!target) return
-    setDrawerItem(target)
-    // 한 번 열었으면 주소에서 지워 새로고침·뒤로가기 때 다시 열리지 않게
-    setSearchParams((prev) => {
+    const clearOpenParam = () => setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
       next.delete('open')
       return next
     }, { replace: true })
-  }, [openId, realItems, setSearchParams])
+
+    const target = realItems.find((i) => i.id === openId)
+    if (target) {
+      setDrawerItem(target)
+      setPinnedItem(target)
+      clearOpenParam()
+      return
+    }
+    if (feedLoading) return // 첫 페이지가 아직 로딩 중이면 그 결과에서 먼저 찾아본다
+
+    let ignore = false
+    const isRecord = openId.endsWith('-record')
+    const tripId = isRecord ? openId.slice(0, -'-record'.length) : openId
+    getFeedDetail(tripId)
+      .then((detail) => {
+        if (ignore) return
+        const resolved = isRecord ? adaptRecordDetail(detail) : adaptPlanDetail(detail)
+        if (!resolved) {
+          showToast('게시글을 찾을 수 없어요')
+          return
+        }
+        setDrawerItem(resolved)
+        setPinnedItem(resolved)
+      })
+      .catch(() => { if (!ignore) showToast('게시글을 찾을 수 없어요') })
+      .finally(() => { if (!ignore) clearOpenParam() })
+    return () => { ignore = true }
+  }, [openId, realItems, feedLoading, setSearchParams])
   const [uploadOpen, setUploadOpen] = useState(false)
   const [toast, setToast] = useState('')
   const toastTimer = useRef(null)
@@ -282,8 +309,11 @@ export default function TravelerFeedPage() {
     return true
   }
 
-  // 실 데이터는 이미 서버가 keyword로 걸러서 준 결과라 그대로 믿는다
-  const allItems = realItems
+  // 실 데이터는 이미 서버가 keyword로 걸러서 준 결과라 그대로 믿는다. pinnedItem(홈 등에서 열고 들어온 글)이 있으면 맨 위로 꽂는다.
+  const allItems = useMemo(() => {
+    if (!pinnedItem) return realItems
+    return [pinnedItem, ...realItems.filter((i) => i.id !== pinnedItem.id)]
+  }, [realItems, pinnedItem])
   const allItemsRef = useRef(allItems)
   allItemsRef.current = allItems
   const items = allItems.filter(matchesFilters)
