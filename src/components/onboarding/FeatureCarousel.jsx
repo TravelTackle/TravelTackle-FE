@@ -1,57 +1,124 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { useTheme } from '../../theme'
+import { useLanguage } from '../../i18n'
 
-const SLIDES = [
-  {
-    eyebrow: '01 · 트레블 참견',
-    title: '혼자 짠 계획에\n여행자의 경험을 더해요',
-    description: '일정을 만들고 현지인의 생생한 조언을 받아 나만의 여행을 완성해보세요.',
-    icon: 'solar:stars-bold',
-    accent: '#2563EB',
-    accentDark: '#7CB0FF',
-    background: 'linear-gradient(145deg,#F0F7FF,#E0ECFF)',
-    backgroundDark: 'linear-gradient(145deg,#111c33,#16264a)',
-    items: ['날짜별 여행 계획 만들기', '현지인의 생생한 참견', '취향 기반 장소와 코스 추천'],
-    labels: ['계획', '참견', '추천'],
+// 슬라이드 콘텐츠(텍스트)만 언어별로 바뀐다 — 아이콘/색/그라데이션은 언어와 무관해 그대로 둔다
+function getSlides(language) {
+  if (language !== 'ko') {
+    return [
+      {
+        eyebrow: '01 · Travel Tackle',
+        title: 'Add real traveler experience\nto the plan you made',
+        description: 'Build your itinerary and get vivid advice from locals to complete your own trip.',
+        icon: 'solar:stars-bold',
+        accent: '#2563EB',
+        accentDark: '#7CB0FF',
+        background: 'linear-gradient(145deg,#F0F7FF,#E0ECFF)',
+        backgroundDark: 'linear-gradient(145deg,#111c33,#16264a)',
+        items: ['Build a day-by-day itinerary', 'Vivid feedback from locals', 'Recommendations based on your taste'],
+        labels: ['Plan', 'Feedback', 'Recommend'],
+      },
+      {
+        eyebrow: '02 · Trip Planning',
+        title: 'Turn the places you want to go\ninto your own itinerary',
+        description: 'Add your travel dates and spots to build an easy-to-read schedule.',
+        icon: 'solar:calendar-mark-bold',
+        accent: '#2563EB',
+        accentDark: '#7CB0FF',
+        background: 'linear-gradient(145deg,#EFF6FF,#DBEAFE)',
+        backgroundDark: 'linear-gradient(145deg,#111c33,#182b52)',
+        items: ['Arrive at Jeju Airport', 'Hyeopjae Beach', 'Aewol Cafe Street'],
+        labels: ['10:00', '13:30', '17:00'],
+      },
+      {
+        eyebrow: '03 · Feedback From Locals',
+        title: 'Make your plan stronger\nwith feedback from locals',
+        description: "Get advice from people who've been there to catch missed spots and inefficient routes.",
+        icon: 'solar:chat-round-dots-bold',
+        accent: '#4F46E5',
+        accentDark: '#A5B4FC',
+        background: 'linear-gradient(145deg,#EEF2FF,#E0E7FF)',
+        backgroundDark: 'linear-gradient(145deg,#161a3a,#1f2457)',
+        items: ['The coastal road is prettier in the afternoon', 'This cafe is worth booking ahead', 'Try changing your route like this'],
+        labels: ['Local', 'Traveler', 'TravelBot'],
+      },
+      {
+        eyebrow: '04 · Personalized Picks',
+        title: 'Discover a trip\nthat matches your taste',
+        description: 'We recommend spots and routes based on your interests and travel style.',
+        icon: 'solar:magic-stick-3-bold',
+        accent: '#0F766E',
+        accentDark: '#5EEAD4',
+        background: 'linear-gradient(145deg,#ECFDF5,#D1FAE5)',
+        backgroundDark: 'linear-gradient(145deg,#0e2622,#123b34)',
+        items: ['Quiet beaches and walks', 'Local restaurants and cafes', 'Photogenic spots'],
+        labels: ['Relax', 'Food', 'Photos'],
+      },
+    ]
+  }
+  return [
+    {
+      eyebrow: '01 · 트레블 참견',
+      title: '혼자 짠 계획에\n여행자의 경험을 더해요',
+      description: '일정을 만들고 현지인의 생생한 조언을 받아 나만의 여행을 완성해보세요.',
+      icon: 'solar:stars-bold',
+      accent: '#2563EB',
+      accentDark: '#7CB0FF',
+      background: 'linear-gradient(145deg,#F0F7FF,#E0ECFF)',
+      backgroundDark: 'linear-gradient(145deg,#111c33,#16264a)',
+      items: ['날짜별 여행 계획 만들기', '현지인의 생생한 참견', '취향 기반 장소와 코스 추천'],
+      labels: ['계획', '참견', '추천'],
+    },
+    {
+      eyebrow: '02 · 여행 계획',
+      title: '가고 싶은 곳을\n나만의 일정으로',
+      description: '여행 날짜와 장소를 담으면 보기 쉬운 일정이 완성돼요.',
+      icon: 'solar:calendar-mark-bold',
+      accent: '#2563EB',
+      accentDark: '#7CB0FF',
+      background: 'linear-gradient(145deg,#EFF6FF,#DBEAFE)',
+      backgroundDark: 'linear-gradient(145deg,#111c33,#182b52)',
+      items: ['제주 공항 도착', '협재해수욕장', '애월 카페거리'],
+      labels: ['10:00', '13:30', '17:00'],
+    },
+    {
+      eyebrow: '03 · 현지인의 참견',
+      title: '현지인의 참견으로\n계획을 더 탄탄하게',
+      description: '직접 다녀온 사람의 조언으로 놓친 장소와 비효율적인 동선을 확인해요.',
+      icon: 'solar:chat-round-dots-bold',
+      accent: '#4F46E5',
+      accentDark: '#A5B4FC',
+      background: 'linear-gradient(145deg,#EEF2FF,#E0E7FF)',
+      backgroundDark: 'linear-gradient(145deg,#161a3a,#1f2457)',
+      items: ['오후에는 해안도로가 더 예뻐요', '이 카페는 예약을 추천해요', '동선을 이렇게 바꿔보세요'],
+      labels: ['현지인', '여행자', '트레블봇'],
+    },
+    {
+      eyebrow: '04 · 맞춤 추천',
+      title: '내 취향에 맞는\n여행을 발견해요',
+      description: '선택한 관심사와 여행 스타일을 바탕으로 장소와 코스를 추천해요.',
+      icon: 'solar:magic-stick-3-bold',
+      accent: '#0F766E',
+      accentDark: '#5EEAD4',
+      background: 'linear-gradient(145deg,#ECFDF5,#D1FAE5)',
+      backgroundDark: 'linear-gradient(145deg,#0e2622,#123b34)',
+      items: ['조용한 바다와 산책', '로컬 맛집과 카페', '사진이 잘 나오는 명소'],
+      labels: ['힐링', '맛집', '사진'],
+    },
+  ]
+}
+
+const T = {
+  ko: {
+    sectionAria: '트레블 참견 기능 소개',
+    dotAria: (n) => `기능 소개 ${n}`,
   },
-  {
-    eyebrow: '02 · 여행 계획',
-    title: '가고 싶은 곳을\n나만의 일정으로',
-    description: '여행 날짜와 장소를 담으면 보기 쉬운 일정이 완성돼요.',
-    icon: 'solar:calendar-mark-bold',
-    accent: '#2563EB',
-    accentDark: '#7CB0FF',
-    background: 'linear-gradient(145deg,#EFF6FF,#DBEAFE)',
-    backgroundDark: 'linear-gradient(145deg,#111c33,#182b52)',
-    items: ['제주 공항 도착', '협재해수욕장', '애월 카페거리'],
-    labels: ['10:00', '13:30', '17:00'],
+  en: {
+    sectionAria: 'Travel Tackle feature highlights',
+    dotAria: (n) => `Feature highlight ${n}`,
   },
-  {
-    eyebrow: '03 · 현지인의 참견',
-    title: '현지인의 참견으로\n계획을 더 탄탄하게',
-    description: '직접 다녀온 사람의 조언으로 놓친 장소와 비효율적인 동선을 확인해요.',
-    icon: 'solar:chat-round-dots-bold',
-    accent: '#4F46E5',
-    accentDark: '#A5B4FC',
-    background: 'linear-gradient(145deg,#EEF2FF,#E0E7FF)',
-    backgroundDark: 'linear-gradient(145deg,#161a3a,#1f2457)',
-    items: ['오후에는 해안도로가 더 예뻐요', '이 카페는 예약을 추천해요', '동선을 이렇게 바꿔보세요'],
-    labels: ['현지인', '여행자', '트레블봇'],
-  },
-  {
-    eyebrow: '04 · 맞춤 추천',
-    title: '내 취향에 맞는\n여행을 발견해요',
-    description: '선택한 관심사와 여행 스타일을 바탕으로 장소와 코스를 추천해요.',
-    icon: 'solar:magic-stick-3-bold',
-    accent: '#0F766E',
-    accentDark: '#5EEAD4',
-    background: 'linear-gradient(145deg,#ECFDF5,#D1FAE5)',
-    backgroundDark: 'linear-gradient(145deg,#0e2622,#123b34)',
-    items: ['조용한 바다와 산책', '로컬 맛집과 카페', '사진이 잘 나오는 명소'],
-    labels: ['힐링', '맛집', '사진'],
-  },
-]
+}
 
 /** 온보딩 카드의 왼쪽 면. 독립 카드가 아니라 부모 카드의 절반을 채우는 패널이다.
  *  배경·강조색은 인라인 style이라 다크 모드 변수 뒤집기가 닿지 않는다 — 모드에 맞는 값을 골라 쓴다. */
@@ -59,17 +126,20 @@ export default function FeatureCarousel() {
   const [index, setIndex] = useState(0)
   const dark = useTheme().resolved === 'dark'
   const [paused, setPaused] = useState(false)
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
+  const SLIDES = getSlides(language)
 
   useEffect(() => {
     if (paused) return undefined
     const timer = setInterval(() => setIndex((current) => (current + 1) % SLIDES.length), 4500)
     return () => clearInterval(timer)
-  }, [paused])
+  }, [paused, SLIDES.length])
 
   return (
     <section
       className="relative h-full overflow-hidden"
-      aria-label="트레블 참견 기능 소개"
+      aria-label={copy.sectionAria}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
@@ -131,7 +201,7 @@ export default function FeatureCarousel() {
             className={`h-1.5 rounded-full transition-all ${
               slideIndex === index ? 'w-6 bg-brand' : 'w-1.5 bg-slate-500/25 hover:bg-slate-500/40'
             }`}
-            aria-label={`기능 소개 ${slideIndex + 1}`}
+            aria-label={copy.dotAria(slideIndex + 1)}
           />
         ))}
       </div>

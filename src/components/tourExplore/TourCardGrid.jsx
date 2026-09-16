@@ -2,9 +2,27 @@ import { useEffect, useRef } from 'react'
 import TourCard from './TourCard'
 import Skeleton from '../ui/Skeleton'
 import FestivalCard, { FestivalCardSkeleton } from './FestivalCard'
+import { useLanguage } from '../../i18n'
+
+const T = {
+  ko: {
+    loadingFestivals: '축제·행사를 불러오는 중',
+    loadingSpots: '관광지를 불러오는 중',
+    emptySpots: '해당하는 관광지가 없어요.',
+    loadingMore: '다음 페이지 불러오는 중...',
+  },
+  en: {
+    loadingFestivals: 'Loading festivals & events',
+    loadingSpots: 'Loading destinations',
+    emptySpots: 'No matching destinations found.',
+    loadingMore: 'Loading more...',
+  },
+}
 
 // variant='festival'이면 기간 조회 결과용 카드(상태 배지·날짜)와 그 골격의 스켈레톤을 쓴다
 export default function TourCardGrid({ spots, loading, loadingMore, hasMore, onLoadMore, onOpen, onToggleCart, cartMap, variant = 'spot', emptyMessage, emptyAction }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const festival = variant === 'festival'
   const sentinelRef = useRef(null)
 
@@ -24,7 +42,7 @@ export default function TourCardGrid({ spots, loading, loadingMore, hasMore, onL
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3" role="status" aria-label={festival ? '축제·행사를 불러오는 중' : '관광지를 불러오는 중'}>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3" role="status" aria-label={festival ? copy.loadingFestivals : copy.loadingSpots}>
         {Array.from({ length: festival ? 6 : 9 }).map((_, i) => festival ? (
           <FestivalCardSkeleton key={i} index={i} />
         ) : (
@@ -43,7 +61,7 @@ export default function TourCardGrid({ spots, loading, loadingMore, hasMore, onL
   if (spots.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 py-20 text-center text-[13px] text-slate-400">
-        <span>{emptyMessage || '해당하는 관광지가 없어요.'}</span>
+        <span>{emptyMessage || copy.emptySpots}</span>
         {emptyAction}
       </div>
     )
@@ -60,7 +78,7 @@ export default function TourCardGrid({ spots, loading, loadingMore, hasMore, onL
       </div>
       {hasMore && (
         <div ref={sentinelRef} className="flex items-center justify-center py-8">
-          {loadingMore && <span className="text-[12px] text-slate-300">다음 페이지 불러오는 중...</span>}
+          {loadingMore && <span className="text-[12px] text-slate-300">{copy.loadingMore}</span>}
         </div>
       )}
     </div>

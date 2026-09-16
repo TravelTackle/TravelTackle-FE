@@ -8,13 +8,56 @@ import { getFeedDetail } from '../../api/feed'
 import { deleteTrip } from '../../api/trip'
 import { deleteTripRecord } from '../../api/record'
 import { targetTripId, useFeedActions } from './FeedActionsContext'
+import { useLanguage } from '../../i18n'
 
 // 나의 여행 계획을 이어서 편집할 때 쓰는 값 — TripPlannerPage(LAST_TRIP_ID_KEY)와 같은 키를 써야
 // "지난번 보던 계획"으로 그 계획이 바로 뜬다.
 const LAST_TRIP_ID_KEY = 'tripPlanner:lastActiveTripId'
 
+// FeedDetailDrawer 전체 문구 — ParticipateSection과 같은 언어별 맵 패턴
+const T = {
+  ko: {
+    more: '더보기',
+    delete: '삭제하기',
+    cancel: '취소',
+    deleting: '삭제 중…',
+    deleteFailed: '삭제하지 못했어요. 잠시 후 다시 시도해주세요.',
+    closePanel: '상세 패널 닫기',
+    back: '뒤로가기',
+    viewPlanOfRecord: '이 기록의 여행 계획 보기',
+    edit: '편집하기',
+    viewRecordOfPlan: '이 여행의 기록 보기',
+    saved: '스크랩됨',
+    savePlan: '이 계획 스크랩',
+    deleteRecordTitle: '이 기록을 삭제하시겠어요?',
+    deletePlanTitle: '이 계획을 삭제하시겠어요?',
+    deleteRecordDesc: '삭제하면 사진과 글이 모두 사라지고 되돌릴 수 없어요.',
+    deletePlanDesc: '삭제하면 이 계획의 일정과 기록이 모두 사라지고 되돌릴 수 없어요.',
+    placesCount: (n) => `${n}개의 장소`,
+  },
+  en: {
+    more: 'More',
+    delete: 'Delete',
+    cancel: 'Cancel',
+    deleting: 'Deleting…',
+    deleteFailed: 'Could not delete. Please try again shortly.',
+    closePanel: 'Close detail panel',
+    back: 'Back',
+    viewPlanOfRecord: "View this record's trip plan",
+    edit: 'Edit',
+    viewRecordOfPlan: "View this trip's record",
+    saved: 'Saved',
+    savePlan: 'Save this plan',
+    deleteRecordTitle: 'Delete this record?',
+    deletePlanTitle: 'Delete this plan?',
+    deleteRecordDesc: 'Deleting removes all photos and text, and cannot be undone.',
+    deletePlanDesc: "Deleting removes this plan's itinerary and records, and cannot be undone.",
+    placesCount: (n) => `${n} spots`,
+  },
+}
+
 // 카드 우측 위 점 세개 메뉴 — 지금은 "삭제하기" 하나뿐이라 단순한 팝오버로 둔다
-function CardMenu({ onDelete }) {
+function CardMenu({ onDelete, copy }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -32,7 +75,7 @@ function CardMenu({ onDelete }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label="더보기"
+        aria-label={copy.more}
         className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-50"
       >
         <Icon icon="mdi:dots-vertical" width={18} />
@@ -48,7 +91,7 @@ function CardMenu({ onDelete }) {
             className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-[12.5px] font-semibold text-rose-500 transition-colors hover:bg-rose-50"
           >
             <Icon icon="mdi:trash-can-outline" width={14} />
-            삭제하기
+            {copy.delete}
           </button>
         </div>
       )}
@@ -57,7 +100,7 @@ function CardMenu({ onDelete }) {
 }
 
 // MyPageSettings의 ConfirmDialog와 같은 오버레이+흰 카드+버튼 2개 패턴 그대로
-function DeleteConfirmDialog({ title, description, deleting, error, onCancel, onConfirm }) {
+function DeleteConfirmDialog({ title, description, deleting, error, onCancel, onConfirm, copy }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-[320px] rounded-2xl bg-surface p-5 shadow-popup">
@@ -71,7 +114,7 @@ function DeleteConfirmDialog({ title, description, deleting, error, onCancel, on
             disabled={deleting}
             className="flex-1 rounded-full border border-slate-200 py-2 text-[12.5px] font-bold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-60"
           >
-            취소
+            {copy.cancel}
           </button>
           <button
             type="button"
@@ -79,7 +122,7 @@ function DeleteConfirmDialog({ title, description, deleting, error, onCancel, on
             disabled={deleting}
             className="flex-1 rounded-full bg-rose-500 py-2 text-[12.5px] font-bold text-white transition-colors hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {deleting ? '삭제 중…' : '삭제하기'}
+            {deleting ? copy.deleting : copy.delete}
           </button>
         </div>
       </div>
@@ -99,6 +142,8 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan, fro
   const open = !!item
   const navigate = useNavigate()
   const { savedIds, pendingIds, user } = useFeedActions()
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
 
   useEffect(() => {
     if (item) setStack([item])
@@ -129,7 +174,7 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan, fro
       setDeleteTarget(null)
       onClose()
     } catch {
-      setDeleteError('삭제하지 못했어요. 잠시 후 다시 시도해주세요.')
+      setDeleteError(copy.deleteFailed)
     } finally {
       setDeleting(false)
     }
@@ -181,7 +226,7 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan, fro
   return (
     <>
       {/* 클릭 시 닫히는 투명 백드롭 — TourDetailDrawer와 동일 패턴 */}
-      {open && <button aria-label="상세 패널 닫기" onClick={onClose} className="fixed inset-0 z-[55] cursor-default" />}
+      {open && <button aria-label={copy.closePanel} onClick={onClose} className="fixed inset-0 z-[55] cursor-default" />}
 
       <div
         className={`fixed top-16 bottom-0 right-0 z-[56] w-full max-w-[560px] overflow-y-auto bg-surface shadow-popup transition-transform duration-300 ${
@@ -193,7 +238,7 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan, fro
             <div className="sticky top-0 z-10 flex items-center justify-between bg-surface p-4">
               <button
                 onClick={handleBack}
-                aria-label="뒤로가기"
+                aria-label={copy.back}
                 className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-50 transition-colors"
               >
                 <Icon icon="mdi:chevron-left" width={20} />
@@ -203,19 +248,19 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan, fro
                 <div className="flex items-center gap-1">
                   <Button onClick={handleViewPlan} className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-bold">
                     <Icon icon="mdi:calendar-blank-outline" width={14} />
-                    이 기록의 여행 계획 보기
+                    {copy.viewPlanOfRecord}
                   </Button>
                   {/* 내 기록일 때만 삭제 메뉴 — 남의 기록엔 애초에 권한이 없다 */}
-                  {isMine && <CardMenu onDelete={() => setDeleteTarget(current)} />}
+                  {isMine && <CardMenu onDelete={() => setDeleteTarget(current)} copy={copy} />}
                 </div>
               ) : isMine ? (
                 // 내 계획은 스크랩 버튼 대신 편집하기 + 점 세개(삭제) 메뉴
                 <div className="flex items-center gap-1">
                   <Button variant="light" onClick={handleEdit} className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-bold">
                     <Icon icon="mdi:pencil-outline" width={14} />
-                    편집하기
+                    {copy.edit}
                   </Button>
-                  <CardMenu onDelete={() => setDeleteTarget(current)} />
+                  <CardMenu onDelete={() => setDeleteTarget(current)} copy={copy} />
                 </div>
               ) : fromSaved ? (
                 // 보관함에서 연 계획 상세는 스크랩 버튼 대신 기록 보기로 바뀐다 —
@@ -223,7 +268,7 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan, fro
                 current.hasRecord && (
                   <Button onClick={handleViewRecord} className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-bold">
                     <Icon icon="mdi:image-multiple-outline" width={14} />
-                    이 여행의 기록 보기
+                    {copy.viewRecordOfPlan}
                   </Button>
                 )
               ) : (
@@ -240,13 +285,13 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan, fro
                   ) : (
                     <Icon icon={savedIds.has(targetTripId(current)) ? 'solar:bookmark-bold' : 'mdi:bookmark-outline'} width={14} />
                   )}
-                  {savedIds.has(targetTripId(current)) ? '스크랩됨' : '이 계획 스크랩'}
+                  {savedIds.has(targetTripId(current)) ? copy.saved : copy.savePlan}
                 </Button>
               )}
             </div>
 
             <div className="pl-[22px] pr-4 pb-6">
-              {current.type === 'record' ? <RecordDetail item={current} /> : <PlanDetail item={current} />}
+              {current.type === 'record' ? <RecordDetail item={current} /> : <PlanDetail item={current} copy={copy} />}
             </div>
           </>
         )}
@@ -254,12 +299,8 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan, fro
 
       {deleteTarget && (
         <DeleteConfirmDialog
-          title={deleteTarget.type === 'record' ? '이 기록을 삭제하시겠어요?' : '이 계획을 삭제하시겠어요?'}
-          description={
-            deleteTarget.type === 'record'
-              ? '삭제하면 사진과 글이 모두 사라지고 되돌릴 수 없어요.'
-              : '삭제하면 이 계획의 일정과 기록이 모두 사라지고 되돌릴 수 없어요.'
-          }
+          title={deleteTarget.type === 'record' ? copy.deleteRecordTitle : copy.deletePlanTitle}
+          description={deleteTarget.type === 'record' ? copy.deleteRecordDesc : copy.deletePlanDesc}
           deleting={deleting}
           error={deleteError}
           onCancel={() => {
@@ -267,6 +308,7 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan, fro
             setDeleteError('')
           }}
           onConfirm={handleConfirmDelete}
+          copy={copy}
         />
       )}
     </>
@@ -291,12 +333,12 @@ function RecordDetail({ item }) {
   )
 }
 
-function PlanDetail({ item }) {
+function PlanDetail({ item, copy }) {
   return (
     <>
       <FeedUserHeader item={item} showChip={false} />
       <div className="mt-3 text-[17px] font-bold text-slate-900">{item.title}</div>
-      <div className="mt-1 text-[12px] text-slate-400">{item.duration} · {item.placeCount}개의 장소</div>
+      <div className="mt-1 text-[12px] text-slate-400">{item.duration} · {copy.placesCount(item.placeCount)}</div>
 
       <div className="mt-5 flex flex-col gap-6">
         {item.days.map((day) => (

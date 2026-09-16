@@ -18,54 +18,216 @@ import { getMyTrips } from '../api/trip'
 import { getReceivedFeedback } from '../api/feed'
 import { INTEREST_TAGS, TRAVEL_STYLES, BUDGET_LEVELS, PREFERRED_REGIONS } from '../data/preferenceOptions'
 
+// 이 파일 전체(프로필/계정 설정)에서 쓰는 문구 — Footer.jsx와 동일한 ko/en 맵 패턴.
+const T = {
+  ko: {
+    tabProfile: '프로필 설정',
+    tabPreference: '선호도 수정',
+    providerEmail: '이메일',
+    providerKakao: '카카오',
+    stepInterestTitle: '이번 여행에서 가장 끌리는 것은 무엇인가요?',
+    stepStyleTitle: '여행할 때 어떤 스타일에 가까우신가요?',
+    stepBudgetTitle: '여행에서 소비하는 편은 어느 쪽인가요?',
+    stepBudgetSubtitle: '숙박비/항공권 제외',
+    stepRegionTitle: '가고 싶은 지역이 있으신가요?',
+    notifFeedback: '피드백 알림',
+    notifRecommend: '여행 추천',
+    notifEvent: '이벤트',
+    cancel: '취소',
+    back: '이전',
+    changeButton: '변경',
+    doneButton: '완료',
+    nextButton: '다음',
+    editButton: '수정하기',
+    genericSaving: '저장 중…',
+    notSet: '설정 안 함',
+    multiSelectHint: '중복 선택 가능',
+    labelProfilePhoto: '프로필 사진',
+    labelNickname: '닉네임',
+    labelEmail: '이메일',
+    labelPassword: '비밀번호',
+    labelLoginInfo: '로그인 정보',
+    labelLanguage: '언어',
+    labelNotifSettings: '알림 설정',
+    labelAccount: '계정',
+    nicknameErrorEmpty: '닉네임을 입력해주세요.',
+    nicknameErrorGeneric: '닉네임을 변경하지 못했어요.',
+    toastNicknameChanged: '닉네임을 변경했어요',
+    languageSaveError: '언어 저장에 실패했어요',
+    toastNotifSaved: '알림 설정을 저장했어요',
+    notifSaveErrorGeneric: '알림 설정을 저장하지 못했어요',
+    notifEmailAllow: '이메일 알림 허용',
+    emailNotifOffTitle: '이메일 알림을 끄시겠어요?',
+    emailNotifOffDesc: '피드백 알림, 여행 추천, 이벤트 알림을 받을 수 없어요.',
+    notifOffConfirmLabel: '끄기',
+    notifOffTitle: (label) => `${label}을 끄시겠어요?`,
+    notifOffDesc: (label) => `${label}을 받지 못해요.`,
+    pwdErrorAllRequired: '모든 항목을 입력해주세요.',
+    pwdErrorMinLength: '새 비밀번호는 8자 이상이어야 해요.',
+    pwdErrorMismatch: '새 비밀번호가 일치하지 않아요.',
+    pwdErrorGeneric: '비밀번호를 변경하지 못했어요. 잠시 후 다시 시도해주세요.',
+    pwdPlaceholderCurrent: '현재 비밀번호',
+    pwdPlaceholderNew: '새 비밀번호 (8자 이상)',
+    pwdPlaceholderConfirm: '새 비밀번호 확인',
+    pwdSaveButton: '변경하기',
+    pwdConfirmTitle: '비밀번호를 변경하시겠어요?',
+    pwdConfirmDescription: '변경 후에는 새 비밀번호로 다시 로그인해야 할 수 있어요.',
+    pwdConfirmSaving: '변경 중…',
+    toastPasswordChanged: '비밀번호를 변경했어요',
+    deleteConfirmPhrase: '다음 여행에서 만나요',
+    deleteSummaryHeading: (count) => `트레블 참견과 함께 ${count}개의 여행을 만들어왔어요`,
+    deleteSummaryDesc: '탈퇴하면 아래 계획과 참견이 모두 사라져요. 정말 떠나시겠어요?',
+    deleteSummaryTripsTitle: '내가 만든 여행 계획',
+    deleteSummaryFeedbackTitle: '받은 참견',
+    moreCount: (n) => `그 외 ${n}개 더…`,
+    feedbackCountSuffix: (n) => `${n}개`,
+    deleteSummaryProceed: '그래도 탈퇴할게요',
+    deleteConfirmTitle: '정말 탈퇴하시겠어요?',
+    deleteConfirmDesc: '탈퇴하면 내 여행 계획, 기록, 참견 내역이 모두 삭제되고 복구할 수 없어요.',
+    deleteConfirmBefore: '계속하려면 아래에 ',
+    deleteConfirmAfter: '를 입력해주세요.',
+    deleteErrorGeneric: '탈퇴 처리에 실패했어요. 잠시 후 다시 시도해주세요.',
+    deleteProcessing: '탈퇴 처리 중…',
+    deleteAccountButton: '회원 탈퇴',
+    preferenceSaveError: '선호도를 저장하지 못했어요. 잠시 후 다시 시도해주세요.',
+    summaryInterest: '관심사',
+    summaryStyle: '여행 스타일',
+    summaryBudget: '예산',
+    summaryRegion: '선호 지역',
+    backAria: '뒤로가기',
+  },
+  en: {
+    tabProfile: 'Profile Settings',
+    tabPreference: 'Edit Preferences',
+    providerEmail: 'Email',
+    providerKakao: 'Kakao',
+    stepInterestTitle: 'What excites you most about this trip?',
+    stepStyleTitle: 'Which travel style fits you best?',
+    stepBudgetTitle: 'How do you tend to spend on trips?',
+    stepBudgetSubtitle: 'Excluding lodging/flights',
+    stepRegionTitle: "Any regions you'd like to visit?",
+    notifFeedback: 'Feedback alerts',
+    notifRecommend: 'Trip recommendations',
+    notifEvent: 'Events',
+    cancel: 'Cancel',
+    back: 'Back',
+    changeButton: 'Change',
+    doneButton: 'Done',
+    nextButton: 'Next',
+    editButton: 'Edit',
+    genericSaving: 'Saving…',
+    notSet: 'Not set',
+    multiSelectHint: 'Multiple selections allowed',
+    labelProfilePhoto: 'Profile photo',
+    labelNickname: 'Nickname',
+    labelEmail: 'Email',
+    labelPassword: 'Password',
+    labelLoginInfo: 'Login info',
+    labelLanguage: 'Language',
+    labelNotifSettings: 'Notifications',
+    labelAccount: 'Account',
+    nicknameErrorEmpty: 'Please enter a nickname.',
+    nicknameErrorGeneric: "Couldn't update your nickname.",
+    toastNicknameChanged: 'Nickname updated',
+    languageSaveError: 'Failed to save language',
+    toastNotifSaved: 'Notification settings saved',
+    notifSaveErrorGeneric: 'Failed to save notification settings',
+    notifEmailAllow: 'Allow email notifications',
+    emailNotifOffTitle: 'Turn off email notifications?',
+    emailNotifOffDesc: "You won't receive feedback, recommendation, or event alerts.",
+    notifOffConfirmLabel: 'Turn off',
+    notifOffTitle: (label) => `Turn off ${label}?`,
+    notifOffDesc: (label) => `You won't receive ${label}.`,
+    pwdErrorAllRequired: 'Please fill in all fields.',
+    pwdErrorMinLength: 'New password must be at least 8 characters.',
+    pwdErrorMismatch: 'New passwords do not match.',
+    pwdErrorGeneric: "Couldn't change your password. Please try again later.",
+    pwdPlaceholderCurrent: 'Current password',
+    pwdPlaceholderNew: 'New password (min. 8 characters)',
+    pwdPlaceholderConfirm: 'Confirm new password',
+    pwdSaveButton: 'Change',
+    pwdConfirmTitle: 'Change your password?',
+    pwdConfirmDescription: 'You may need to log in again with your new password.',
+    pwdConfirmSaving: 'Changing…',
+    toastPasswordChanged: 'Password changed',
+    deleteConfirmPhrase: 'See you on the next trip',
+    deleteSummaryHeading: (count) => `You've created ${count} trips with Travel Tackle`,
+    deleteSummaryDesc: 'Deleting your account removes all the plans and feedback below. Are you sure you want to leave?',
+    deleteSummaryTripsTitle: 'Trip plans you created',
+    deleteSummaryFeedbackTitle: 'Feedback received',
+    moreCount: (n) => `${n} more…`,
+    feedbackCountSuffix: (n) => `${n}`,
+    deleteSummaryProceed: 'Delete my account anyway',
+    deleteConfirmTitle: 'Are you sure you want to delete your account?',
+    deleteConfirmDesc: 'Deleting your account permanently removes all your trip plans, records, and feedback. This cannot be undone.',
+    deleteConfirmBefore: 'Type ',
+    deleteConfirmAfter: ' below to continue.',
+    deleteErrorGeneric: "Couldn't delete your account. Please try again later.",
+    deleteProcessing: 'Deleting…',
+    deleteAccountButton: 'Delete account',
+    preferenceSaveError: "Couldn't save your preferences. Please try again later.",
+    summaryInterest: 'Interests',
+    summaryStyle: 'Travel style',
+    summaryBudget: 'Budget',
+    summaryRegion: 'Preferred regions',
+    backAria: 'Go back',
+  },
+}
+
 // 닉네임/언어/로그인정보/비밀번호/선호도는 실 API 연동 완료.
-const SETTINGS_TABS = [
-  { value: 'profile', label: '프로필 설정' },
-  { value: 'preference', label: '선호도 수정' },
-]
+function getSettingsTabs(copy) {
+  return [
+    { value: 'profile', label: copy.tabProfile },
+    { value: 'preference', label: copy.tabPreference },
+  ]
+}
 
 // LoginPage.jsx와 동일한 아이콘·순서·브랜드 색 (이메일 폼 -> 카카오 -> Google -> Apple)
 // authProvider: 백엔드 AuthProvider enum 값(CurrentUserResponse.authProviders)과 매핑 — 이메일/비번 로그인은 LOCAL로 내려온다
-const LOGIN_PROVIDERS = [
-  { key: 'email', authProvider: 'LOCAL', label: '이메일', icon: 'mdi:email-outline', style: { background: '#1e293b', color: '#fff' } },
-  { key: 'kakao', authProvider: 'KAKAO', label: '카카오', icon: 'ri:kakao-talk-fill', style: { background: '#FEE500', color: '#191600' } },
-  { key: 'google', authProvider: 'GOOGLE', label: 'Google', icon: 'logos:google-icon', style: { background: '#fff', color: '#334155', border: '1px solid #e2e8f0' } },
-  { key: 'apple', authProvider: 'APPLE', label: 'Apple', icon: 'ri:apple-fill', style: { background: '#000', color: '#fff' } },
-]
+function getLoginProviders(copy) {
+  return [
+    { key: 'email', authProvider: 'LOCAL', label: copy.providerEmail, icon: 'mdi:email-outline', style: { background: '#1e293b', color: '#fff' } },
+    { key: 'kakao', authProvider: 'KAKAO', label: copy.providerKakao, icon: 'ri:kakao-talk-fill', style: { background: '#FEE500', color: '#191600' } },
+    { key: 'google', authProvider: 'GOOGLE', label: 'Google', icon: 'logos:google-icon', style: { background: '#fff', color: '#334155', border: '1px solid #e2e8f0' } },
+    { key: 'apple', authProvider: 'APPLE', label: 'Apple', icon: 'ri:apple-fill', style: { background: '#000', color: '#fff' } },
+  ]
+}
 
 // 온보딩 PreferenceWizard와 동일한 스텝 구성 — 수정 흐름도 완전히 같은 화면으로 보여준다.
-const STEPS = [
-  {
-    key: 'interestTags',
-    multiple: true,
-    title: '이번 여행에서 가장 끌리는 것은 무엇인가요?',
-    options: INTEREST_TAGS,
-    // 2열이면 모바일 폭에서 라벨 텍스트(nowrap)가 카드 밖으로 넘쳐 잘려 보여서 1열로
-    grid: 'grid-cols-1 sm:grid-cols-3',
-  },
-  {
-    key: 'travelStyle',
-    multiple: false,
-    title: '여행할 때 어떤 스타일에 가까우신가요?',
-    options: TRAVEL_STYLES,
-    grid: 'grid-cols-1',
-  },
-  {
-    key: 'budgetLevel',
-    multiple: false,
-    title: '여행에서 소비하는 편은 어느 쪽인가요?',
-    subtitle: '숙박비/항공권 제외',
-    options: BUDGET_LEVELS,
-    grid: 'grid-cols-1 sm:grid-cols-2',
-  },
-  {
-    key: 'preferredRegions',
-    multiple: true,
-    title: '가고 싶은 지역이 있으신가요?',
-    options: PREFERRED_REGIONS,
-    grid: 'grid-cols-2 sm:grid-cols-3',
-  },
-]
+function getSteps(copy) {
+  return [
+    {
+      key: 'interestTags',
+      multiple: true,
+      title: copy.stepInterestTitle,
+      options: INTEREST_TAGS,
+      // 2열이면 모바일 폭에서 라벨 텍스트(nowrap)가 카드 밖으로 넘쳐 잘려 보여서 1열로
+      grid: 'grid-cols-1 sm:grid-cols-3',
+    },
+    {
+      key: 'travelStyle',
+      multiple: false,
+      title: copy.stepStyleTitle,
+      options: TRAVEL_STYLES,
+      grid: 'grid-cols-1',
+    },
+    {
+      key: 'budgetLevel',
+      multiple: false,
+      title: copy.stepBudgetTitle,
+      subtitle: copy.stepBudgetSubtitle,
+      options: BUDGET_LEVELS,
+      grid: 'grid-cols-1 sm:grid-cols-2',
+    },
+    {
+      key: 'preferredRegions',
+      multiple: true,
+      title: copy.stepRegionTitle,
+      options: PREFERRED_REGIONS,
+      grid: 'grid-cols-2 sm:grid-cols-3',
+    },
+  ]
+}
 
 function emptyAnswers() {
   return { interestTags: new Set(), travelStyle: null, budgetLevel: null, preferredRegions: new Set() }
@@ -176,7 +338,9 @@ function NotifToggle({ label, checked, onChange, disabled }) {
 }
 
 // RecordUploadModal의 확인 다이얼로그(오버레이 + 흰 카드 + 문구/버튼2개)와 동일한 패턴
-function ConfirmDialog({ title, description, confirmLabel = '끄기', confirmDisabled, onCancel, onConfirm }) {
+function ConfirmDialog({ title, description, confirmLabel, confirmDisabled, onCancel, onConfirm }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-[320px] rounded-2xl bg-surface p-5 shadow-popup">
@@ -188,7 +352,7 @@ function ConfirmDialog({ title, description, confirmLabel = '끄기', confirmDis
             onClick={onCancel}
             className="flex-1 rounded-full border border-slate-200 py-2 text-[12.5px] font-bold text-slate-600 transition-colors hover:bg-slate-50"
           >
-            취소
+            {copy.cancel}
           </button>
           <button
             type="button"
@@ -196,7 +360,7 @@ function ConfirmDialog({ title, description, confirmLabel = '끄기', confirmDis
             disabled={confirmDisabled}
             className="flex-1 rounded-full bg-rose-500 py-2 text-[12.5px] font-bold text-white transition-colors hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {confirmLabel}
+            {confirmLabel ?? copy.notifOffConfirmLabel}
           </button>
         </div>
       </div>
@@ -208,6 +372,8 @@ function ConfirmDialog({ title, description, confirmLabel = '끄기', confirmDis
 // CSS Grid 0fr↔1fr 트릭으로 애니메이션. 현재 비밀번호로 본인 확인하므로 별도 이메일 인증은 없음
 // (백엔드 PATCH /api/auth/password가 currentPassword 일치만 확인 — 이메일 재설정 흐름과는 다름).
 function PasswordInlinePanel({ open, onSaved }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -217,15 +383,15 @@ function PasswordInlinePanel({ open, onSaved }) {
 
   function handleSave() {
     if (!current || !next || !confirm) {
-      setError('모든 항목을 입력해주세요.')
+      setError(copy.pwdErrorAllRequired)
       return
     }
     if (next.length < 8) {
-      setError('새 비밀번호는 8자 이상이어야 해요.')
+      setError(copy.pwdErrorMinLength)
       return
     }
     if (next !== confirm) {
-      setError('새 비밀번호가 일치하지 않아요.')
+      setError(copy.pwdErrorMismatch)
       return
     }
     setError('')
@@ -243,7 +409,7 @@ function PasswordInlinePanel({ open, onSaved }) {
       onSaved()
     } catch (err) {
       setConfirming(false)
-      setError(err.response?.data?.message || '비밀번호를 변경하지 못했어요. 잠시 후 다시 시도해주세요.')
+      setError(err.response?.data?.message || copy.pwdErrorGeneric)
     } finally {
       setSaving(false)
     }
@@ -260,21 +426,21 @@ function PasswordInlinePanel({ open, onSaved }) {
             type="password"
             value={current}
             onChange={(e) => setCurrent(e.target.value)}
-            placeholder="현재 비밀번호"
+            placeholder={copy.pwdPlaceholderCurrent}
             className="h-10 rounded-lg border border-slate-200 bg-surface px-3 text-[13px] outline-none focus:border-brand"
           />
           <input
             type="password"
             value={next}
             onChange={(e) => setNext(e.target.value)}
-            placeholder="새 비밀번호 (8자 이상)"
+            placeholder={copy.pwdPlaceholderNew}
             className="h-10 rounded-lg border border-slate-200 bg-surface px-3 text-[13px] outline-none focus:border-brand"
           />
           <input
             type="password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
-            placeholder="새 비밀번호 확인"
+            placeholder={copy.pwdPlaceholderConfirm}
             className="h-10 rounded-lg border border-slate-200 bg-surface px-3 text-[13px] outline-none focus:border-brand"
           />
           {error && <p className="text-[12px] text-rose-500">{error}</p>}
@@ -284,16 +450,16 @@ function PasswordInlinePanel({ open, onSaved }) {
               onClick={handleSave}
               className="rounded-full bg-brand px-5 py-2 text-[12.5px] font-bold text-white hover:bg-brand-dark"
             >
-              변경하기
+              {copy.pwdSaveButton}
             </button>
           </div>
           </div>
         </div>
         {confirming && (
           <ConfirmDialog
-            title="비밀번호를 변경하시겠어요?"
-            description="변경 후에는 새 비밀번호로 다시 로그인해야 할 수 있어요."
-            confirmLabel={saving ? '변경 중…' : '변경하기'}
+            title={copy.pwdConfirmTitle}
+            description={copy.pwdConfirmDescription}
+            confirmLabel={saving ? copy.pwdConfirmSaving : copy.pwdSaveButton}
             confirmDisabled={saving}
             onCancel={() => setConfirming(false)}
             onConfirm={handleConfirmed}
@@ -303,9 +469,6 @@ function PasswordInlinePanel({ open, onSaved }) {
     </div>
   )
 }
-
-// GitHub류 "이름 그대로 입력해야 버튼 활성화" 패턴 — 실수로 누르는 걸 막기 위한 재입력 확인
-const DELETE_CONFIRM_PHRASE = '다음 여행에서 만나요'
 
 // logo-icon.svg의 두 캐릭터(teal 왼쪽, blue 오른쪽)를 각각 그룹으로 분리 —
 // 각자 반대편 화면 밖에서 날아와 원래 위치(=서로 마주 보는 자리)에 도착하는 연출.
@@ -344,6 +507,8 @@ function MascotFlyIn() {
 const DELETE_SUMMARY_MAX = 4
 
 function DeleteSummaryStep({ onCancel, onNext }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [data, setData] = useState(null) // { trips, feedback } | null(로딩중)
 
   useEffect(() => {
@@ -361,10 +526,10 @@ function DeleteSummaryStep({ onCancel, onNext }) {
         <MascotFlyIn />
       </div>
       <h3 className="mt-3 text-center text-[16px] font-bold text-slate-900">
-        트레블 참견과 함께 {trips.length}개의 여행을 만들어왔어요
+        {copy.deleteSummaryHeading(trips.length)}
       </h3>
       <p className="mt-1.5 text-center text-[12.5px] leading-relaxed text-slate-500">
-        탈퇴하면 아래 계획과 참견이 모두 사라져요. 정말 떠나시겠어요?
+        {copy.deleteSummaryDesc}
       </p>
 
       {!data ? (
@@ -378,7 +543,7 @@ function DeleteSummaryStep({ onCancel, onNext }) {
             <div className="rounded-2xl bg-slate-50 p-4">
               <p className="flex items-center gap-1.5 text-[13.5px] font-bold text-slate-500">
                 <Icon icon="solar:notebook-bold" width={15} className="text-brand" />
-                내가 만든 여행 계획
+                {copy.deleteSummaryTripsTitle}
               </p>
               <ul className="mt-2 flex flex-col gap-1">
                 {trips.slice(0, DELETE_SUMMARY_MAX).map((t) => (
@@ -387,7 +552,7 @@ function DeleteSummaryStep({ onCancel, onNext }) {
                   </li>
                 ))}
                 {trips.length > DELETE_SUMMARY_MAX && (
-                  <li className="text-[12px] text-slate-400">그 외 {trips.length - DELETE_SUMMARY_MAX}개 더…</li>
+                  <li className="text-[12px] text-slate-400">{copy.moreCount(trips.length - DELETE_SUMMARY_MAX)}</li>
                 )}
               </ul>
             </div>
@@ -397,17 +562,17 @@ function DeleteSummaryStep({ onCancel, onNext }) {
             <div className="rounded-2xl bg-slate-50 p-4">
               <p className="flex items-center gap-1.5 text-[13.5px] font-bold text-slate-500">
                 <Icon icon="solar:chat-round-dots-bold" width={15} className="text-brand" />
-                받은 참견
+                {copy.deleteSummaryFeedbackTitle}
               </p>
               <ul className="mt-2 flex flex-col gap-1">
                 {feedback.slice(0, DELETE_SUMMARY_MAX).map((f) => (
                   <li key={f.tripId} className="flex items-center justify-between gap-2 text-[12.5px] text-slate-700">
                     <span className="truncate">· {f.tripTitle}</span>
-                    <span className="shrink-0 text-slate-400">{f.totalFeedbackCount}개</span>
+                    <span className="shrink-0 text-slate-400">{copy.feedbackCountSuffix(f.totalFeedbackCount)}</span>
                   </li>
                 ))}
                 {feedback.length > DELETE_SUMMARY_MAX && (
-                  <li className="text-[12px] text-slate-400">그 외 {feedback.length - DELETE_SUMMARY_MAX}개 더…</li>
+                  <li className="text-[12px] text-slate-400">{copy.moreCount(feedback.length - DELETE_SUMMARY_MAX)}</li>
                 )}
               </ul>
             </div>
@@ -421,14 +586,14 @@ function DeleteSummaryStep({ onCancel, onNext }) {
           onClick={onCancel}
           className="flex-1 rounded-full bg-brand py-2.5 text-[12.5px] font-bold text-white hover:bg-brand-dark"
         >
-          취소
+          {copy.cancel}
         </button>
         <button
           type="button"
           onClick={onNext}
           className="flex-1 rounded-full border border-slate-200 bg-surface py-2.5 text-[12.5px] font-bold text-slate-500 hover:bg-slate-50"
         >
-          그래도 탈퇴할게요
+          {copy.deleteSummaryProceed}
         </button>
       </div>
     </div>
@@ -436,24 +601,27 @@ function DeleteSummaryStep({ onCancel, onNext }) {
 }
 
 function DeleteConfirmStep({ onBack, onConfirmed, deleting, error }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
+  const phrase = copy.deleteConfirmPhrase
   const [text, setText] = useState('')
-  const matched = text === DELETE_CONFIRM_PHRASE
+  const matched = text === phrase
 
   return (
     <div className="w-full max-w-[560px] rounded-3xl bg-surface p-8 shadow-popup">
-      <h3 className="text-[15px] font-bold text-slate-900">정말 탈퇴하시겠어요?</h3>
+      <h3 className="text-[15px] font-bold text-slate-900">{copy.deleteConfirmTitle}</h3>
       <p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-500 sm:whitespace-nowrap">
-        탈퇴하면 내 여행 계획, 기록, 참견 내역이 모두 삭제되고 복구할 수 없어요.
+        {copy.deleteConfirmDesc}
       </p>
       <p className="mt-4 text-[12.5px] text-slate-600">
-        계속하려면 아래에 <span className="font-bold text-rose-500">{DELETE_CONFIRM_PHRASE}</span>를 입력해주세요.
+        {copy.deleteConfirmBefore}<span className="font-bold text-rose-500">{phrase}</span>{copy.deleteConfirmAfter}
       </p>
       <input
         autoFocus
         value={text}
         onChange={(e) => setText(e.target.value)}
         disabled={deleting}
-        placeholder={DELETE_CONFIRM_PHRASE}
+        placeholder={phrase}
         className="mt-2.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-[13px] outline-none focus:border-rose-400 disabled:opacity-60"
       />
       {error && <p className="mt-2 text-[12px] text-rose-500">{error}</p>}
@@ -464,7 +632,7 @@ function DeleteConfirmStep({ onBack, onConfirmed, deleting, error }) {
           disabled={deleting}
           className="flex-1 rounded-full border border-slate-200 py-2.5 text-[12.5px] font-bold text-slate-600 hover:bg-slate-50"
         >
-          이전
+          {copy.back}
         </button>
         <button
           type="button"
@@ -472,7 +640,7 @@ function DeleteConfirmStep({ onBack, onConfirmed, deleting, error }) {
           onClick={onConfirmed}
           className="flex-1 rounded-full bg-rose-500 py-2.5 text-[12.5px] font-bold text-white transition-colors hover:bg-rose-600 disabled:cursor-not-allowed disabled:bg-rose-200"
         >
-          {deleting ? '탈퇴 처리 중…' : '회원 탈퇴'}
+          {deleting ? copy.deleteProcessing : copy.deleteAccountButton}
         </button>
       </div>
     </div>
@@ -480,6 +648,8 @@ function DeleteConfirmStep({ onBack, onConfirmed, deleting, error }) {
 }
 
 function DeleteAccountModal({ onClose, onDeleted }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [step, setStep] = useState('summary') // 'summary' | 'confirm'
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
@@ -491,7 +661,7 @@ function DeleteAccountModal({ onClose, onDeleted }) {
       await deleteAccount()
       onDeleted()
     } catch (err) {
-      setError(err.response?.data?.message || '탈퇴 처리에 실패했어요. 잠시 후 다시 시도해주세요.')
+      setError(err.response?.data?.message || copy.deleteErrorGeneric)
     } finally {
       setDeleting(false)
     }
@@ -510,11 +680,13 @@ function DeleteAccountModal({ onClose, onDeleted }) {
 
 // 이메일 알림 허용이 부모, 나머지 3개는 자식 — 부모가 꺼지면 자식도 전부 꺼지고 조작 불가.
 // 무엇이든 끄는 조작에는 확인 팝업을 먼저 띄운다.
-const NOTIF_CHILDREN = [
-  { key: 'feedback', label: '피드백 알림' },
-  { key: 'recommend', label: '여행 추천' },
-  { key: 'event', label: '이벤트' },
-]
+function getNotifChildren(copy) {
+  return [
+    { key: 'feedback', label: copy.notifFeedback },
+    { key: 'recommend', label: copy.notifRecommend },
+    { key: 'event', label: copy.notifEvent },
+  ]
+}
 
 function notificationSettingsFromUser(user) {
   return {
@@ -528,6 +700,9 @@ function notificationSettingsFromUser(user) {
 function ProfileTab({ user }) {
   const { setUser } = useAuth()
   const { language, setLanguage } = useLanguage()
+  const copy = T[language] ?? T.en
+  const loginProviders = getLoginProviders(copy)
+  const notifChildren = getNotifChildren(copy)
   const [nickname, setNickname] = useState(user?.name || '')
   const [editingNickname, setEditingNickname] = useState(false)
   const [nicknameError, setNicknameError] = useState('')
@@ -547,7 +722,7 @@ function ProfileTab({ user }) {
   async function handleSaveNickname() {
     const trimmed = nickname.trim()
     if (!trimmed) {
-      setNicknameError('닉네임을 입력해주세요.')
+      setNicknameError(copy.nicknameErrorEmpty)
       return
     }
     setNicknameSaving(true)
@@ -557,9 +732,9 @@ function ProfileTab({ user }) {
       setUser(updated)
       setNickname(updated.name)
       setEditingNickname(false)
-      showToast('닉네임을 변경했어요')
+      showToast(copy.toastNicknameChanged)
     } catch (err) {
-      setNicknameError(err.response?.data?.message || '닉네임을 변경하지 못했어요.')
+      setNicknameError(err.response?.data?.message || copy.nicknameErrorGeneric)
     } finally {
       setNicknameSaving(false)
     }
@@ -570,7 +745,7 @@ function ProfileTab({ user }) {
       const updated = await updateProfile({ preferredLanguage: code })
       setUser(updated)
     } catch (err) {
-      showToast(err.response?.data?.message || '언어 저장에 실패했어요')
+      showToast(err.response?.data?.message || copy.languageSaveError)
     }
   }
 
@@ -603,9 +778,9 @@ function ProfileTab({ user }) {
       })
       setUser(updated)
       setNotif(notificationSettingsFromUser(updated))
-      showToast('알림 설정을 저장했어요')
+      showToast(copy.toastNotifSaved)
     } catch (err) {
-      showToast(err.response?.data?.message || '알림 설정을 저장하지 못했어요')
+      showToast(err.response?.data?.message || copy.notifSaveErrorGeneric)
     } finally {
       setNotifSaving(false)
     }
@@ -639,7 +814,7 @@ function ProfileTab({ user }) {
       <Card className="p-8">
         {/* 카드 자체는 nav바 폭에 맞춰 넓어지되, 행 내용은 너무 헐렁해 보이지 않게 폭을 한 번 더 제한 */}
         <div className="max-w-[760px]">
-        <SettingRow label="프로필 사진">
+        <SettingRow label={copy.labelProfilePhoto}>
           <ProfilePhotoRow
             user={user}
             nickname={nickname}
@@ -651,7 +826,7 @@ function ProfileTab({ user }) {
           />
         </SettingRow>
 
-        <SettingRow label="닉네임">
+        <SettingRow label={copy.labelNickname}>
           {editingNickname ? (
             <>
               <input
@@ -671,7 +846,7 @@ function ProfileTab({ user }) {
                 disabled={nicknameSaving}
                 className="shrink-0 rounded-full bg-slate-100 px-3 py-1.5 text-[12px] font-bold text-slate-500 hover:bg-slate-200"
               >
-                취소
+                {copy.cancel}
               </button>
               <button
                 type="button"
@@ -679,7 +854,7 @@ function ProfileTab({ user }) {
                 disabled={nicknameSaving}
                 className="shrink-0 rounded-full bg-brand px-3 py-1.5 text-[12px] font-bold text-white hover:bg-brand-dark disabled:opacity-60"
               >
-                {nicknameSaving ? '저장 중…' : '완료'}
+                {nicknameSaving ? copy.genericSaving : copy.doneButton}
               </button>
               {nicknameError && <p className="w-full text-[12px] text-rose-500">{nicknameError}</p>}
             </>
@@ -691,18 +866,18 @@ function ProfileTab({ user }) {
                 onClick={() => setEditingNickname(true)}
                 className="shrink-0 rounded-full bg-brand-light px-3 py-1.5 text-[12px] font-bold text-brand hover:bg-brand-light/70"
               >
-                변경
+                {copy.changeButton}
               </button>
             </>
           )}
         </SettingRow>
 
-        <SettingRow label="이메일">
+        <SettingRow label={copy.labelEmail}>
           {/* 목업 더미 텍스트("test1234@example.com") 대신 값이 없을 때만 옅은 회색 대시로 */}
           <span className={`text-[13px] ${user?.email ? 'text-slate-500' : 'text-slate-300'}`}>{user?.email || '—'}</span>
         </SettingRow>
 
-        <SettingRow label="비밀번호">
+        <SettingRow label={copy.labelPassword}>
           <span className="text-[13px] tracking-widest text-slate-400">••••••••</span>
           <button
             type="button"
@@ -711,19 +886,19 @@ function ProfileTab({ user }) {
               passwordEditing ? 'bg-slate-100 text-slate-500 hover:bg-slate-200' : 'bg-brand-light text-brand hover:bg-brand-light/70'
             }`}
           >
-            {passwordEditing ? '취소' : '변경'}
+            {passwordEditing ? copy.cancel : copy.changeButton}
           </button>
         </SettingRow>
         <PasswordInlinePanel
           open={passwordEditing}
           onSaved={() => {
             setPasswordEditing(false)
-            showToast('비밀번호를 변경했어요')
+            showToast(copy.toastPasswordChanged)
           }}
         />
 
-        <SettingRow label="로그인 정보">
-          {LOGIN_PROVIDERS.map((p) => {
+        <SettingRow label={copy.labelLoginInfo}>
+          {loginProviders.map((p) => {
             const providers = Array.isArray(user?.authProviders) ? user.authProviders.map((provider) => String(provider).toUpperCase()) : []
             const connected = providers.includes(p.authProvider)
             return (
@@ -739,20 +914,20 @@ function ProfileTab({ user }) {
           })}
         </SettingRow>
 
-        <SettingRow label="언어">
+        <SettingRow label={copy.labelLanguage}>
           <LanguageDropdown onPersist={handleChangeLanguage} />
         </SettingRow>
 
-        <SettingRow label="알림 설정">
+        <SettingRow label={copy.labelNotifSettings}>
           <div className="flex flex-col gap-3">
             <NotifToggle
-              label="이메일 알림 허용"
+              label={copy.notifEmailAllow}
               checked={notif.email}
-              onChange={() => requestToggle('email', '이메일 알림 허용', notif.email)}
+              onChange={() => requestToggle('email', copy.notifEmailAllow, notif.email)}
               disabled={notifSaving}
             />
             <div className="flex flex-col gap-2.5 border-l-2 border-slate-100 pl-3">
-              {NOTIF_CHILDREN.map((n) => (
+              {notifChildren.map((n) => (
                 <NotifToggle
                   key={n.key}
                   label={n.label}
@@ -765,13 +940,13 @@ function ProfileTab({ user }) {
           </div>
         </SettingRow>
 
-        <SettingRow label="계정">
+        <SettingRow label={copy.labelAccount}>
           <button
             type="button"
             onClick={() => setDeleteModalOpen(true)}
             className="text-[12px] font-medium text-slate-400 underline underline-offset-2 transition-colors hover:text-rose-500"
           >
-            회원 탈퇴
+            {copy.deleteAccountButton}
           </button>
         </SettingRow>
         </div>
@@ -779,11 +954,11 @@ function ProfileTab({ user }) {
 
       {confirmOff && (
         <ConfirmDialog
-          title={confirmOff.key === 'email' ? '이메일 알림을 끄시겠어요?' : `${confirmOff.label}을 끄시겠어요?`}
+          title={confirmOff.key === 'email' ? copy.emailNotifOffTitle : copy.notifOffTitle(confirmOff.label)}
           description={
             confirmOff.key === 'email'
-              ? '피드백 알림, 여행 추천, 이벤트 알림을 받을 수 없어요.'
-              : `${confirmOff.label}을 받지 못해요.`
+              ? copy.emailNotifOffDesc
+              : copy.notifOffDesc(confirmOff.label)
           }
           onCancel={() => setConfirmOff(null)}
           onConfirm={confirmTurnOff}
@@ -816,6 +991,9 @@ function ProfileTab({ user }) {
 // 온보딩 PreferenceWizard와 동일한 한 문항씩 넘어가는 흐름 — 완료 시 onFinish(호출부인 PreferenceTab)가
 // updatePreferences로 실제 저장한다.
 function PreferenceEditWizard({ answers, onCancel, onFinish, saving, error }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
+  const STEPS = getSteps(copy)
   const [stepIndex, setStepIndex] = useState(0)
   const [values, setValues] = useState(answers)
 
@@ -856,7 +1034,7 @@ function PreferenceEditWizard({ answers, onCancel, onFinish, saving, error }) {
           {stepIndex + 1}/{STEPS.length}
         </span>
         <button type="button" onClick={onCancel} className="text-[13px] font-medium text-slate-400 hover:text-slate-600">
-          취소
+          {copy.cancel}
         </button>
       </div>
       <div className="h-1.5 w-full rounded-full bg-slate-100 mb-5 overflow-hidden">
@@ -873,7 +1051,7 @@ function PreferenceEditWizard({ answers, onCancel, onFinish, saving, error }) {
           </h2>
           {/* subtitle/중복선택 문구 유무로 헤더 높이가 문항마다 달라지지 않도록, 없을 때도 자리만 invisible로 유지 */}
           <p className={`text-[12px] text-slate-400 mt-1.5 ${step.subtitle ? '' : 'invisible'}`}>{step.subtitle || '-'}</p>
-          <p className={`text-[12px] text-brand-dark font-semibold mt-1.5 ${step.multiple ? '' : 'invisible'}`}>중복 선택 가능</p>
+          <p className={`text-[12px] text-brand-dark font-semibold mt-1.5 ${step.multiple ? '' : 'invisible'}`}>{copy.multiSelectHint}</p>
         </div>
 
         <div className={`grid ${step.grid} content-start gap-2.5 min-h-[370px] sm:min-h-[270px]`}>
@@ -898,7 +1076,7 @@ function PreferenceEditWizard({ answers, onCancel, onFinish, saving, error }) {
           disabled={saving}
           className="h-11 rounded-xl bg-slate-100 px-6 text-[14px] font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-60"
         >
-          이전
+          {copy.back}
         </button>
         <button
           type="button"
@@ -906,7 +1084,7 @@ function PreferenceEditWizard({ answers, onCancel, onFinish, saving, error }) {
           disabled={!isAnswered || saving}
           className="h-11 rounded-xl bg-brand px-6 text-[14px] font-bold text-white hover:bg-brand-dark disabled:opacity-40"
         >
-          {isLastStep ? (saving ? '저장 중…' : '완료') : '다음'}
+          {isLastStep ? (saving ? copy.genericSaving : copy.doneButton) : copy.nextButton}
         </button>
       </div>
       </div>
@@ -917,6 +1095,8 @@ function PreferenceEditWizard({ answers, onCancel, onFinish, saving, error }) {
 // 탭을 눌렀을 때 fetch를 시작하면 로딩 중 한 줄짜리 카드로 줄었다가 다시 늘어나며
 // 푸터가 튀는 게 보여서, 선호도 데이터는 페이지 진입 시점(MyPageAccountSettings)에 미리 받아온다.
 function PreferenceTab({ preferences, setPreferences }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -946,7 +1126,7 @@ function PreferenceTab({ preferences, setPreferences }) {
       setPreferences(updated)
       setEditing(false)
     } catch (err) {
-      setSaveError(err.response?.data?.message || '선호도를 저장하지 못했어요. 잠시 후 다시 시도해주세요.')
+      setSaveError(err.response?.data?.message || copy.preferenceSaveError)
     } finally {
       setSaving(false)
     }
@@ -978,21 +1158,21 @@ function PreferenceTab({ preferences, setPreferences }) {
   }
 
   const summaryRows = [
-    { title: '관심사', icon: 'solar:heart-bold', options: INTEREST_TAGS, values: preferences?.interestTags || [] },
+    { title: copy.summaryInterest, icon: 'solar:heart-bold', options: INTEREST_TAGS, values: preferences?.interestTags || [] },
     {
-      title: '여행 스타일',
+      title: copy.summaryStyle,
       icon: 'solar:routing-2-bold',
       options: TRAVEL_STYLES,
       values: preferences?.travelStyle ? [preferences.travelStyle] : [],
     },
     {
-      title: '예산',
+      title: copy.summaryBudget,
       icon: 'solar:wallet-money-bold',
       options: BUDGET_LEVELS,
       values: preferences?.budgetLevel ? [preferences.budgetLevel] : [],
     },
     {
-      title: '선호 지역',
+      title: copy.summaryRegion,
       icon: 'solar:map-point-bold',
       options: PREFERRED_REGIONS,
       values: preferences?.preferredRegions || [],
@@ -1010,7 +1190,7 @@ function PreferenceTab({ preferences, setPreferences }) {
           onClick={() => setEditing(true)}
           className="rounded-xl bg-brand px-5 py-2.5 text-[12.5px] font-bold text-white hover:bg-brand-dark"
         >
-          수정하기
+          {copy.editButton}
         </button>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -1032,7 +1212,7 @@ function PreferenceTab({ preferences, setPreferences }) {
                   </span>
                 ))
               ) : (
-                <span className="text-[14px] text-slate-400">설정 안 함</span>
+                <span className="text-[14px] text-slate-400">{copy.notSet}</span>
               )}
             </div>
           </div>
@@ -1048,6 +1228,9 @@ function PreferenceTab({ preferences, setPreferences }) {
 export default function MyPageAccountSettings() {
   const { user, loading: authLoading } = useAuth()
   const navigate = useNavigate()
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
+  const SETTINGS_TABS = getSettingsTabs(copy)
   const [tab, setTab] = useState('profile')
   const [preferences, setPreferences] = useState(null)
 
@@ -1069,7 +1252,7 @@ export default function MyPageAccountSettings() {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            aria-label="뒤로가기"
+            aria-label={copy.backAria}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
           >
             <Icon icon="mdi:chevron-left" width={20} />

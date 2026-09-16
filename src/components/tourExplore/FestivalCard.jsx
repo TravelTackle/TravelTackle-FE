@@ -6,6 +6,7 @@ import Skeleton from '../ui/Skeleton'
 import { SPOT_DRAG_TYPE } from '../../api/cart'
 import { shortRegion } from '../../lib/homeFormat'
 import { festivalStatus, formatRange, formatSpan } from '../../lib/festivalPeriod'
+import { useLanguage } from '../../i18n'
 
 // 상태 배지 색 — 진행 중은 초록에 살아있는 점, 예정은 흰 바탕의 브랜드 블루, 오늘 마감은 앰버, 종료는 짙은 회색
 const TONE = {
@@ -15,13 +16,28 @@ const TONE = {
   ended: 'bg-black/80 text-white',
 }
 
+const T = {
+  ko: {
+    removeFromCart: '카트에서 빼기',
+    addToCart: '카트에 담기',
+    noAddress: '장소 정보 없음',
+  },
+  en: {
+    removeFromCart: 'Remove from cart',
+    addToCart: 'Add to cart',
+    noAddress: 'No location info',
+  },
+}
+
 export default function FestivalCard({ festival, index = 0, onOpen, onToggleCart, carted }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [loading, setLoading] = useState(false)
   const [dragging, setDragging] = useState(false)
 
-  const status = festivalStatus(festival.startDate, festival.endDate)
-  const range = formatRange(festival.startDate, festival.endDate)
-  const span = formatSpan(festival.startDate, festival.endDate)
+  const status = festivalStatus(festival.startDate, festival.endDate, language)
+  const range = formatRange(festival.startDate, festival.endDate, language)
+  const span = formatSpan(festival.startDate, festival.endDate, language)
   const region = shortRegion(festival.address)
 
   // 이미 담긴 상태에서 다시 누르면 onToggleCart가 담기 대신 빼기로 처리한다
@@ -76,7 +92,7 @@ export default function FestivalCard({ festival, index = 0, onOpen, onToggleCart
         <button
           onClick={handleQuickToggle}
           disabled={loading}
-          aria-label={carted ? '카트에서 빼기' : '카트에 담기'}
+          aria-label={carted ? copy.removeFromCart : copy.addToCart}
           className={`absolute left-2.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full shadow-card transition-colors ${
             carted ? 'bg-brand text-white' : 'bg-white/95 text-ink hover:text-ink-brand'
           }`}
@@ -97,7 +113,7 @@ export default function FestivalCard({ festival, index = 0, onOpen, onToggleCart
           {region && (
             <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-500">{region}</span>
           )}
-          <span className="truncate">{festival.address || '장소 정보 없음'}</span>
+          <span className="truncate">{festival.address || copy.noAddress}</span>
         </div>
       </div>
     </Card>

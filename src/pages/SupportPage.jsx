@@ -7,128 +7,320 @@ import ChatbotWidget from '../components/ChatbotWidget'
 import FloatingCart from '../components/FloatingCart'
 import Section from '../components/ui/Section'
 import Card from '../components/ui/Card'
+import { useLanguage } from '../i18n'
 
-const TABS = [
-  { value: 'faq', label: '자주 묻는 질문' },
-  { value: 'terms', label: '이용약관' },
-  { value: 'privacy', label: '개인정보처리방침' },
-]
+// 페이지 전역 문구
+const T = {
+  ko: {
+    pageTitle: '고객지원',
+  },
+  en: {
+    pageTitle: 'Support',
+  },
+}
 
-const FAQ_SECTIONS = [
-  {
-    category: '회원가입 · 로그인',
-    items: [
-      {
-        q: '회원가입은 어떻게 하나요?',
-        a: '이메일과 비밀번호로 가입하거나, 카카오·Google·Apple 계정으로 간편하게 가입할 수 있어요. 소셜 계정으로 가입하면 별도의 비밀번호 설정 없이 바로 로그인할 수 있어요.',
-      },
-      {
-        q: '비밀번호를 잊어버렸어요.',
-        a: '로그인 화면의 비밀번호 찾기를 통해 가입하신 이메일로 재설정 링크를 받으실 수 있어요. 소셜 계정으로 가입하신 경우 별도의 비밀번호가 없으니 해당 소셜 로그인으로 이용해주세요.',
-      },
-      {
-        q: '회원 탈퇴는 어떻게 하나요?',
-        a: '마이페이지 > 설정에서 탈퇴를 진행할 수 있어요. 탈퇴 시 작성하신 계획, 기록, 참견 등 대부분의 데이터는 삭제되며 복구할 수 없어요. 다만 접속 로그 등 일부 정보는 통신비밀보호법에 따라 3개월간 보관될 수 있어요.',
-      },
-    ],
-  },
-  {
-    category: '여행 계획',
-    items: [
-      {
-        q: '여행 계획은 어떻게 만드나요?',
-        a: '나의 계획 페이지에서 새 계획 만들기를 누르고 여행 제목과 기간(출발일·종료일)을 입력하면 Day별 일정이 자동으로 생성돼요. 이후 관심 있는 장소를 장바구니에 담아두고, 원하는 Day로 드래그 앤 드롭하면서 일정을 채워나갈 수 있어요.',
-      },
-      {
-        q: '여행 기간을 나중에 수정할 수 있나요?',
-        a: '네, 계획 상세 화면에서 기간을 수정할 수 있어요. 다만 기간을 변경하면 이미 짜둔 Day별 일정이 초기화될 수 있으니 참고해주세요.',
-      },
-      {
-        q: '장바구니에 담아둔 장소만으로 바로 계획을 만들 수도 있나요?',
-        a: '네. 여행지 탐색에서 담아둔 장바구니를 기반으로 새 계획을 바로 만들면, Day별 일정에 담아둔 장소들이 함께 채워진 상태로 시작할 수 있어요.',
-      },
-      {
-        q: '만든 계획은 나만 볼 수 있나요?',
-        a: '계획 상세 화면 또는 마이페이지에서 "나만보기 / 전체보기" 버튼으로 공개 범위를 전환할 수 있어요. 나만보기로 설정하면 본인만 볼 수 있고, 전체보기로 전환하면 여행자 피드에 노출되어 다른 이용자들이 계획을 보고 참견(피드백)을 남길 수 있어요.',
-      },
-    ],
-  },
-  {
-    category: '여행자 피드 · 참견',
-    items: [
-      {
-        q: '여행자 피드는 무엇인가요?',
-        a: '다른 이용자들이 공유한 여행 계획과 여행 기록을 모아볼 수 있는 공간이에요. 전체/계획/기록으로 필터링해서 볼 수 있어요.',
-      },
-      {
-        q: '참견(피드백)이 뭔가요?',
-        a: '다른 이용자의 계획이나 기록에 남기는 댓글 및 반응이에요. 동선이 좋은지, 더 가볼만한 곳은 없는지 등 여행에 도움이 되는 의견을 주고받을 수 있어요.',
-      },
-      {
-        q: '내가 받은 참견은 어디서 확인하나요?',
-        a: '화면 상단 알림 아이콘(종 모양) 또는 내 계획 상세 화면에서 받은 참견을 확인할 수 있어요.',
-      },
-      {
-        q: '여행 기록(사진 후기)은 어떻게 올리나요?',
-        a: '완료한 계획의 기록 업로드 메뉴에서 사진과 후기를 함께 등록할 수 있어요. 등록한 기록은 여행자 피드에서 다른 이용자들과 공유돼요.',
-      },
-    ],
-  },
-  {
-    category: '트레블봇',
-    items: [
-      {
-        q: '트레블봇이 뭔가요?',
-        a: '화면 우측 하단의 챗봇 아이콘을 누르면 나오는 여행 계획 상담 도우미예요. 궁금한 점을 메시지로 물어보면 여행 계획 짜는 걸 도와줘요.',
-      },
-    ],
-  },
-  {
-    category: '보관함 · 마이페이지',
-    items: [
-      {
-        q: '보관함은 무엇인가요?',
-        a: '마음에 드는 다른 이용자의 계획을 스크랩해서 모아두는 공간이에요. 나의 여행 > 보관함 메뉴에서 확인할 수 있어요.',
-      },
-      {
-        q: '내 프로필에서 계획과 기록 개수가 다르게 보여요.',
-        a: '마이페이지에서는 내가 만든 계획 수와 작성한 기록 수를 각각 보여드려요. 계획을 세웠다고 해서 자동으로 기록이 생기는 건 아니고, 기록은 별도로 업로드해야 해요.',
-      },
-      {
-        q: '여행 선호도(관심사, 스타일 등)는 왜 입력하나요?',
-        a: '관심 태그, 여행 스타일, 예산 수준, 선호 지역 등을 입력하면 이를 바탕으로 더 취향에 맞는 여행지와 계획을 추천해드려요. 선택 항목이라 온보딩 과정에서 건너뛸 수 있고, 이후 마이페이지에서 언제든지 입력하거나 수정할 수 있어요.',
-      },
-    ],
-  },
-  {
-    category: '여행지 정보',
-    items: [
-      {
-        q: '여행지 정보(주소, 운영시간 등)가 실제와 달라요.',
-        a: '여행지 탐색에 제공되는 정보는 공공 관광정보 데이터를 기반으로 하고 있어 실제 정보와 차이가 있을 수 있어요. 방문 전 반드시 공식 홈페이지 등에서 최신 정보를 다시 확인해주세요.',
-      },
-      {
-        q: '원하는 지역의 축제·행사 정보도 볼 수 있나요?',
-        a: '네, 여행지 탐색에서 축제·행사 테마를 선택하면 기간별로 진행 중이거나 예정된 행사를 확인할 수 있어요.',
-      },
-    ],
-  },
-  {
-    category: '기타 문의',
-    items: [
-      {
-        q: '버그를 발견했거나 건의하고 싶은 기능이 있어요.',
-        a: '고객지원 페이지의 이메일(traveltackleteam@gmail.com)로 언제든지 알려주세요. 소중한 의견 감사히 반영할게요.',
-      },
-      {
-        q: '광고나 제휴 문의는 어디로 하나요?',
-        a: 'traveltackleteam@gmail.com으로 문의 내용을 보내주시면 담당자가 확인 후 순차적으로 답변드려요.',
-      },
-    ],
-  },
-]
+// 탭 value는 언어와 무관 — 쿼리 파라미터·상태 비교에 그대로 쓰고, label만 번역한다
+const TAB_VALUES = ['faq', 'terms', 'privacy']
 
-const TERMS_TEXT = `제1조 (목적)
+function getTabs(language) {
+  if (language !== 'ko') {
+    return [
+      { value: 'faq', label: 'FAQ' },
+      { value: 'terms', label: 'Terms of Service' },
+      { value: 'privacy', label: 'Privacy Policy' },
+    ]
+  }
+  return [
+    { value: 'faq', label: '자주 묻는 질문' },
+    { value: 'terms', label: '이용약관' },
+    { value: 'privacy', label: '개인정보처리방침' },
+  ]
+}
+
+// 각 문항에 언어와 무관한 id를 둬서, 언어가 바뀌어도 아코디언 열림 상태의 key가 안정적으로 유지되게 한다
+const FAQ_SECTIONS = {
+  ko: [
+    {
+      id: 'account',
+      category: '회원가입 · 로그인',
+      items: [
+        {
+          id: 'account-signup',
+          q: '회원가입은 어떻게 하나요?',
+          a: '이메일과 비밀번호로 가입하거나, 카카오·Google·Apple 계정으로 간편하게 가입할 수 있어요. 소셜 계정으로 가입하면 별도의 비밀번호 설정 없이 바로 로그인할 수 있어요.',
+        },
+        {
+          id: 'account-forgot-password',
+          q: '비밀번호를 잊어버렸어요.',
+          a: '로그인 화면의 비밀번호 찾기를 통해 가입하신 이메일로 재설정 링크를 받으실 수 있어요. 소셜 계정으로 가입하신 경우 별도의 비밀번호가 없으니 해당 소셜 로그인으로 이용해주세요.',
+        },
+        {
+          id: 'account-delete',
+          q: '회원 탈퇴는 어떻게 하나요?',
+          a: '마이페이지 > 설정에서 탈퇴를 진행할 수 있어요. 탈퇴 시 작성하신 계획, 기록, 참견 등 대부분의 데이터는 삭제되며 복구할 수 없어요. 다만 접속 로그 등 일부 정보는 통신비밀보호법에 따라 3개월간 보관될 수 있어요.',
+        },
+      ],
+    },
+    {
+      id: 'planning',
+      category: '여행 계획',
+      items: [
+        {
+          id: 'planning-create',
+          q: '여행 계획은 어떻게 만드나요?',
+          a: '나의 계획 페이지에서 새 계획 만들기를 누르고 여행 제목과 기간(출발일·종료일)을 입력하면 Day별 일정이 자동으로 생성돼요. 이후 관심 있는 장소를 장바구니에 담아두고, 원하는 Day로 드래그 앤 드롭하면서 일정을 채워나갈 수 있어요.',
+        },
+        {
+          id: 'planning-edit-dates',
+          q: '여행 기간을 나중에 수정할 수 있나요?',
+          a: '네, 계획 상세 화면에서 기간을 수정할 수 있어요. 다만 기간을 변경하면 이미 짜둔 Day별 일정이 초기화될 수 있으니 참고해주세요.',
+        },
+        {
+          id: 'planning-from-cart',
+          q: '장바구니에 담아둔 장소만으로 바로 계획을 만들 수도 있나요?',
+          a: '네. 여행지 탐색에서 담아둔 장바구니를 기반으로 새 계획을 바로 만들면, Day별 일정에 담아둔 장소들이 함께 채워진 상태로 시작할 수 있어요.',
+        },
+        {
+          id: 'planning-visibility',
+          q: '만든 계획은 나만 볼 수 있나요?',
+          a: '계획 상세 화면 또는 마이페이지에서 "나만보기 / 전체보기" 버튼으로 공개 범위를 전환할 수 있어요. 나만보기로 설정하면 본인만 볼 수 있고, 전체보기로 전환하면 여행자 피드에 노출되어 다른 이용자들이 계획을 보고 참견(피드백)을 남길 수 있어요.',
+        },
+      ],
+    },
+    {
+      id: 'feed',
+      category: '여행자 피드 · 참견',
+      items: [
+        {
+          id: 'feed-what',
+          q: '여행자 피드는 무엇인가요?',
+          a: '다른 이용자들이 공유한 여행 계획과 여행 기록을 모아볼 수 있는 공간이에요. 전체/계획/기록으로 필터링해서 볼 수 있어요.',
+        },
+        {
+          id: 'feed-feedback',
+          q: '참견(피드백)이 뭔가요?',
+          a: '다른 이용자의 계획이나 기록에 남기는 댓글 및 반응이에요. 동선이 좋은지, 더 가볼만한 곳은 없는지 등 여행에 도움이 되는 의견을 주고받을 수 있어요.',
+        },
+        {
+          id: 'feed-received',
+          q: '내가 받은 참견은 어디서 확인하나요?',
+          a: '화면 상단 알림 아이콘(종 모양) 또는 내 계획 상세 화면에서 받은 참견을 확인할 수 있어요.',
+        },
+        {
+          id: 'feed-record-upload',
+          q: '여행 기록(사진 후기)은 어떻게 올리나요?',
+          a: '완료한 계획의 기록 업로드 메뉴에서 사진과 후기를 함께 등록할 수 있어요. 등록한 기록은 여행자 피드에서 다른 이용자들과 공유돼요.',
+        },
+      ],
+    },
+    {
+      id: 'travelbot',
+      category: '트레블봇',
+      items: [
+        {
+          id: 'travelbot-what',
+          q: '트레블봇이 뭔가요?',
+          a: '화면 우측 하단의 챗봇 아이콘을 누르면 나오는 여행 계획 상담 도우미예요. 궁금한 점을 메시지로 물어보면 여행 계획 짜는 걸 도와줘요.',
+        },
+      ],
+    },
+    {
+      id: 'saved',
+      category: '보관함 · 마이페이지',
+      items: [
+        {
+          id: 'saved-what',
+          q: '보관함은 무엇인가요?',
+          a: '마음에 드는 다른 이용자의 계획을 스크랩해서 모아두는 공간이에요. 나의 여행 > 보관함 메뉴에서 확인할 수 있어요.',
+        },
+        {
+          id: 'saved-count-mismatch',
+          q: '내 프로필에서 계획과 기록 개수가 다르게 보여요.',
+          a: '마이페이지에서는 내가 만든 계획 수와 작성한 기록 수를 각각 보여드려요. 계획을 세웠다고 해서 자동으로 기록이 생기는 건 아니고, 기록은 별도로 업로드해야 해요.',
+        },
+        {
+          id: 'saved-preferences',
+          q: '여행 선호도(관심사, 스타일 등)는 왜 입력하나요?',
+          a: '관심 태그, 여행 스타일, 예산 수준, 선호 지역 등을 입력하면 이를 바탕으로 더 취향에 맞는 여행지와 계획을 추천해드려요. 선택 항목이라 온보딩 과정에서 건너뛸 수 있고, 이후 마이페이지에서 언제든지 입력하거나 수정할 수 있어요.',
+        },
+      ],
+    },
+    {
+      id: 'destinations',
+      category: '여행지 정보',
+      items: [
+        {
+          id: 'destinations-info-mismatch',
+          q: '여행지 정보(주소, 운영시간 등)가 실제와 달라요.',
+          a: '여행지 탐색에 제공되는 정보는 공공 관광정보 데이터를 기반으로 하고 있어 실제 정보와 차이가 있을 수 있어요. 방문 전 반드시 공식 홈페이지 등에서 최신 정보를 다시 확인해주세요.',
+        },
+        {
+          id: 'destinations-festivals',
+          q: '원하는 지역의 축제·행사 정보도 볼 수 있나요?',
+          a: '네, 여행지 탐색에서 축제·행사 테마를 선택하면 기간별로 진행 중이거나 예정된 행사를 확인할 수 있어요.',
+        },
+      ],
+    },
+    {
+      id: 'other',
+      category: '기타 문의',
+      items: [
+        {
+          id: 'other-bug-report',
+          q: '버그를 발견했거나 건의하고 싶은 기능이 있어요.',
+          a: '고객지원 페이지의 이메일(traveltackleteam@gmail.com)로 언제든지 알려주세요. 소중한 의견 감사히 반영할게요.',
+        },
+        {
+          id: 'other-partnership',
+          q: '광고나 제휴 문의는 어디로 하나요?',
+          a: 'traveltackleteam@gmail.com으로 문의 내용을 보내주시면 담당자가 확인 후 순차적으로 답변드려요.',
+        },
+      ],
+    },
+  ],
+  en: [
+    {
+      id: 'account',
+      category: 'Account & Login',
+      items: [
+        {
+          id: 'account-signup',
+          q: 'How do I sign up?',
+          a: 'You can sign up with an email and password, or quickly sign up using your Kakao, Google, or Apple account. Signing up with a social account lets you log in right away without setting a separate password.',
+        },
+        {
+          id: 'account-forgot-password',
+          q: 'I forgot my password.',
+          a: 'You can request a reset link to your registered email using the "Forgot password" option on the login screen. If you signed up with a social account, there is no separate password — please continue using that social login instead.',
+        },
+        {
+          id: 'account-delete',
+          q: 'How do I delete my account?',
+          a: "You can delete your account from My Page > Settings. When you delete your account, most of your data — including plans, records, and feedback you've written — is deleted and cannot be recovered. However, certain information such as access logs may be retained for 3 months in accordance with the Protection of Communications Secrets Act.",
+        },
+      ],
+    },
+    {
+      id: 'planning',
+      category: 'Trip Planning',
+      items: [
+        {
+          id: 'planning-create',
+          q: 'How do I create a trip plan?',
+          a: 'Tap "Create new plan" on the My Trips page, then enter a trip title and dates (start and end date), and a day-by-day itinerary is generated automatically. From there, you can save places you\'re interested in to your cart and drag and drop them onto the day you want to build out your itinerary.',
+        },
+        {
+          id: 'planning-edit-dates',
+          q: 'Can I change the trip dates later?',
+          a: "Yes, you can edit the dates from the plan detail screen. Please note that changing the dates may reset the day-by-day itinerary you've already put together.",
+        },
+        {
+          id: 'planning-from-cart',
+          q: "Can I create a plan directly from the places I've saved to my cart?",
+          a: 'Yes. If you create a new plan based on the cart you\'ve built up in Explore, it starts out with those saved places already filled into the day-by-day itinerary.',
+        },
+        {
+          id: 'planning-visibility',
+          q: 'Can only I see the plans I make?',
+          a: 'You can switch the visibility using the "Private / Public" toggle on the plan detail screen or My Page. Setting a plan to private means only you can see it, while switching it to public exposes it on the Traveler Feed so other users can view it and leave feedback.',
+        },
+      ],
+    },
+    {
+      id: 'feed',
+      category: 'Traveler Feed & Feedback',
+      items: [
+        {
+          id: 'feed-what',
+          q: 'What is the Traveler Feed?',
+          a: "It's a space where you can browse trip plans and travel records shared by other users. You can filter by All, Plans, or Records.",
+        },
+        {
+          id: 'feed-feedback',
+          q: 'What is "feedback"?',
+          a: "It's the comments and reactions you can leave on other users' plans or records. You can exchange helpful opinions about things like whether the route makes sense or if there are other places worth visiting.",
+        },
+        {
+          id: 'feed-received',
+          q: "Where can I see the feedback I've received?",
+          a: "You can check the feedback you've received from the bell-shaped notification icon at the top of the screen, or from your plan's detail screen.",
+        },
+        {
+          id: 'feed-record-upload',
+          q: 'How do I upload a travel record (photo review)?',
+          a: 'From a completed plan\'s "Upload record" menu, you can register photos together with your review. Once uploaded, your record is shared with other users on the Traveler Feed.',
+        },
+      ],
+    },
+    {
+      id: 'travelbot',
+      category: 'TravelBot',
+      items: [
+        {
+          id: 'travelbot-what',
+          q: 'What is TravelBot?',
+          a: "It's a trip-planning assistant that appears when you tap the chatbot icon at the bottom right of the screen. Send it a message with your question, and it will help you plan your trip.",
+        },
+      ],
+    },
+    {
+      id: 'saved',
+      category: 'Saved & My Page',
+      items: [
+        {
+          id: 'saved-what',
+          q: 'What is Saved?',
+          a: "It's a space where you can bookmark other users' plans that you like and keep them in one place. You can find it under My Trips > Saved.",
+        },
+        {
+          id: 'saved-count-mismatch',
+          q: 'The number of plans and records on my profile looks different.',
+          a: "My Page shows the number of plans you've created and the number of records you've written separately. Creating a plan doesn't automatically create a record — records need to be uploaded separately.",
+        },
+        {
+          id: 'saved-preferences',
+          q: 'Why do I enter travel preferences (interests, style, etc.)?',
+          a: 'Entering things like interest tags, travel style, budget level, and preferred regions helps us recommend destinations and plans that better match your taste. This is optional, so you can skip it during onboarding and enter or edit it anytime later from My Page.',
+        },
+      ],
+    },
+    {
+      id: 'destinations',
+      category: 'Destination Information',
+      items: [
+        {
+          id: 'destinations-info-mismatch',
+          q: "The destination information (address, hours, etc.) doesn't match reality.",
+          a: 'The information provided in Explore is based on public tourism data, so it may differ from actual information. Please be sure to check the latest information on the official website or similar sources before visiting.',
+        },
+        {
+          id: 'destinations-festivals',
+          q: "Can I see festival and event information for a region I'm interested in?",
+          a: 'Yes, if you select the Festivals & Events theme in Explore, you can check ongoing or upcoming events by date.',
+        },
+      ],
+    },
+    {
+      id: 'other',
+      category: 'Other Inquiries',
+      items: [
+        {
+          id: 'other-bug-report',
+          q: 'I found a bug or have a feature suggestion.',
+          a: 'Please let us know anytime at the email address on the Support page (traveltackleteam@gmail.com). We appreciate your feedback and will do our best to reflect it.',
+        },
+        {
+          id: 'other-partnership',
+          q: 'Where can I send advertising or partnership inquiries?',
+          a: 'Please send your inquiry to traveltackleteam@gmail.com, and our team will review it and respond in order.',
+        },
+      ],
+    },
+  ],
+}
+
+const TERMS_TEXT = {
+  ko: `제1조 (목적)
 
 이 약관은 트레블 참견(이하 "운영팀")이 제공하는 여행 계획, 여행자 피드 등 일체의 서비스(이하 "서비스")의 이용조건 및 절차, 운영팀과 회원 간의 권리·의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.
 
@@ -243,9 +435,127 @@ const TERMS_TEXT = `제1조 (목적)
 본 약관은 2026년 9월 17일부터 시행합니다.
 
 최초 시행일자: 2026년 9월 17일
-최종 수정일자: 2026년 9월 17일`
+최종 수정일자: 2026년 9월 17일`,
+  en: `Article 1 (Purpose)
 
-const PRIVACY_TEXT = `트레블 참견(이하 "운영팀")은 이용자의 개인정보를 중요시하며, 「개인정보 보호법」 등 관련 법령의 취지를 준수하고자 노력합니다. 운영팀은 개인정보 처리방침을 통하여 이용자가 제공하는 개인정보가 어떠한 목적과 방식으로 이용되고 있으며, 개인정보 보호를 위해 어떠한 조치가 취해지고 있는지 알려드립니다.
+These Terms and Conditions ("Terms") set out the conditions and procedures for using the trip planning, traveler feed, and all other services (the "Service") provided by Travel Tackle (the "Operating Team"), the rights, obligations, and responsibilities between the Operating Team and members, and other necessary matters.
+
+Article 2 (Definitions)
+
+The definitions of the terms used in these Terms are as follows.
+1. "Service" means all services provided by the Operating Team, including destination exploration, trip plan creation, the traveler feed, feedback, the cart, and saved items.
+2. "Member" means a person who has agreed to these Terms and entered into a service agreement with the Operating Team, and has been assigned an ID.
+3. "Plan" means the day-by-day travel itinerary content that a member creates within the Service.
+4. "Record" means content such as reviews and photos that a member writes about a trip they have actually taken.
+5. "Feedback" means comments, reactions, and other input that a member leaves on another member's plan or record.
+6. "Cart" means the feature that lets a member temporarily save places of interest while exploring destinations.
+7. "Saved" means the feature that lets a member bookmark and collect their own or other members' plans.
+
+Article 3 (Effect and Amendment of the Terms)
+
+① These Terms take effect by being posted on the Service screen or otherwise notified to members.
+
+② The Operating Team may amend these Terms within the scope permitted by applicable law when necessary. When the Terms are amended, the Operating Team will specify the effective date and reason for the change and announce it through in-service notices starting 7 days before the effective date. However, changes unfavorable to members will be announced starting 30 days before the effective date.
+
+③ If a member does not agree to the amended Terms, the member may terminate the service agreement (delete their account). Continued use of the Service after the amendment is deemed acceptance of the amended Terms.
+
+Article 4 (Membership Registration)
+
+① Membership registration is applied for when a user completes the registration process via email verification or a social account such as Kakao, Google, or Apple, and agrees to the content of these Terms and the Privacy Policy; it is concluded when the Operating Team accepts the application.
+
+② The Operating Team may withhold acceptance of, or subsequently terminate the service agreement for, an application that falls under any of the following:
+1. The applicant has previously lost membership status under these Terms.
+2. The application does not use the applicant's real name or uses another person's name.
+3. The application contains false information, or omits information requested by the Operating Team.
+
+Article 5 (Withdrawal and Loss of Membership)
+
+① A member may request termination of the service agreement (withdrawal) at any time through the withdrawal menu in My Page, and the Operating Team will process this immediately in accordance with applicable law.
+
+② Upon a member's withdrawal, posts such as plans, records, and feedback written by the member, as well as their personal information, are processed in accordance with applicable law and the Privacy Policy, and are deleted without delay and cannot be recovered, unless there is a separate reason for retention.
+
+③ If a member falls under any of the following, the Operating Team may restrict or suspend the member's status or terminate the service agreement:
+1. The member has used another person's information without authorization.
+2. The member has used the Service to engage in conduct prohibited by law or these Terms.
+3. The member has repeatedly left feedback that causes ongoing discomfort to other members.
+
+Article 6 (Provision and Change of the Service)
+
+① The Operating Team provides the following services:
+1. Destination exploration service
+2. Trip plan creation and management service
+3. Plan/record sharing service through the traveler feed
+4. Feedback service
+5. Cart and saved items service
+6. Trip-planning consultation service via chatbot (TravelBot)
+7. Other services that the Operating Team additionally develops or provides to members through partnerships
+
+② The Operating Team may change all or part of the Service being provided for operational or technical reasons, and in such cases will announce the reason and details of the change in advance.
+
+③ Destination information within the Service is provided based on public tourism data and may differ from actual information (operating hours, closed days, address, etc.). Members should always verify such information separately before visiting.
+
+Article 7 (Suspension of the Service)
+
+The Operating Team may temporarily suspend provision of the Service in the event of maintenance, replacement, or failure of computer or other information and communication equipment, or a communication outage, and will provide advance notice in such cases. However, if there is an unavoidable reason that prevents advance notice, notice may be given afterward.
+
+Article 8 (Obligations of Members)
+
+① Members must not engage in any of the following:
+1. Registering false information when applying for or changing membership
+2. Using another person's information without authorization
+3. Altering information posted by the Operating Team without authorization
+4. Transmitting or posting information (such as computer programs) other than that designated by the Operating Team
+5. Infringing on the intellectual property rights, including copyrights, of the Operating Team or third parties
+6. Damaging the reputation of, or interfering with the business of, the Operating Team or other third parties
+7. Disclosing or posting obscene or violent messages, images, audio, or other information contrary to public order and morals on the Service
+8. Leaving feedback on another member's plan or record that is baseless slander or is insulting
+
+② Members must comply with applicable laws, the provisions of these Terms, usage guidelines, precautions announced in relation to the Service, and matters notified by the Operating Team, and must not engage in any other conduct that interferes with the Operating Team's business.
+
+Article 9 (Copyright and Management of Posts)
+
+① Copyright in posts such as plans, records, photos, and feedback that a member creates within the Service belongs to the member who authored the post.
+
+② When a member registers a post within the Service, the Operating Team is deemed to have been granted the right to use the post within the scope of operating the Service and for the purpose of submission to or demonstration at contests. However, the member may delete the post at any time, and upon deletion the Operating Team will stop using that post.
+
+③ If the Operating Team determines that a member's post falls under any of the following, it may delete, relocate, or refuse to register the post without prior notice:
+1. Content that slanders or damages the reputation of another member or a third party
+2. Content that disseminates or links to material that violates public order or good morals
+3. Content that infringes on another person's copyright or other rights
+
+Article 10 (Protection of Personal Information)
+
+The Operating Team endeavors to protect members' personal information in accordance with applicable law, and the protection and use of personal information is governed by applicable law and the Operating Team's Privacy Policy.
+
+Article 11 (Obligations of the Operating Team)
+
+① The Operating Team will not engage in conduct prohibited by applicable law and these Terms, or conduct contrary to public morals, and will do its best to provide the Service continuously and reliably.
+
+② The Operating Team endeavors to put in place basic security measures to protect personal information so that members can use the Service safely.
+
+Article 12 (Disclaimer)
+
+① The Operating Team is exempted from responsibility for providing the Service if it is unable to do so due to a natural disaster or equivalent force majeure.
+
+② The Operating Team does not guarantee the accuracy or timeliness of destination information (based on public data) provided within the Service, and is not liable for any damage a member incurs from relying on it.
+
+③ The Operating Team is not obligated to intervene in disputes arising between members, or between a member and a third party, in connection with the Service, and is not liable to compensate for any resulting damages.
+
+④ The Operating Team is not responsible for the reliability or accuracy of information, materials, or facts that a member posts in connection with the Service.
+
+Article 13 (Dispute Resolution)
+
+If a dispute arises between the Operating Team and a member in connection with these Terms, the Operating Team and the member shall discuss the matter in good faith to resolve it. If no agreement is reached, the matter shall be governed by applicable law and customary practice.
+
+Addendum
+These Terms take effect on September 17, 2026.
+
+Date first effective: September 17, 2026
+Date last amended: September 17, 2026`,
+}
+
+const PRIVACY_TEXT = {
+  ko: `트레블 참견(이하 "운영팀")은 이용자의 개인정보를 중요시하며, 「개인정보 보호법」 등 관련 법령의 취지를 준수하고자 노력합니다. 운영팀은 개인정보 처리방침을 통하여 이용자가 제공하는 개인정보가 어떠한 목적과 방식으로 이용되고 있으며, 개인정보 보호를 위해 어떠한 조치가 취해지고 있는지 알려드립니다.
 
 제1조 (수집하는 개인정보 항목 및 수집방법)
 
@@ -362,7 +672,126 @@ const PRIVACY_TEXT = `트레블 참견(이하 "운영팀")은 이용자의 개�
 본 방침은 2026년 9월 17일부터 시행합니다.
 
 최초 시행일자: 2026년 9월 17일
-최종 수정일자: 2026년 9월 17일`
+최종 수정일자: 2026년 9월 17일`,
+  en: `Travel Tackle (the "Operating Team") places great importance on users' personal information and strives to comply with the intent of applicable laws, including the Personal Information Protection Act. Through this Privacy Policy, the Operating Team informs users of the purposes and methods for which the personal information they provide is used, and what measures are in place to protect that personal information.
+
+Article 1 (Items and Methods of Personal Information Collected)
+
+① The Operating Team collects the following personal information during membership registration and use of the Service.
+
+1. When registering by email
+- Required: email address (including verification), password (stored encrypted), name (nickname), nationality
+- Optional: consent to receive notifications (overall consent and detailed items for feedback, travel recommendations, and events)
+
+2. When using social login (Kakao, Google, Apple)
+- Identifier (unique ID), email, name (nickname), and other items provided with consent from each social login provider
+
+3. Information generated and collected during use of the Service
+- Travel preference information: interest tags, travel style, budget level, preferred regions
+- Preferred language setting
+- Trip plan information: trip title, dates, places visited by day, notes
+- Travel records and posts: uploaded photos, review text
+- Feedback content: comments and emoji reactions left on other users' plans
+- Destination information saved to the cart and saved items
+- Conversation content when using the chatbot (TravelBot) consultation feature
+- Service usage records: access logs, access IP, cookies, device information, service usage time
+
+② Personal information is collected through the following methods.
+- Input during website membership registration and information updates
+- Receipt of information from the provider when linking a social login
+- Information automatically generated and collected during use of the Service
+
+Article 2 (Purposes of Collection and Use of Personal Information)
+
+The Operating Team uses collected personal information for the following purposes.
+
+1. Member management
+- Identity verification, personal identification, prevention of fraudulent use, and confirmation of intent to register in connection with the use of membership-based services
+- Linking and managing social login accounts
+
+2. Service provision
+- Providing core features such as creating, editing, and viewing trip plans
+- Providing plan/record sharing and feedback features through the traveler feed
+- Providing customized destination and plan recommendations based on travel preferences and nationality information
+- Providing the Service in the user's preferred language based on their language setting
+- Providing cart and saved items features
+- Supporting trip-planning consultation through the chatbot (TravelBot)
+- Sending notifications (new feedback, reactions to plans, etc.)
+
+3. Service improvement and statistical analysis
+- Calculating statistics such as popular regions and popular plans, and improving content recommendations
+- Checking usage statistics by nationality and planning services for users from other countries
+- Planning new features based on analysis of service usage statistics
+
+Article 3 (Retention and Use Period of Personal Information)
+
+① The Operating Team processes and retains personal information within the retention and use period required by applicable law, or the retention and use period consented to by the data subject when the personal information was collected.
+
+② Upon a member's withdrawal, the Operating Team destroys the collected personal information without delay. However, the following information is exceptionally retained for the specified period, for the stated reason:
+- Information subject to an ongoing investigation for a violation of applicable law: until the investigation concludes
+- Personal information related to service use under the Protection of Communications Secrets Act (access logs, access IP, etc.): 3 months
+
+Article 4 (Provision of Personal Information to Third Parties)
+
+The Operating Team processes users' personal information only within the scope specified in Article 1, and does not process it beyond that scope or provide it to third parties without the user's prior consent, except in the following cases:
+- Where the user has given prior consent to provision to a third party
+- Where required by applicable law, or requested by an investigative agency in accordance with the procedures and methods prescribed by law for investigative purposes
+
+Article 5 (Use of External Services)
+
+① The Operating Team uses the following external services to operate the Service.
+- Cloud infrastructure: server hosting and data storage
+- Email/notification delivery: sending notification messages to members
+- Social login authentication: Kakao, Google, Apple
+
+② In using the above external services, the Operating Team manages personal information so that it is not used for purposes other than its original purpose, and strives to comply with the personal information protection standards set by applicable law.
+
+Article 6 (Rights and Obligations of Data Subjects and How to Exercise Them)
+
+① Users may exercise the following personal-information-related rights against the Operating Team at any time.
+1. Request to view personal information
+2. Request for correction if there is an error
+3. Request for deletion
+4. Request to suspend processing
+
+② The rights under paragraph 1 may be exercised through the settings screen in My Page or by email (traveltackleteam@gmail.com), and the Operating Team will take action without delay.
+
+③ Users may directly edit personal information such as their nickname and travel preferences in My Page, and may request deletion of their personal information by withdrawing their membership.
+
+Article 7 (Destruction of Personal Information)
+
+① The Operating Team destroys personal information without delay once it becomes unnecessary, such as when the retention period has elapsed or the processing purpose has been achieved.
+
+② The procedure and method of destruction are as follows.
+- Information in electronic file form is deleted using a technical method that prevents the records from being reproduced.
+- Personal information printed on paper is destroyed by shredding or incineration.
+
+Article 8 (Measures to Ensure the Security of Personal Information)
+
+The Operating Team applies the following basic measures to protect personal information.
+- Encrypted storage of passwords and encryption of the transmission channel (HTTPS)
+- Limiting access to personal information to the minimum number of personnel necessary
+- Retaining access records for personal information processing systems
+
+Article 9 (Personal Information Protection Officer)
+
+The Operating Team designates a Personal Information Protection Officer as follows, who takes overall responsibility for personal information processing and handles users' complaints and requests for remedies related to personal information processing.
+
+- Personal Information Protection Officer: Travel Tackle Team
+- Email: traveltackleteam@gmail.com
+
+Users may direct any inquiries, complaints, or requests for remedies related to personal information protection arising from their use of the Service to the Personal Information Protection Officer.
+
+Article 10 (Changes to the Privacy Policy)
+
+If there are additions, deletions, or amendments to this Privacy Policy due to changes in laws, policy, or security technology, they will be announced through in-service notices starting at least 7 days before the amendment.
+
+Addendum
+This Policy takes effect on September 17, 2026.
+
+Date first effective: September 17, 2026
+Date last amended: September 17, 2026`,
+}
 
 // 질문을 누르면 그 항목만 펼쳐지는 아코디언 — 여러 개를 동시에 열어둘 수 있다.
 function FaqAccordionItem({ q, a, open, onToggle }) {
@@ -382,18 +811,25 @@ function FaqAccordionItem({ q, a, open, onToggle }) {
 }
 
 export default function SupportPage() {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
+  const tabs = getTabs(language)
+  const faqSections = FAQ_SECTIONS[language] ?? FAQ_SECTIONS.en
+  const termsText = TERMS_TEXT[language] ?? TERMS_TEXT.en
+  const privacyText = PRIVACY_TEXT[language] ?? PRIVACY_TEXT.en
+
   const [searchParams, setSearchParams] = useSearchParams()
   const [openQuestions, setOpenQuestions] = useState(() => new Set())
   const tab = useMemo(() => {
     const requested = searchParams.get('tab')
-    return TABS.some((t) => t.value === requested) ? requested : 'faq'
+    return TAB_VALUES.includes(requested) ? requested : 'faq'
   }, [searchParams])
 
-  function toggleQuestion(q) {
+  function toggleQuestion(id) {
     setOpenQuestions((prev) => {
       const next = new Set(prev)
-      if (next.has(q)) next.delete(q)
-      else next.add(q)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
       return next
     })
   }
@@ -403,7 +839,7 @@ export default function SupportPage() {
       <Navbar />
 
       <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-1 flex-col gap-8 py-12">
-        <h1 className="text-[22px] font-extrabold text-slate-900">고객지원</h1>
+        <h1 className="text-[22px] font-extrabold text-slate-900">{copy.pageTitle}</h1>
 
         {/* MyPageAccountSettings의 슬라이딩 필 토글과 동일한 패턴, 3탭용으로 폭만 조정 */}
         <div className="relative flex w-full items-center gap-1 rounded-xl bg-slate-100 p-1">
@@ -412,10 +848,10 @@ export default function SupportPage() {
             className="absolute top-1 h-8 rounded-lg bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.15)] transition-transform duration-200 ease-out"
             style={{
               width: 'calc((100% - 0.5rem) / 3)',
-              transform: `translateX(calc(${TABS.findIndex((t) => t.value === tab)} * (100% + 0.25rem)))`,
+              transform: `translateX(calc(${tabs.findIndex((t) => t.value === tab)} * (100% + 0.25rem)))`,
             }}
           />
-          {TABS.map((t) => (
+          {tabs.map((t) => (
             <button
               key={t.value}
               type="button"
@@ -432,17 +868,17 @@ export default function SupportPage() {
 
         {tab === 'faq' && (
           <div className="flex flex-col gap-8">
-            {FAQ_SECTIONS.map((section) => (
-              <div key={section.category}>
+            {faqSections.map((section) => (
+              <div key={section.id}>
                 <h2 className="text-[13px] font-bold text-brand-dark">{section.category}</h2>
                 <div className="mt-3 flex flex-col gap-3">
                   {section.items.map((item) => (
                     <FaqAccordionItem
-                      key={item.q}
+                      key={item.id}
                       q={item.q}
                       a={item.a}
-                      open={openQuestions.has(item.q)}
-                      onToggle={() => toggleQuestion(item.q)}
+                      open={openQuestions.has(item.id)}
+                      onToggle={() => toggleQuestion(item.id)}
                     />
                   ))}
                 </div>
@@ -452,11 +888,11 @@ export default function SupportPage() {
         )}
 
         {tab === 'terms' && (
-          <Card className="whitespace-pre-line p-6 text-[12.5px] leading-relaxed text-slate-600">{TERMS_TEXT}</Card>
+          <Card className="whitespace-pre-line p-6 text-[12.5px] leading-relaxed text-slate-600">{termsText}</Card>
         )}
 
         {tab === 'privacy' && (
-          <Card className="whitespace-pre-line p-6 text-[12.5px] leading-relaxed text-slate-600">{PRIVACY_TEXT}</Card>
+          <Card className="whitespace-pre-line p-6 text-[12.5px] leading-relaxed text-slate-600">{privacyText}</Card>
         )}
       </Section>
 

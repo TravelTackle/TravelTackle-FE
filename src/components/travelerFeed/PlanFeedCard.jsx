@@ -2,6 +2,22 @@ import { useEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
 import Card from '../ui/Card'
 import { FeedUserHeader, FeedActionBar } from './FeedCardChrome'
+import { useLanguage } from '../../i18n'
+
+const T = {
+  ko: {
+    prevDay: '이전 Day',
+    nextDay: '다음 Day',
+    day: (n) => `Day ${n}`,
+    placeCount: (n) => `${n}개의 장소`,
+  },
+  en: {
+    prevDay: 'Previous day',
+    nextDay: 'Next day',
+    day: (n) => `Day ${n}`,
+    placeCount: (n) => `${n} spots`,
+  },
+}
 
 // extra: 카드 하단에 덧붙일 요소 — 보관함에서 "나의 계획으로 복사하기" 버튼을 붙이는 데 쓴다.
 export default function PlanFeedCard({ item, onOpen, extra }) {
@@ -26,6 +42,8 @@ export default function PlanFeedCard({ item, onOpen, extra }) {
 // 계획 카드 본문 — 작성자 · Day 넘기기 · 장소 스트립 · 제목. 기록 카드 뒷면에서도 그대로 쓴다.
 // headerRight: 작성자 헤더 오른쪽에 타입 칩 대신 넣을 요소(뒷면에서는 "기록으로" 버튼)
 export function PlanCardBody({ item, headerRight }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [dayIndex, setDayIndex] = useState(0)
   const day = item.days[dayIndex]
   const hasPrev = dayIndex > 0
@@ -93,21 +111,21 @@ export function PlanCardBody({ item, headerRight }) {
           type="button"
           disabled={!hasPrev}
           onClick={(e) => { e.stopPropagation(); setDayIndex((v) => v - 1) }}
-          aria-label="이전 Day"
+          aria-label={copy.prevDay}
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-light text-brand-dark transition-colors hover:bg-blue-100 disabled:opacity-30 disabled:hover:bg-brand-light"
         >
           <Icon icon="mdi:chevron-left" width={17} />
         </button>
 
         <span className="absolute left-1/2 -translate-x-1/2 rounded-full bg-brand-light px-3 py-1 text-[11px] font-bold text-brand-dark">
-          Day {day.day}
+          {copy.day(day.day)}
         </span>
 
         <button
           type="button"
           disabled={!hasNext}
           onClick={(e) => { e.stopPropagation(); setDayIndex((v) => v + 1) }}
-          aria-label="다음 Day"
+          aria-label={copy.nextDay}
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-light text-brand-dark transition-colors hover:bg-blue-100 disabled:opacity-30 disabled:hover:bg-brand-light"
         >
           <Icon icon="mdi:chevron-right" width={17} />
@@ -139,7 +157,7 @@ export function PlanCardBody({ item, headerRight }) {
       </div>
 
       <div className="mt-3 text-[14px] font-bold text-slate-900">{item.title}</div>
-      <div className="mt-1 text-[12px] text-slate-400">{item.duration} · {item.placeCount}개의 장소</div>
+      <div className="mt-1 text-[12px] text-slate-400">{item.duration} · {copy.placeCount(item.placeCount)}</div>
 
       <FeedActionBar item={item} />
     </>

@@ -1,8 +1,18 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../i18n'
 import * as authApi from '../api/auth'
 import * as preferencesApi from '../api/preferences'
+
+const T = {
+  ko: {
+    signingIn: '로그인 처리 중이에요...',
+  },
+  en: {
+    signingIn: 'Signing you in...',
+  },
+}
 
 /**
  * 소셜 로그인(카카오/구글) 성공 후 백엔드가 이 경로로 리다이렉트한다.
@@ -14,6 +24,8 @@ export default function OAuthCallback() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const { setUser } = useAuth()
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const ran = useRef(false)
 
   useEffect(() => {
@@ -48,7 +60,7 @@ export default function OAuthCallback() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-slate-50">
       <div className="w-8 h-8 rounded-full border-2 border-brand border-t-transparent animate-spin" />
-      <p className="text-[13px] text-slate-500">로그인 처리 중이에요...</p>
+      <p className="text-[13px] text-slate-500">{copy.signingIn}</p>
     </div>
   )
 }

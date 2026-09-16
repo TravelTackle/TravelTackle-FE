@@ -6,7 +6,93 @@ import Button from '../components/ui/Button'
 import FormField from '../components/ui/FormField'
 import { COUNTRIES } from '../data/countries'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../i18n'
 import * as authApi from '../api/auth'
+
+const T = {
+  ko: {
+    startTitle: '시작하기',
+    headline: '회원가입하고 여행을 계획해보세요',
+    stepEmail: '1/2 · 이메일 인증',
+    stepInfo: '2/2 · 회원 정보 입력',
+    emailLabel: '이메일',
+    resendIn: (s) => `재전송 (${s}초)`,
+    resendCode: '인증 재전송',
+    sending: '전송 중...',
+    getCode: '인증 받기',
+    codeLabel: '인증번호',
+    expired: '만료됨',
+    remaining: (mmss) => `${mmss} 남음`,
+    verifying: '확인 중...',
+    verify: '인증 하기',
+    codeExpiredNotice: '인증번호가 만료됐어요. 코드를 재전송해주세요.',
+    changeEmail: '이메일 변경',
+    nameLabel: '이름',
+    namePlaceholder: '이름을 입력해주세요',
+    passwordLabel: '비밀번호',
+    passwordPlaceholder: '8~72자로 입력해주세요',
+    confirmPasswordLabel: '비밀번호 확인',
+    confirmPasswordPlaceholder: '비밀번호를 다시 입력해주세요',
+    passwordMismatch: '비밀번호가 일치하지 않아요.',
+    nationalityLabel: '국적',
+    notifyDetailsAria: '알림 세부 항목 보기',
+    notifyEmailLabel: '이메일 알림 수신 동의',
+    optional: '(선택)',
+    notifyFeedback: '피드백 알림',
+    notifyRecommend: '여행 추천',
+    notifyEvent: '이벤트',
+    submitting: '가입 중...',
+    signup: '가입하기',
+    haveAccount: '계정이 있으신가요?',
+    login: '로그인',
+    errorTooManyRequests: '요청이 너무 많아요. 잠시 후 다시 시도해주세요.',
+    errorEmailTaken: '이미 가입된 이메일이에요.',
+    errorSendFailed: '인증번호 전송에 실패했어요.',
+    errorCodeInvalid: '인증번호가 올바르지 않거나 만료됐어요.',
+    errorSignupFailed: '회원가입에 실패했어요. 잠시 후 다시 시도해주세요.',
+  },
+  en: {
+    startTitle: 'Get started',
+    headline: 'Sign up and start planning your trip',
+    stepEmail: 'Step 1/2 · Email verification',
+    stepInfo: 'Step 2/2 · Account details',
+    emailLabel: 'Email',
+    resendIn: (s) => `Resend (${s}s)`,
+    resendCode: 'Resend code',
+    sending: 'Sending...',
+    getCode: 'Get code',
+    codeLabel: 'Verification code',
+    expired: 'Expired',
+    remaining: (mmss) => `${mmss} left`,
+    verifying: 'Verifying...',
+    verify: 'Verify',
+    codeExpiredNotice: 'The verification code has expired. Please resend it.',
+    changeEmail: 'Change email',
+    nameLabel: 'Name',
+    namePlaceholder: 'Enter your name',
+    passwordLabel: 'Password',
+    passwordPlaceholder: 'Enter 8–72 characters',
+    confirmPasswordLabel: 'Confirm password',
+    confirmPasswordPlaceholder: 'Re-enter your password',
+    passwordMismatch: 'Passwords do not match.',
+    nationalityLabel: 'Nationality',
+    notifyDetailsAria: 'Show notification details',
+    notifyEmailLabel: 'Agree to receive email notifications',
+    optional: '(optional)',
+    notifyFeedback: 'Feedback alerts',
+    notifyRecommend: 'Trip recommendations',
+    notifyEvent: 'Events',
+    submitting: 'Signing up...',
+    signup: 'Sign up',
+    haveAccount: 'Already have an account?',
+    login: 'Log in',
+    errorTooManyRequests: 'Too many requests. Please try again shortly.',
+    errorEmailTaken: 'This email is already registered.',
+    errorSendFailed: 'Failed to send the verification code.',
+    errorCodeInvalid: 'The verification code is invalid or expired.',
+    errorSignupFailed: 'Sign-up failed. Please try again shortly.',
+  },
+}
 
 const RESEND_COOLDOWN = 60
 const CODE_EXPIRE_SECONDS = 600 // 백엔드 email-verification-expiration-minutes(10분)와 일치
@@ -38,6 +124,8 @@ function NotifToggle({ label, hint, checked, onChange }) {
 export default function SignupPage() {
   const navigate = useNavigate()
   const { login } = useAuth()
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
 
   const [step, setStep] = useState('email')
 
@@ -114,11 +202,11 @@ export default function SignupPage() {
       setExpiresIn(CODE_EXPIRE_SECONDS)
     } catch (err) {
       if (err.response?.status === 429) {
-        setEmailError('요청이 너무 많아요. 잠시 후 다시 시도해주세요.')
+        setEmailError(copy.errorTooManyRequests)
       } else if (err.response?.status === 409) {
-        setEmailError('이미 가입된 이메일이에요.')
+        setEmailError(copy.errorEmailTaken)
       } else {
-        setEmailError('인증번호 전송에 실패했어요.')
+        setEmailError(copy.errorSendFailed)
       }
     } finally {
       setSendingCode(false)
@@ -127,7 +215,7 @@ export default function SignupPage() {
 
   const handleVerifyCode = async () => {
     if (expiresIn <= 0) {
-      setCodeError('인증번호가 만료됐어요. 코드를 재전송해주세요.')
+      setCodeError(copy.codeExpiredNotice)
       return
     }
     setCodeError('')
@@ -138,7 +226,7 @@ export default function SignupPage() {
       setExpiresIn(0)
       setStep('info')
     } catch {
-      setCodeError('인증번호가 올바르지 않거나 만료됐어요.')
+      setCodeError(copy.errorCodeInvalid)
     } finally {
       setVerifyingCode(false)
     }
@@ -175,9 +263,9 @@ export default function SignupPage() {
       navigate('/onboarding/welcome')
     } catch (err) {
       if (err.response?.status === 409) {
-        setFormError('이미 가입된 이메일이에요.')
+        setFormError(copy.errorEmailTaken)
       } else {
-        setFormError('회원가입에 실패했어요. 잠시 후 다시 시도해주세요.')
+        setFormError(copy.errorSignupFailed)
       }
     } finally {
       setSubmitting(false)
@@ -186,15 +274,15 @@ export default function SignupPage() {
 
   return (
     <AuthLayout>
-      <h1 className="text-[13px] font-semibold text-brand-dark mb-1">시작하기</h1>
-      <p className="text-[22px] font-extrabold text-slate-800 mb-1">회원가입하고 여행을 계획해보세요</p>
-      <p className="text-[13px] text-slate-400 mb-7">{step === 'email' ? '1/2 · 이메일 인증' : '2/2 · 회원 정보 입력'}</p>
+      <h1 className="text-[13px] font-semibold text-brand-dark mb-1">{copy.startTitle}</h1>
+      <p className="text-[22px] font-extrabold text-slate-800 mb-1">{copy.headline}</p>
+      <p className="text-[13px] text-slate-400 mb-7">{step === 'email' ? copy.stepEmail : copy.stepInfo}</p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {step === 'email' && (
           <>
             <div>
-              <span className="block text-[13px] font-semibold text-slate-600 mb-1.5">이메일</span>
+              <span className="block text-[13px] font-semibold text-slate-600 mb-1.5">{copy.emailLabel}</span>
               <div className="flex gap-2">
                 <input
                   type="email"
@@ -214,12 +302,12 @@ export default function SignupPage() {
                   className="shrink-0 h-12 px-5 rounded-xl font-bold text-[13.5px] whitespace-nowrap disabled:opacity-40 disabled:pointer-events-none"
                 >
                   {cooldown > 0
-                    ? `재전송 (${cooldown}초)`
+                    ? copy.resendIn(cooldown)
                     : codeSent
-                      ? '인증 재전송'
+                      ? copy.resendCode
                       : sendingCode
-                        ? '전송 중...'
-                        : '인증 받기'}
+                        ? copy.sending
+                        : copy.getCode}
                 </Button>
               </div>
               {emailError && <p className="mt-1.5 text-[12px] text-rose-500">{emailError}</p>}
@@ -228,10 +316,10 @@ export default function SignupPage() {
             {codeSent && (
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[13px] font-semibold text-slate-600">인증번호</span>
+                  <span className="text-[13px] font-semibold text-slate-600">{copy.codeLabel}</span>
                   {!codeVerified && (
                     <span className={`text-[12px] font-semibold ${expired ? 'text-rose-500' : 'text-brand-dark'}`}>
-                      {expired ? '만료됨' : `${mmss} 남음`}
+                      {expired ? copy.expired : copy.remaining(mmss)}
                     </span>
                   )}
                 </div>
@@ -252,11 +340,11 @@ export default function SignupPage() {
                     disabled={code.length !== 6 || verifyingCode || expired}
                     className="shrink-0 h-12 px-5 rounded-xl font-bold text-[13.5px] whitespace-nowrap disabled:opacity-40 disabled:pointer-events-none"
                   >
-                    {verifyingCode ? '확인 중...' : '인증 하기'}
+                    {verifyingCode ? copy.verifying : copy.verify}
                   </Button>
                 </div>
                 {expired && !codeError && (
-                  <p className="mt-1.5 text-[12px] text-rose-500">인증번호가 만료됐어요. 코드를 재전송해주세요.</p>
+                  <p className="mt-1.5 text-[12px] text-rose-500">{copy.codeExpiredNotice}</p>
                 )}
                 {codeError && <p className="mt-1.5 text-[12px] text-rose-500">{codeError}</p>}
               </div>
@@ -274,13 +362,13 @@ export default function SignupPage() {
                 onClick={handleChangeEmail}
                 className="ml-auto shrink-0 text-slate-400 hover:text-slate-600 font-medium transition-all"
               >
-                이메일 변경
+                {copy.changeEmail}
               </button>
             </div>
 
             <FormField
-              label="이름"
-              placeholder="이름을 입력해주세요"
+              label={copy.nameLabel}
+              placeholder={copy.namePlaceholder}
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -288,9 +376,9 @@ export default function SignupPage() {
             />
 
             <FormField
-              label="비밀번호"
+              label={copy.passwordLabel}
               type="password"
-              placeholder="8~72자로 입력해주세요"
+              placeholder={copy.passwordPlaceholder}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               minLength={8}
@@ -300,18 +388,18 @@ export default function SignupPage() {
             />
 
             <FormField
-              label="비밀번호 확인"
+              label={copy.confirmPasswordLabel}
               type="password"
-              placeholder="비밀번호를 다시 입력해주세요"
+              placeholder={copy.confirmPasswordPlaceholder}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              error={passwordMismatch ? '비밀번호가 일치하지 않아요.' : ''}
+              error={passwordMismatch ? copy.passwordMismatch : ''}
               autoComplete="new-password"
               required
             />
 
             <label className="block">
-              <span className="block text-[13px] font-semibold text-slate-600 mb-1.5">국적</span>
+              <span className="block text-[13px] font-semibold text-slate-600 mb-1.5">{copy.nationalityLabel}</span>
               <select
                 value={nationality}
                 onChange={(e) => setNationality(e.target.value)}
@@ -332,19 +420,19 @@ export default function SignupPage() {
                   type="button"
                   onClick={() => setNotifyDetailsOpen((v) => !v)}
                   aria-expanded={notifyDetailsOpen}
-                  aria-label="알림 세부 항목 보기"
+                  aria-label={copy.notifyDetailsAria}
                   className="flex h-4 w-4 shrink-0 items-center justify-center text-slate-400 hover:text-slate-600"
                 >
                   <Icon icon="solar:alt-arrow-down-linear" width={11} className={`transition-transform ${notifyDetailsOpen ? 'rotate-180' : ''}`} />
                 </button>
-                <NotifToggle label="이메일 알림 수신 동의" hint="(선택)" checked={notifyEmail} onChange={toggleNotifyEmail} />
+                <NotifToggle label={copy.notifyEmailLabel} hint={copy.optional} checked={notifyEmail} onChange={toggleNotifyEmail} />
               </div>
               <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${notifyDetailsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                 <div className="overflow-hidden">
                   <div className="ml-5 mt-2.5 flex flex-col gap-2 border-l-2 border-slate-100 pl-3">
-                    <NotifToggle label="피드백 알림" checked={notifyFeedback} onChange={setNotifyFeedback} />
-                    <NotifToggle label="여행 추천" checked={notifyRecommend} onChange={setNotifyRecommend} />
-                    <NotifToggle label="이벤트" checked={notifyEvent} onChange={setNotifyEvent} />
+                    <NotifToggle label={copy.notifyFeedback} checked={notifyFeedback} onChange={setNotifyFeedback} />
+                    <NotifToggle label={copy.notifyRecommend} checked={notifyRecommend} onChange={setNotifyRecommend} />
+                    <NotifToggle label={copy.notifyEvent} checked={notifyEvent} onChange={setNotifyEvent} />
                   </div>
                 </div>
               </div>
@@ -357,16 +445,16 @@ export default function SignupPage() {
               disabled={!canSubmit || submitting}
               className="h-12 rounded-xl font-bold text-[15px] disabled:opacity-50 mt-1"
             >
-              {submitting ? '가입 중...' : '가입하기'}
+              {submitting ? copy.submitting : copy.signup}
             </Button>
           </>
         )}
       </form>
 
       <p className="text-center text-[13px] text-slate-500 mt-7">
-        계정이 있으신가요?{' '}
+        {copy.haveAccount}{' '}
         <Link to="/login" className="font-bold text-brand-dark">
-          로그인
+          {copy.login}
         </Link>
       </p>
     </AuthLayout>

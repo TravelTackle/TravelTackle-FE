@@ -15,14 +15,40 @@ import { CART_CHANGED_EVENT, addCartItem, getCartItems, removeCartItem } from '.
 import { PAGE_SIZE, toLDongRegnCd } from '../data/tourSpots'
 import { DEFAULT_PRESET, presetRange } from '../lib/festivalPeriod'
 import { shuffle } from '../lib/shuffle'
+import { useLanguage } from '../i18n'
 
 // 축제·행사 테마의 기간 상태 — 프리셋 키와 그로부터 계산된 start/end("YYYY-MM-DD", end는 null 가능)
 function initialPeriod() {
   return { preset: DEFAULT_PRESET, ...presetRange(DEFAULT_PRESET) }
 }
 
+const T = {
+  ko: {
+    loginRequired: '로그인이 필요해요',
+    removedFromCart: '장바구니에서 뺐어요',
+    removeFailed: '장바구니에서 빼지 못했어요',
+    addedToCart: '여행 장바구니에 담았어요',
+    alreadyInCart: '이미 장바구니에 있어요',
+    addFailed: '장바구니에 담지 못했어요',
+    noFestivalsInPeriod: '이 기간에 열리는 축제·행사가 없어요.',
+    viewAllUpcoming: '예정된 행사 전체 보기',
+  },
+  en: {
+    loginRequired: 'Please log in first',
+    removedFromCart: 'Removed from your cart',
+    removeFailed: 'Could not remove from cart',
+    addedToCart: 'Added to your trip cart',
+    alreadyInCart: 'Already in your cart',
+    addFailed: 'Could not add to cart',
+    noFestivalsInPeriod: 'No festivals or events in this period.',
+    viewAllUpcoming: 'View all upcoming events',
+  },
+}
+
 export default function TourExplorePage() {
   const { user } = useAuth()
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [theme, setTheme] = useState(null)
   const [region, setRegion] = useState(null)
   const [sigungu, setSigungu] = useState(null)
@@ -155,7 +181,7 @@ export default function TourExplorePage() {
   // 이미 담긴 콘텐츠를 다시 누르면 담기 대신 빼기 — 장바구니 패널의 삭제와 동일하게 동작한다.
   async function handleToggleCart(contentId) {
     if (!user) {
-      showToast('로그인이 필요해요')
+      showToast(copy.loginRequired)
       return false
     }
     const cartItemId = cartMap.get(contentId)
@@ -163,27 +189,27 @@ export default function TourExplorePage() {
       try {
         await removeCartItem(cartItemId)
         setCartMap((m) => { const next = new Map(m); next.delete(contentId); return next })
-        showToast('장바구니에서 뺐어요')
+        showToast(copy.removedFromCart)
         return true
       } catch {
-        showToast('장바구니에서 빼지 못했어요')
+        showToast(copy.removeFailed)
         return false
       }
     }
     try {
       const created = await addCartItem(contentId)
       setCartMap((m) => new Map(m).set(contentId, created.id))
-      showToast('여행 장바구니에 담았어요')
+      showToast(copy.addedToCart)
       return true
     } catch (err) {
       if (err.response?.status === 409) {
         // 이미 있는데 우리 맵엔 없던 경우(다른 탭 등에서 담김) — 목록을 다시 받아 동기화
         const items = await getCartItems().catch(() => [])
         setCartMap(new Map(items.map((i) => [i.contentId, i.id])))
-        showToast('이미 장바구니에 있어요')
+        showToast(copy.alreadyInCart)
         return true
       }
-      showToast('장바구니에 담지 못했어요')
+      showToast(copy.addFailed)
       return false
     }
   }
@@ -249,7 +275,7 @@ export default function TourExplorePage() {
             onToggleCart={handleToggleCart}
             cartMap={cartMap}
             variant={isFestival ? 'festival' : 'spot'}
-            emptyMessage={isFestival ? '이 기간에 열리는 축제·행사가 없어요.' : undefined}
+            emptyMessage={isFestival ? copy.noFestivalsInPeriod : undefined}
             emptyAction={
               isFestival && period.preset !== 'upcoming' ? (
                 <button
@@ -257,7 +283,7 @@ export default function TourExplorePage() {
                   onClick={() => handlePeriodChange({ preset: 'upcoming' })}
                   className="rounded-full bg-brand-light px-4 py-2 text-[12.5px] font-bold text-brand-dark transition-colors hover:bg-brand hover:text-white"
                 >
-                  예정된 행사 전체 보기
+                  {copy.viewAllUpcoming}
                 </button>
               ) : null
             }

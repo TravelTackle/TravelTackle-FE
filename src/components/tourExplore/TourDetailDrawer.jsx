@@ -3,10 +3,30 @@ import { Icon } from '@iconify/react'
 import Button from '../ui/Button'
 import CardImage from '../ui/CardImage'
 import { getTourContentDetail } from '../../api/tour'
+import { useLanguage } from '../../i18n'
 
 const stripTags = (html) => (html ? html.replace(/<[^>]*>/g, '') : '')
 
+const T = {
+  ko: {
+    closeDetail: '상세 패널 닫기',
+    goBack: '뒤로가기',
+    inCart: '담음 · 빼기',
+    addToCart: '카트에 담기',
+    phone: (tel) => `전화 ${tel}`,
+  },
+  en: {
+    closeDetail: 'Close detail panel',
+    goBack: 'Back',
+    inCart: 'In cart · Remove',
+    addToCart: 'Add to cart',
+    phone: (tel) => `Phone ${tel}`,
+  },
+}
+
 export default function TourDetailDrawer({ contentId, onClose, onToggleCart, carted }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(false)
   const [cartLoading, setCartLoading] = useState(false)
@@ -35,7 +55,7 @@ export default function TourDetailDrawer({ contentId, onClose, onToggleCart, car
   return (
     <>
       {/* 클릭 시 닫히는 투명 백드롭 — 배경은 어둡게 처리하지 않음 */}
-      {open && <button aria-label="상세 패널 닫기" onClick={onClose} className="fixed inset-0 z-[55] cursor-default" />}
+      {open && <button aria-label={copy.closeDetail} onClick={onClose} className="fixed inset-0 z-[55] cursor-default" />}
 
       <div
         className={`fixed top-16 bottom-0 right-0 z-[56] w-full max-w-[420px] overflow-y-auto bg-surface shadow-popup transition-transform duration-300 ${
@@ -47,7 +67,7 @@ export default function TourDetailDrawer({ contentId, onClose, onToggleCart, car
             <div className="flex items-center justify-between p-4">
               <button
                 onClick={onClose}
-                aria-label="뒤로가기"
+                aria-label={copy.goBack}
                 className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-50 transition-colors"
               >
                 <Icon icon="solar:alt-arrow-left-linear" width={18} />
@@ -59,7 +79,7 @@ export default function TourDetailDrawer({ contentId, onClose, onToggleCart, car
                 className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-bold disabled:opacity-60"
               >
                 <Icon icon={carted ? 'solar:check-circle-bold' : 'solar:cart-large-2-bold'} width={14} />
-                {carted ? '담음 · 빼기' : '카트에 담기'}
+                {carted ? copy.inCart : copy.addToCart}
               </Button>
             </div>
 
@@ -81,7 +101,7 @@ export default function TourDetailDrawer({ contentId, onClose, onToggleCart, car
                   {detail.overview && (
                     <p className="mt-4 text-[13px] leading-relaxed text-slate-600">{stripTags(detail.overview)}</p>
                   )}
-                  {detail.telephone && <p className="mt-3 text-[12px] text-slate-500">전화 {detail.telephone}</p>}
+                  {detail.telephone && <p className="mt-3 text-[12px] text-slate-500">{copy.phone(detail.telephone)}</p>}
 
                   {detail.images?.length > 0 && (
                     <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

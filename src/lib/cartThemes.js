@@ -16,6 +16,22 @@ export const CART_THEMES = [
 
 export const CART_TABS = [{ key: 'all', label: '전체' }, ...CART_THEMES]
 
+// CART_THEMES/CART_TABS의 label은 한국어 고정 — 표시할 때는 이 맵으로 언어별 라벨을 골라 쓴다
+const CART_THEME_LABEL_EN = {
+  all: 'All',
+  activity: 'Activities',
+  spot: 'Sights',
+  shopping: 'Shopping',
+  food: 'Food',
+  festival: 'Festivals',
+  stay: 'Stay',
+}
+
+export function cartThemeLabel(key, language = 'ko') {
+  if (language === 'ko') return CART_TABS.find((t) => t.key === key)?.label ?? key
+  return CART_THEME_LABEL_EN[key] ?? key
+}
+
 export function cartTheme(contentTypeId) {
   return CART_THEMES.find((t) => t.typeIds.includes(String(contentTypeId))) ?? CART_THEMES.find((t) => t.key === 'spot')
 }
@@ -35,6 +51,28 @@ export function tripItemColor(contentTypeId) {
   return contentTypeId ? cartTheme(contentTypeId).badgeBg : 'bg-brand'
 }
 
-export function areaName(code) {
-  return FALLBACK_AREAS.find((a) => a.code === String(code))?.name ?? ''
+const AREA_LABEL_EN = {
+  서울: 'Seoul',
+  인천: 'Incheon',
+  대전: 'Daejeon',
+  대구: 'Daegu',
+  광주: 'Gwangju',
+  부산: 'Busan',
+  울산: 'Ulsan',
+  세종특별자치시: 'Sejong',
+  경기도: 'Gyeonggi-do',
+  강원특별자치도: 'Gangwon-do',
+  충청북도: 'Chungcheongbuk-do',
+  충청남도: 'Chungcheongnam-do',
+  경상북도: 'Gyeongsangbuk-do',
+  경상남도: 'Gyeongsangnam-do',
+  전북특별자치도: 'Jeonbuk-do',
+  전라남도: 'Jeollanam-do',
+  제주특별자치도: 'Jeju-do',
+}
+
+export function areaName(code, language = 'ko') {
+  const name = FALLBACK_AREAS.find((a) => a.code === String(code))?.name ?? ''
+  if (!name) return ''
+  return language !== 'ko' ? (AREA_LABEL_EN[name] ?? name) : name
 }

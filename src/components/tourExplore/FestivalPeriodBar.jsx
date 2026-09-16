@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
 import Skeleton from '../ui/Skeleton'
-import { PERIOD_PRESETS, formatRange } from '../../lib/festivalPeriod'
+import { getPeriodPresets, formatRange } from '../../lib/festivalPeriod'
+import { useLanguage } from '../../i18n'
 
 const INPUT =
   'h-8 rounded-lg border border-slate-200 bg-surface px-2 text-[12px] text-slate-700 outline-none transition-colors hover:border-brand/40 focus:border-brand'
@@ -9,10 +10,38 @@ const INPUT =
 // 첫 진입에만 스켈레톤 → 드러나기 모션을 재생한다. 같은 세션에서 테마를 오갈 때 매번 반복되면 새로고침처럼 느껴진다.
 let revealedOnce = false
 const MIN_SKELETON_MS = 650
-const TITLE_WORDS = ['축제', '·', '행사']
+
+function getTitleWords(language) {
+  return language !== 'ko' ? ['Festivals', '&', 'Events'] : ['축제', '·', '행사']
+}
+
+const T = {
+  ko: {
+    preparing: '축제·행사 기간 필터를 준비하는 중',
+    presetsAria: '기간 프리셋',
+    customPick: '직접 선택',
+    customDialogAria: '기간 직접 선택',
+    start: '시작',
+    end: '종료',
+    countSuffix: (n) => `${n.toLocaleString()}개`,
+  },
+  en: {
+    preparing: 'Preparing the event period filter',
+    presetsAria: 'Period presets',
+    customPick: 'Custom range',
+    customDialogAria: 'Choose a custom period',
+    start: 'Start',
+    end: 'End',
+    countSuffix: (n) => `${n.toLocaleString()} results`,
+  },
+}
 
 // 축제·행사 테마에서 그리드 위에 붙는 한 줄 기간 바 — 제목·기간·결과 수 / 프리셋 세그먼트(미끄러지는 썸) / 날짜 직접 선택 팝오버
 export default function FestivalPeriodBar({ period, onChange, regionName, loading, totalCount }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
+  const TITLE_WORDS = getTitleWords(language)
+  const PERIOD_PRESETS = getPeriodPresets(language)
   const [revealed, setRevealed] = useState(revealedOnce)
   const [customOpen, setCustomOpen] = useState(false)
   const trackRef = useRef(null)
@@ -80,11 +109,11 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
   }
 
   const isCustom = period.preset === 'custom'
-  const rangeLabel = formatRange(period.start, period.end)
+  const rangeLabel = formatRange(period.start, period.end, language)
 
   if (!revealed) {
     return (
-      <div className="mb-5 flex h-[54px] items-center gap-4 rounded-2xl border border-slate-100 bg-surface px-4 shadow-card" role="status" aria-label="축제·행사 기간 필터를 준비하는 중">
+      <div className="mb-5 flex h-[54px] items-center gap-4 rounded-2xl border border-slate-100 bg-surface px-4 shadow-card" role="status" aria-label={copy.preparing}>
         <div className="flex min-w-0 items-center gap-2.5">
           <Skeleton className="h-4 w-20" />
           <Skeleton className="h-3 w-28" style={{ animationDelay: '80ms' }} />
@@ -106,7 +135,7 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
         <h2 className="flex shrink-0 gap-x-[0.22em] text-[15px] font-bold text-slate-900">
           {regionName && <span className="ai-word text-brand-dark" style={{ animationDelay: '0ms' }}>{regionName}</span>}
           {TITLE_WORDS.map((w, i) => (
-            <span key={w} className={`ai-word ${w === '·' ? 'text-slate-300' : ''}`} style={{ animationDelay: `${(regionName ? 1 : 0) * 70 + i * 70}ms` }}>
+            <span key={w} className={`ai-word ${w === '·' || w === '&' ? 'text-slate-300' : ''}`} style={{ animationDelay: `${(regionName ? 1 : 0) * 70 + i * 70}ms` }}>
               {w}
             </span>
           ))}
@@ -119,7 +148,7 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
             <Skeleton className="h-3.5 w-9 rounded-md" />
           ) : (
             <span key={totalCount} className="ai-pop inline-block font-bold tabular-nums text-brand-dark">
-              {totalCount.toLocaleString()}개
+              {copy.countSuffix(totalCount)}
             </span>
           )}
         </div>
@@ -133,7 +162,7 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
       <div
         ref={trackRef}
         role="tablist"
-        aria-label="기간 프리셋"
+        aria-label={copy.presetsAria}
         className="relative flex w-full items-center gap-0.5 overflow-x-auto rounded-full bg-slate-100 p-1 scrollbar-hide sm:w-auto sm:max-w-full"
       >
         <span
@@ -186,7 +215,7 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
           }`}
         >
           <Icon icon="solar:calendar-search-linear" width={14} />
-          {isCustom ? rangeLabel : '직접 선택'}
+          {isCustom ? rangeLabel : copy.customPick}
           <Icon icon="solar:alt-arrow-down-linear" width={11} className={`transition-transform ${customOpen ? 'rotate-180' : ''}`} />
         </button>
       </div>
@@ -197,16 +226,16 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
         <div
           ref={popRef}
           role="dialog"
-          aria-label="기간 직접 선택"
+          aria-label={copy.customDialogAria}
           className="nav-pop absolute left-3 right-3 top-[calc(100%+8px)] z-30 flex flex-col gap-2 rounded-2xl border border-slate-100 bg-surface p-3 text-[12px] text-slate-500 shadow-popup sm:left-auto sm:right-4 sm:flex-row sm:items-center"
         >
           <label className="flex items-center justify-between gap-3 sm:justify-start sm:gap-1.5">
-            <span className="shrink-0 font-semibold text-slate-400">시작</span>
+            <span className="shrink-0 font-semibold text-slate-400">{copy.start}</span>
             <input type="date" value={period.start} onChange={(e) => setDate('start', e.target.value)} className={`${INPUT} flex-1 sm:flex-none`} />
           </label>
           <span className="hidden text-slate-300 sm:inline">~</span>
           <label className="flex items-center justify-between gap-3 sm:justify-start sm:gap-1.5">
-            <span className="shrink-0 font-semibold text-slate-400">종료</span>
+            <span className="shrink-0 font-semibold text-slate-400">{copy.end}</span>
             <input type="date" value={period.end || ''} min={period.start} onChange={(e) => setDate('end', e.target.value)} className={`${INPUT} flex-1 sm:flex-none`} />
           </label>
         </div>

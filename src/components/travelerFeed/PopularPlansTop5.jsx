@@ -1,37 +1,62 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
 import Card from '../ui/Card'
 import Skeleton from '../ui/Skeleton'
 import { getFeed } from '../../api/feed'
 import { adaptFeedItem } from '../../data/feedAdapter'
+import { useLanguage } from '../../i18n'
 
 const TOP_N = 5
 
+const T = {
+  ko: {
+    title: (n) => `인기 계획 Top ${n}`,
+    loading: '인기 계획을 불러오는 중',
+    loadError: '인기 계획을 불러오지 못했어요.',
+    empty: '아직 공개된 계획이 없어요.',
+    feedbackAria: (n) => `참견 ${n}개`,
+    saveAria: (n) => `스크랩 ${n}개`,
+  },
+  en: {
+    title: (n) => `Top ${n} Popular Plans`,
+    loading: 'Loading popular plans',
+    loadError: "Couldn't load popular plans.",
+    empty: 'No public plans yet.',
+    feedbackAria: (n) => `${n} feedback`,
+    saveAria: (n) => `${n} saved`,
+  },
+}
+
 // 인기 계획 Top 5 — 서버 인기 정렬(GET /feed?sort=popular)에서 계획만 골라 스크랩 수와 함께 보여준다.
-// 같은 세션에서 다시 들어와도 한 번만 조회한다.
+// 같은 세션에서 다시 들어와도 한 번만 조회한다. raw 응답을 캐시해두고, adapt(언어별 문구 반영)는
+// 렌더링 시 현재 language로 매번 다시 한다 — 언어를 바꿔도 다시 조회하지 않고 표시만 바뀐다.
 let cache = null
 
 export default function PopularPlansTop5({ onOpen }) {
-  const [state, setState] = useState(() => ({ items: cache ?? [], loading: !cache, error: false }))
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
+  const [state, setState] = useState(() => ({ raw: cache ?? [], loading: !cache, error: false }))
 
   useEffect(() => {
     if (cache) return
     let ignore = false
     getFeed({ size: 20, sort: 'popular' })
       .then((page) => {
-        const plans = (page?.content ?? []).map(adaptFeedItem).filter((i) => i.type === 'plan').slice(0, TOP_N)
+        const plans = (page?.content ?? []).filter((i) => i.type === 'PLAN').slice(0, TOP_N)
         cache = plans
-        if (!ignore) setState({ items: plans, loading: false, error: false })
+        if (!ignore) setState({ raw: plans, loading: false, error: false })
       })
-      .catch(() => { if (!ignore) setState({ items: [], loading: false, error: true }) })
+      .catch(() => { if (!ignore) setState({ raw: [], loading: false, error: true }) })
     return () => { ignore = true }
   }, [])
 
+  const items = useMemo(() => state.raw.map((entry) => adaptFeedItem(entry, language)), [state.raw, language])
+
   return (
     <Card className="p-4">
-      <div className="mb-3 text-[13px] font-bold text-slate-900">인기 계획 Top {TOP_N}</div>
+      <div className="mb-3 text-[13px] font-bold text-slate-900">{copy.title(TOP_N)}</div>
       {state.loading ? (
-        <div className="flex flex-col gap-1" role="status" aria-label="인기 계획을 불러오는 중">
+        <div className="flex flex-col gap-1" role="status" aria-label={copy.loading}>
           {Array.from({ length: TOP_N }).map((_, i) => (
             <div key={i} className="flex items-center gap-2 px-2 py-1.5">
               <Skeleton className="h-3 w-3" style={{ animationDelay: `${i * 70}ms` }} />
@@ -45,12 +70,12 @@ export default function PopularPlansTop5({ onOpen }) {
           ))}
         </div>
       ) : state.error ? (
-        <p className="px-2 py-4 text-[12px] text-rose-500">인기 계획을 불러오지 못했어요.</p>
-      ) : state.items.length === 0 ? (
-        <p className="px-2 py-4 text-[12px] text-slate-400">아직 공개된 계획이 없어요.</p>
+        <p className="px-2 py-4 text-[12px] text-rose-500">{copy.loadError}</p>
+      ) : items.length === 0 ? (
+        <p className="px-2 py-4 text-[12px] text-slate-400">{copy.empty}</p>
       ) : (
         <ol className="flex flex-col gap-1">
-          {state.items.map((p, i) => {
+          {items.map((p, i) => {
             const thumb = p.days?.flatMap((d) => d.places ?? []).find((pl) => pl.imageUrl)?.imageUrl
             return (
               <li key={p.id} className="animate-slide-in" style={{ animationDelay: `${i * 60}ms` }}>
@@ -69,12 +94,12 @@ export default function PopularPlansTop5({ onOpen }) {
                   </div>
                   {/* 인기 점수 = 참견 수 + 스크랩 수 — 두 값을 나란히 보여준다 */}
                   <div className="flex shrink-0 items-center gap-2 text-[11px] font-semibold tabular-nums">
-                    <span className="flex items-center gap-0.5 text-rose-500" aria-label={`참견 ${p.feedbackCount ?? 0}개`}>
+                    <span className="flex items-center gap-0.5 text-rose-500" aria-label={copy.feedbackAria(p.feedbackCount ?? 0)}>
                       <Icon icon="mdi:comment" width={11} />
                       {p.feedbackCount ?? 0}
                     </span>
                     {typeof p.saveCount === 'number' && (
-                      <span className="flex items-center gap-0.5 text-amber-500" aria-label={`스크랩 ${p.saveCount}개`}>
+                      <span className="flex items-center gap-0.5 text-amber-500" aria-label={copy.saveAria(p.saveCount)}>
                         <Icon icon="solar:bookmark-bold" width={11} />
                         {p.saveCount}
                       </span>

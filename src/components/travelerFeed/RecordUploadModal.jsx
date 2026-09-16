@@ -9,18 +9,81 @@ import { getMyTrips } from '../../api/trip'
 import { createTripRecord, recordErrorMessage } from '../../api/record'
 import { formatDuration } from '../../lib/homeFormat'
 import { getCroppedImg } from './cropImage'
+import { useLanguage } from '../../i18n'
 
 const MAX_COMMENT = 500
 
-// RecordFeedCard.jsx에서 이미 쓰는 세로(4:5)/가로(4:3) 비율을 그대로 사용 — 새 비율을 만들지 않음
-const ORIENTATIONS = [
-  { value: 'portrait', label: '세로', ratio: '4:5', aspect: 4 / 5, icon: 'mdi:crop-portrait' },
-  { value: 'landscape', label: '가로', ratio: '4:3', aspect: 4 / 3, icon: 'mdi:crop-landscape' },
-]
+// RecordUploadModal 전체 문구 — ParticipateSection과 같은 언어별 맵 패턴
+const T = {
+  ko: {
+    portrait: '세로',
+    landscape: '가로',
+    close: '닫기',
+    cancel: '취소',
+    newRecord: '새 기록 만들기',
+    uploading: '올리는 중',
+    upload: '업로드',
+    loginNeeded: '기록은 로그인한 뒤 내 여행 계획에 남길 수 있어요.',
+    login: '로그인하기',
+    choosePlanPrompt: '기록을 남길 여행 계획을 선택하세요',
+    private: '비공개',
+    plansLoadFailed: '내 여행 계획을 불러오지 못했어요.',
+    noPlans: '아직 여행 계획이 없어요. 계획을 먼저 만들어야 기록을 남길 수 있어요.',
+    createPlanLink: '나의 여행에서 계획 만들기',
+    privatePlanNotice: '비공개 계획의 기록은 저장은 되지만, 계획을 공개해야 피드에 보여요.',
+    removePhoto: '사진 삭제',
+    dropHere: '여기에 놓으세요',
+    addPhotoPrompt: <>여기를 눌러<br />사진을 추가하세요</>,
+    titlePlaceholder: '제목을 입력해주세요',
+    commentPlaceholder: '여행 후기를 남겨주세요',
+    cropTitle: '사진 자르기',
+    done: '완료',
+    orientationLockedNote: '(이 기록은 방향이 고정돼요)',
+    discardTitle: '작성 중인 내용이 있어요',
+    discardDesc: '지금 나가면 작성 중인 내용이 사라져요. 정말 나가시겠어요?',
+    keepEditing: '계속 작성',
+    discard: '나가기',
+  },
+  en: {
+    portrait: 'Portrait',
+    landscape: 'Landscape',
+    close: 'Close',
+    cancel: 'Cancel',
+    newRecord: 'New record',
+    uploading: 'Uploading',
+    upload: 'Upload',
+    loginNeeded: 'Sign in to leave a record on your trip plans.',
+    login: 'Log in',
+    choosePlanPrompt: 'Choose a trip plan to record',
+    private: 'Private',
+    plansLoadFailed: 'Could not load your trip plans.',
+    noPlans: "You don't have any trip plans yet. Create a plan first to leave a record.",
+    createPlanLink: 'Create a plan in My Trips',
+    privatePlanNotice: "A record on a private plan is saved, but only shows in the feed once the plan is public.",
+    removePhoto: 'Remove photo',
+    dropHere: 'Drop it here',
+    addPhotoPrompt: <>Tap here to<br />add a photo</>,
+    titlePlaceholder: 'Enter a title',
+    commentPlaceholder: 'Share your trip story',
+    cropTitle: 'Crop photo',
+    done: 'Done',
+    orientationLockedNote: '(This record has a fixed orientation)',
+    discardTitle: 'You have unsaved changes',
+    discardDesc: "If you leave now, what you've written will be lost. Leave anyway?",
+    keepEditing: 'Keep editing',
+    discard: 'Leave',
+  },
+}
 
 // onUploaded(record, trip): 업로드 성공 시 호출 — 피드 페이지가 목록을 새로 고치고 토스트를 띄운다
 export default function RecordUploadModal({ open, onClose, onUploaded }) {
   const { user, loading: authLoading } = useAuth()
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
+  const ORIENTATIONS = [
+    { value: 'portrait', label: copy.portrait, ratio: '4:5', aspect: 4 / 5, icon: 'mdi:crop-portrait' },
+    { value: 'landscape', label: copy.landscape, ratio: '4:3', aspect: 4 / 3, icon: 'mdi:crop-landscape' },
+  ]
   const [step, setStep] = useState('form') // 'form' | 'crop' | 'confirmClose'
   const [sessionOrientation, setSessionOrientation] = useState(null) // 첫 사진 확정 후 잠기는 값
   const [cropOrientation, setCropOrientation] = useState('portrait') // 크롭 화면에서 현재 선택된 값
@@ -235,6 +298,7 @@ export default function RecordUploadModal({ open, onClose, onUploaded }) {
               imageUrl={pendingFileUrl}
               aspect={activeAspect}
               orientation={cropOrientation}
+              orientations={ORIENTATIONS}
               locked={orientationLocked}
               onChangeOrientation={handleChangeOrientation}
               onMediaLoaded={handleMediaLoaded}
@@ -245,34 +309,35 @@ export default function RecordUploadModal({ open, onClose, onUploaded }) {
               onCropComplete={(_, pixels) => setCroppedAreaPixels(pixels)}
               onCancel={handleCancelCrop}
               onConfirm={handleConfirmCrop}
+              copy={copy}
             />
           ) : (
             <>
               <div className="flex items-center justify-between border-b border-slate-100 p-4">
                 <button
                   onClick={handleCloseRequest}
-                  aria-label="닫기"
+                  aria-label={copy.close}
                   className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-50 transition-colors"
                 >
                   <Icon icon="mdi:chevron-left" width={20} />
                 </button>
-                <h2 className="text-[15px] font-bold text-slate-900">새 기록 만들기</h2>
+                <h2 className="text-[15px] font-bold text-slate-900">{copy.newRecord}</h2>
                 <Button
                   onClick={handleSubmit}
                   disabled={!canSubmit}
                   className="flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12.5px] font-bold disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {submitting && <Icon icon="mdi:loading" width={14} className="animate-spin" />}
-                  {submitting ? '올리는 중' : '업로드'}
+                  {submitting ? copy.uploading : copy.upload}
                 </Button>
               </div>
 
               {!authLoading && !user ? (
                 <div className="flex flex-col items-center gap-3 px-4 py-14 text-center">
                   <Icon icon="solar:user-circle-linear" width={30} className="text-slate-300" />
-                  <p className="text-[13px] text-slate-500">기록은 로그인한 뒤 내 여행 계획에 남길 수 있어요.</p>
+                  <p className="text-[13px] text-slate-500">{copy.loginNeeded}</p>
                   <Link to="/login" className="rounded-full bg-brand px-4 py-2 text-[12.5px] font-bold text-white transition-colors hover:bg-brand-dark">
-                    로그인하기
+                    {copy.login}
                   </Link>
                 </div>
               ) : (
@@ -296,23 +361,23 @@ export default function RecordUploadModal({ open, onClose, onUploaded }) {
                       <Skeleton className="h-3.5 w-40" />
                     ) : (
                       <span className={`truncate ${selectedPlan ? 'font-semibold text-slate-900' : ''}`}>
-                        {selectedPlan ? selectedPlan.title : '기록을 남길 여행 계획을 선택하세요'}
+                        {selectedPlan ? selectedPlan.title : copy.choosePlanPrompt}
                       </span>
                     )}
                     {selectedPlan && !selectedPlan.published && (
-                      <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-500">비공개</span>
+                      <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-500">{copy.private}</span>
                     )}
                     <Icon icon="mdi:chevron-down" width={16} className={`ml-auto shrink-0 transition-transform ${planListOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {planListOpen && !plans.loading && (
                     <ul className="absolute left-0 right-0 z-10 mt-1 max-h-56 overflow-y-auto rounded-2xl border border-slate-100 bg-surface py-1.5 shadow-popup">
                       {plans.error && (
-                        <li className="px-3.5 py-3 text-[12px] text-rose-500">내 여행 계획을 불러오지 못했어요.</li>
+                        <li className="px-3.5 py-3 text-[12px] text-rose-500">{copy.plansLoadFailed}</li>
                       )}
                       {!plans.error && plans.items.length === 0 && (
                         <li className="flex flex-col items-start gap-1.5 px-3.5 py-3 text-[12px] text-slate-500">
-                          아직 여행 계획이 없어요. 계획을 먼저 만들어야 기록을 남길 수 있어요.
-                          <Link to="/trips" className="font-bold text-brand-dark hover:underline">나의 여행에서 계획 만들기</Link>
+                          {copy.noPlans}
+                          <Link to="/trips" className="font-bold text-brand-dark hover:underline">{copy.createPlanLink}</Link>
                         </li>
                       )}
                       {plans.items.map((p) => (
@@ -325,8 +390,8 @@ export default function RecordUploadModal({ open, onClose, onUploaded }) {
                             }`}
                           >
                             <span className="min-w-0 flex-1 truncate">{p.title}</span>
-                            <span className="shrink-0 text-[11px] text-slate-400">{formatDuration(p.startDate, p.endDate)}</span>
-                            {!p.published && <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-500">비공개</span>}
+                            <span className="shrink-0 text-[11px] text-slate-400">{formatDuration(p.startDate, p.endDate, language)}</span>
+                            {!p.published && <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-500">{copy.private}</span>}
                           </button>
                         </li>
                       ))}
@@ -334,7 +399,7 @@ export default function RecordUploadModal({ open, onClose, onUploaded }) {
                   )}
                 </div>
                 {selectedPlan && !selectedPlan.published && (
-                  <p className="mt-2 px-1 text-[11.5px] text-slate-400">비공개 계획의 기록은 저장은 되지만, 계획을 공개해야 피드에 보여요.</p>
+                  <p className="mt-2 px-1 text-[11.5px] text-slate-400">{copy.privatePlanNotice}</p>
                 )}
 
                 <div className="mt-4 grid grid-cols-4 gap-2">
@@ -344,7 +409,7 @@ export default function RecordUploadModal({ open, onClose, onUploaded }) {
                       <button
                         type="button"
                         onClick={() => handleRemovePhoto(i)}
-                        aria-label="사진 삭제"
+                        aria-label={copy.removePhoto}
                         className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white transition-colors hover:bg-black"
                       >
                         <Icon icon="mdi:close" width={12} />
@@ -360,7 +425,7 @@ export default function RecordUploadModal({ open, onClose, onUploaded }) {
                   >
                     <Icon icon="mdi:image-plus-outline" width={20} />
                     <span className="text-center text-[10px] leading-tight">
-                      {dragActive ? '여기에 놓으세요' : <>여기를 눌러<br />사진을 추가하세요</>}
+                      {dragActive ? copy.dropHere : copy.addPhotoPrompt}
                     </span>
                   </button>
                   <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handleFiles} />
@@ -369,14 +434,14 @@ export default function RecordUploadModal({ open, onClose, onUploaded }) {
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="제목을 입력해주세요"
+                  placeholder={copy.titlePlaceholder}
                   className="mt-4 w-full border-b border-slate-200 py-2 text-[14px] font-semibold text-slate-900 placeholder:text-slate-300 focus:border-brand focus:outline-none"
                 />
 
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value.slice(0, MAX_COMMENT))}
-                  placeholder="여행 후기를 남겨주세요"
+                  placeholder={copy.commentPlaceholder}
                   rows={6}
                   className="mt-3 w-full resize-none text-[13px] text-slate-700 placeholder:text-slate-300 focus:outline-none"
                 />
@@ -389,7 +454,7 @@ export default function RecordUploadModal({ open, onClose, onUploaded }) {
       </div>
 
       {step === 'confirmClose' && (
-        <ConfirmDiscardDialog onKeepEditing={() => setStep('form')} onDiscard={handleConfirmDiscard} />
+        <ConfirmDiscardDialog onKeepEditing={() => setStep('form')} onDiscard={handleConfirmDiscard} copy={copy} />
       )}
     </>
   )
@@ -399,6 +464,7 @@ function CropStep({
   imageUrl,
   aspect,
   orientation,
+  orientations,
   locked,
   onChangeOrientation,
   onMediaLoaded,
@@ -409,26 +475,27 @@ function CropStep({
   onCropComplete,
   onCancel,
   onConfirm,
+  copy,
 }) {
   return (
     <div>
       <div className="flex items-center justify-between border-b border-slate-100 p-4">
         <button
           onClick={onCancel}
-          aria-label="취소"
+          aria-label={copy.cancel}
           className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-50 transition-colors"
         >
           <Icon icon="mdi:chevron-left" width={20} />
         </button>
-        <h2 className="text-[15px] font-bold text-slate-900">사진 자르기</h2>
+        <h2 className="text-[15px] font-bold text-slate-900">{copy.cropTitle}</h2>
         <Button onClick={onConfirm} className="rounded-full px-4 py-1.5 text-[12.5px] font-bold">
-          완료
+          {copy.done}
         </Button>
       </div>
 
       {/* 방향 선택 아이콘 — 잠기지 않았을 때만(이 기록의 첫 사진일 때만) 변경 가능 */}
       <div className="flex items-center justify-center gap-2 border-b border-slate-100 p-3">
-        {ORIENTATIONS.map((o) => {
+        {orientations.map((o) => {
           const active = orientation === o.value
           const disabled = locked && !active
           return (
@@ -447,7 +514,7 @@ function CropStep({
             </button>
           )
         })}
-        {locked && <span className="ml-1 text-[11px] text-slate-400">(이 기록은 방향이 고정돼요)</span>}
+        {locked && <span className="ml-1 text-[11px] text-slate-400">{copy.orientationLockedNote}</span>}
       </div>
 
       <div className="relative h-[360px] w-full bg-black">
@@ -480,13 +547,13 @@ function CropStep({
   )
 }
 
-function ConfirmDiscardDialog({ onKeepEditing, onDiscard }) {
+function ConfirmDiscardDialog({ onKeepEditing, onDiscard, copy }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-[320px] rounded-2xl bg-surface p-5 shadow-popup">
-        <h3 className="text-[15px] font-bold text-slate-900">작성 중인 내용이 있어요</h3>
+        <h3 className="text-[15px] font-bold text-slate-900">{copy.discardTitle}</h3>
         <p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-500">
-          지금 나가면 작성 중인 내용이 사라져요. 정말 나가시겠어요?
+          {copy.discardDesc}
         </p>
         <div className="mt-4 flex gap-2">
           <button
@@ -494,14 +561,14 @@ function ConfirmDiscardDialog({ onKeepEditing, onDiscard }) {
             onClick={onKeepEditing}
             className="flex-1 rounded-full border border-slate-200 py-2 text-[12.5px] font-bold text-slate-600 transition-colors hover:bg-slate-50"
           >
-            계속 작성
+            {copy.keepEditing}
           </button>
           <button
             type="button"
             onClick={onDiscard}
             className="flex-1 rounded-full bg-rose-500 py-2 text-[12.5px] font-bold text-white transition-colors hover:bg-rose-600"
           >
-            나가기
+            {copy.discard}
           </button>
         </div>
       </div>

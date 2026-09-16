@@ -1,4 +1,6 @@
 // icon: Iconify Solar 아이콘 이름 (@iconify/react) — 이모지 대신 디자인 시스템 아이콘 사용
+// 이 4개 상수는 한국어 고정 — MyPageAccountSettings.jsx 등 다른 화면이 그대로 참조하고 있어
+// 하위호환을 위해 남겨둔다. 언어별 라벨이 필요한 곳(PreferenceWizard.jsx)은 아래 getPreferenceOptions를 쓴다.
 export const INTEREST_TAGS = [
   { value: 'FOOD', label: '맛집', icon: 'solar:chef-hat-linear' },
   { value: 'PHOTOGRAPHY', label: '사진', icon: 'solar:camera-linear' },
@@ -41,3 +43,52 @@ export const PREFERRED_REGIONS = [
   { value: 'GYEONGBUK', label: '경북' },
   { value: 'OTHER', label: '기타 지역' },
 ]
+
+// value는 백엔드로 전송되는 값이라 언어와 무관하게 고정 — label/description만 언어별로 바뀐다.
+// (PreferenceWizard.jsx가 useLanguage()의 language를 넘겨 호출한다)
+export function getPreferenceOptions(language) {
+  if (language !== 'ko') {
+    return {
+      INTEREST_TAGS: [
+        { value: 'FOOD', label: 'Food', icon: 'solar:chef-hat-linear' },
+        { value: 'PHOTOGRAPHY', label: 'Photography', icon: 'solar:camera-linear' },
+        { value: 'NATURE', label: 'Nature', icon: 'solar:leaf-linear' },
+        { value: 'HISTORY', label: 'History', icon: 'solar:buildings-2-linear' },
+        { value: 'ACTIVITY', label: 'Activities', icon: 'solar:bolt-linear' },
+        { value: 'SHOPPING', label: 'Shopping', icon: 'solar:bag-4-linear' },
+        { value: 'K_POP', label: 'K-Pop', icon: 'solar:microphone-3-linear' },
+        { value: 'ART', label: 'Art & Exhibits', icon: 'solar:palette-linear' },
+        { value: 'FESTIVAL', label: 'Festivals', icon: 'solar:confetti-linear' },
+        { value: 'NIGHTLIFE', label: 'Night Views', icon: 'solar:moon-stars-linear' },
+        { value: 'CAFE', label: 'Cafes', icon: 'solar:cup-hot-linear' },
+        { value: 'WELLBEING', label: 'Relaxation', icon: 'solar:meditation-round-linear' },
+      ],
+      TRAVEL_STYLES: [
+        { value: 'RELAXED', label: 'Relaxed pace', description: '1–2 spots per day', icon: 'solar:sun-2-linear' },
+        { value: 'MODERATE', label: 'Moderate pace', description: '3–4 spots per day', icon: 'solar:map-linear' },
+        { value: 'ACTIVE', label: 'Packed schedule', description: 'As many spots as possible', icon: 'solar:fire-linear' },
+      ],
+      BUDGET_LEVELS: [
+        { value: 'LOW', label: 'Budget-friendly', description: 'Under ₩50,000/day', icon: 'solar:wallet-linear' },
+        { value: 'MEDIUM', label: 'Moderate', description: '₩50,000–100,000/day', icon: 'solar:wallet-money-linear' },
+        { value: 'HIGH', label: 'Invest more', description: '₩100,000–200,000/day', icon: 'solar:card-linear' },
+        { value: 'LUXURY', label: 'Luxury', description: 'Over ₩200,000/day', icon: 'solar:crown-linear' },
+      ],
+      PREFERRED_REGIONS: [
+        { value: 'SEOUL', label: 'Seoul' },
+        { value: 'BUSAN', label: 'Busan' },
+        { value: 'JEJU', label: 'Jeju' },
+        { value: 'GANGWON', label: 'Gangwon' },
+        { value: 'GYEONGJU', label: 'Gyeongju' },
+        { value: 'JEONJU', label: 'Jeonju' },
+        { value: 'INCHEON', label: 'Incheon' },
+        { value: 'JEONNAM', label: 'Jeonnam' },
+        { value: 'CHUNGCHEONG', label: 'Chungcheong' },
+        { value: 'GYEONGBUK', label: 'Gyeongbuk' },
+        { value: 'OTHER', label: 'Other regions' },
+      ],
+    }
+  }
+
+  return { INTEREST_TAGS, TRAVEL_STYLES, BUDGET_LEVELS, PREFERRED_REGIONS }
+}

@@ -14,12 +14,30 @@ import FeedDetailDrawer from '../components/travelerFeed/FeedDetailDrawer'
 import FeedbackDrawer from '../components/travelerFeed/FeedbackDrawer'
 import { FeedActionsProvider, targetTripId } from '../components/travelerFeed/FeedActionsContext'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../i18n'
 import { getMyTrips, getTripDetail } from '../api/trip'
 import { getTripRecord } from '../api/record'
 import { getReceivedFeedback } from '../api/feed'
 import { adaptPlanDetail, adaptRecordDetail } from '../data/feedAdapter'
 
 const GALLERY_COLUMNS = 3
+
+const T = {
+  ko: {
+    settingsAria: '설정',
+    planLabel: '계획',
+    recordLabel: '기록',
+    emptyPlan: '아직 만든 여행 계획이 없어요.',
+    emptyRecord: '아직 남긴 여행 기록이 없어요.',
+  },
+  en: {
+    settingsAria: 'Settings',
+    planLabel: 'Plans',
+    recordLabel: 'Records',
+    emptyPlan: "You haven't created any trip plans yet.",
+    emptyRecord: "You haven't left any trip records yet.",
+  },
+}
 
 function buildFeedbackMap(list) {
   return new Map((list || []).map((f) => [f.tripId, f.totalFeedbackCount]))
@@ -32,6 +50,8 @@ const PROFILE_FILTERS = FILTERS.filter((f) => f.value !== 'all')
 // (전체는 제외), 그 아래는 나의 여행 보관함(SavedTripsPage)과 완전히 같은 PlanFeedCard/RecordFeedCard를
 // 3열로 그대로 배치한다 — 새 카드 UI를 따로 만들지 않는다.
 function MyProfileGallery({ user, authLoading, planItems, recordItems, loading, filter, onFilterChange, onOpenSettings, onOpenCard }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const items = filter === 'plan' ? planItems : recordItems
   // 모바일(<sm)에서는 3열이 각 칸을 너무 좁게 눌러서 카드가 찌부러지므로 1열로 — 데스크톱은 기존처럼 3열
   const [columnCount] = useState(() => (window.matchMedia('(min-width: 640px)').matches ? GALLERY_COLUMNS : 1))
@@ -70,10 +90,10 @@ function MyProfileGallery({ user, authLoading, planItems, recordItems, loading, 
                 {/* 개수 텍스트는 기본 13px 대비 20% 키운 16px, "계획 4 · 기록 3"처럼 라벨 다음에 숫자가 오는 순서 */}
                 <div className="mt-2 flex items-center gap-4">
                   <span className="text-[16px] text-slate-500">
-                    계획 <b className="text-slate-900">{loading ? '-' : planItems.length}</b>
+                    {copy.planLabel} <b className="text-slate-900">{loading ? '-' : planItems.length}</b>
                   </span>
                   <span className="text-[16px] text-slate-500">
-                    기록 <b className="text-slate-900">{loading ? '-' : recordItems.length}</b>
+                    {copy.recordLabel} <b className="text-slate-900">{loading ? '-' : recordItems.length}</b>
                   </span>
                 </div>
               </div>
@@ -86,7 +106,7 @@ function MyProfileGallery({ user, authLoading, planItems, recordItems, loading, 
         <button
           type="button"
           onClick={onOpenSettings}
-          aria-label="설정"
+          aria-label={copy.settingsAria}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
         >
           <Icon icon="solar:settings-linear" width={18} />
@@ -111,7 +131,7 @@ function MyProfileGallery({ user, authLoading, planItems, recordItems, loading, 
         </div>
       ) : items.length === 0 ? (
         <div className="py-20 text-center text-[13px] text-slate-400">
-          {filter === 'record' ? '아직 남긴 여행 기록이 없어요.' : '아직 만든 여행 계획이 없어요.'}
+          {filter === 'record' ? copy.emptyRecord : copy.emptyPlan}
         </div>
       ) : (
         <div className="flex gap-5">

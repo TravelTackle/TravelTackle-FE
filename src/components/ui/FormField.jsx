@@ -1,7 +1,15 @@
 import { useState } from 'react'
 import { Icon } from '@iconify/react'
+import { useLanguage } from '../../i18n'
+
+const T = {
+  ko: { showPassword: '비밀번호 보기', hidePassword: '비밀번호 숨기기' },
+  en: { showPassword: 'Show password', hidePassword: 'Hide password' },
+}
 
 export default function FormField({ label, type = 'text', error, className = '', ...props }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [show, setShow] = useState(false)
   const isPassword = type === 'password'
   const inputType = isPassword ? (show ? 'text' : 'password') : type
@@ -23,7 +31,7 @@ export default function FormField({ label, type = 'text', error, className = '',
             onClick={() => setShow((v) => !v)}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-all"
             tabIndex={-1}
-            aria-label={show ? '비밀번호 숨기기' : '비밀번호 보기'}
+            aria-label={show ? copy.hidePassword : copy.showPassword}
           >
             <Icon icon={show ? 'solar:eye-closed-linear' : 'solar:eye-linear'} width={18} />
           </button>

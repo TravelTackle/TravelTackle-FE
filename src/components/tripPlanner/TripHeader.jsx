@@ -3,12 +3,60 @@ import { Icon } from '@iconify/react'
 import Chip from '../ui/Chip'
 import DatePill from './DatePill'
 import { formatNights } from '../../lib/tripTime'
+import { useLanguage } from '../../i18n'
 
 // 리스트/지도 전환 토글 — 선택된 쪽만 흰 배경(rounded-lg + shadow)이 붙는 세그먼트 방식
-const VIEWS = [
-  { value: 'list', icon: 'mdi:format-list-bulleted', label: '리스트' },
-  { value: 'map', icon: 'mdi:map-outline', label: '지도' },
-]
+const VIEWS = {
+  ko: [
+    { value: 'list', icon: 'mdi:format-list-bulleted', label: '리스트' },
+    { value: 'map', icon: 'mdi:map-outline', label: '지도' },
+  ],
+  en: [
+    { value: 'list', icon: 'mdi:format-list-bulleted', label: 'List' },
+    { value: 'map', icon: 'mdi:map-outline', label: 'Map' },
+  ],
+}
+
+const T = {
+  ko: {
+    switchPlan: '계획 전환',
+    addNewPlan: '새 계획 추가',
+    deletePlan: (title) => `${title} 삭제`,
+    deleteConfirm: (title) => `'${title}' 계획을 삭제할까요? 되돌릴 수 없어요.`,
+    switchToPrivate: '눌러서 나만 보기로 전환',
+    switchToPublic: '눌러서 전체공개로 전환',
+    publishBlockedTitle: (blockedLabel) => `${blockedLabel}에 일정을 넣어야 전체공개할 수 있어요`,
+    published: '전체공개',
+    private: '나만 보기',
+    publishBlockedHint: (blockedLabel) => `${blockedLabel}에 일정을 넣으면 전체공개할 수 있어요`,
+    publishHint: '눌러서 전체공개로 바꿔보세요',
+    dismissHint: '안내 닫기',
+    startDate: '출발일',
+    endDate: '종료일',
+    dateResetConfirm: '기간을 바꾸면 지금까지 배치한 일정이 모두 초기화돼요. 계속할까요?',
+    dateLockedTitle: '공개 중인 계획은 날짜를 바꿀 수 없어요. 나만 보기로 전환한 뒤 바꿔주세요.',
+    dateLockedLabel: '공개 중엔 날짜 고정',
+  },
+  en: {
+    switchPlan: 'Switch plan',
+    addNewPlan: 'Add new plan',
+    deletePlan: (title) => `Delete ${title}`,
+    deleteConfirm: (title) => `Delete the plan '${title}'? This cannot be undone.`,
+    switchToPrivate: 'Tap to switch to private',
+    switchToPublic: 'Tap to switch to public',
+    publishBlockedTitle: (blockedLabel) => `Add an item to ${blockedLabel} before making this public`,
+    published: 'Public',
+    private: 'Private',
+    publishBlockedHint: (blockedLabel) => `Add an item to ${blockedLabel} to make this public`,
+    publishHint: 'Tap to make this public',
+    dismissHint: 'Dismiss hint',
+    startDate: 'Start date',
+    endDate: 'End date',
+    dateResetConfirm: 'Changing the dates will reset all the items you have placed so far. Continue?',
+    dateLockedTitle: 'You cannot change dates on a published plan. Switch to private first.',
+    dateLockedLabel: 'Dates locked while public',
+  },
+}
 
 // 상단 바 — 제목(드롭다운으로 계획 전환/새로 만들기), n박n일, 기간, 리스트/지도 토글, 게시 버튼.
 // 여행자 피드의 FeedFilterBar(구분선, 토글, 버튼 스타일)를 그대로 참고해 통일했다.
@@ -25,6 +73,9 @@ export default function TripHeader({
   onDeleteTrip,
   publishBlockedDays = [], // 일정이 없는 일차 번호 — 하나라도 있으면 전체공개 불가(백엔드 TRIP_022)
 }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
+  const views = VIEWS[language] ?? VIEWS.en
   const publishBlocked = !trip.published && publishBlockedDays.length > 0
   const blockedLabel = publishBlockedDays.map((n) => `Day ${n}`).join(', ')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -125,7 +176,7 @@ export default function TripHeader({
   function handleDateChange(nextStart, nextEnd) {
     if (trip.published) return // 공개 중엔 날짜 변경 불가(TRIP_024) — DatePill도 잠겨 있지만 이중으로 막는다
     const hasItems = trip.days.some((d) => d.items.length > 0)
-    if (hasItems && !window.confirm('기간을 바꾸면 지금까지 배치한 일정이 모두 초기화돼요. 계속할까요?')) return
+    if (hasItems && !window.confirm(copy.dateResetConfirm)) return
     onUpdateDates(nextStart, nextEnd)
   }
 
@@ -139,7 +190,7 @@ export default function TripHeader({
           <button
             onClick={() => setMenuOpen((v) => !v)}
             className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-surface text-slate-500 shadow-icon-btn hover:shadow-icon-btn-hover"
-            aria-label="계획 전환"
+            aria-label={copy.switchPlan}
             aria-expanded={menuOpen}
           >
             <Icon icon="solar:alt-arrow-down-linear" width={14} className={`transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
@@ -166,9 +217,9 @@ export default function TripHeader({
                   </button>
                   <button
                     onClick={() => {
-                      if (window.confirm(`'${t.title}' 계획을 삭제할까요? 되돌릴 수 없어요.`)) onDeleteTrip(t.id)
+                      if (window.confirm(copy.deleteConfirm(t.title))) onDeleteTrip(t.id)
                     }}
-                    aria-label={`${t.title} 삭제`}
+                    aria-label={copy.deletePlan(t.title)}
                     className="shrink-0 rounded-lg p-1.5 text-slate-300 opacity-40 transition-all hover:bg-rose-50 hover:text-rose-500 hover:opacity-100 group-hover:opacity-100"
                   >
                     <Icon icon="solar:trash-bin-minimalistic-linear" width={14} />
@@ -183,7 +234,7 @@ export default function TripHeader({
                   }}
                   className="flex w-full items-center gap-2 px-3.5 py-2 text-[13px] font-semibold text-brand hover:bg-brand-light/60"
                 >
-                  <Icon icon="solar:add-circle-linear" width={16} />새 계획 추가
+                  <Icon icon="solar:add-circle-linear" width={16} />{copy.addNewPlan}
                 </button>
               </div>
             </div>
@@ -246,7 +297,7 @@ export default function TripHeader({
           </button>
         )}
         <Chip className="shrink-0 bg-brand-light px-2.5 py-1 text-[11px] font-bold text-brand">
-          {formatNights(trip.startDate, trip.endDate)}
+          {formatNights(trip.startDate, trip.endDate, language)}
         </Chip>
         <div className="relative">
           <button
@@ -255,10 +306,10 @@ export default function TripHeader({
             aria-disabled={publishBlocked}
             title={
               trip.published
-                ? '눌러서 나만 보기로 전환'
+                ? copy.switchToPrivate
                 : publishBlocked
-                  ? `${blockedLabel}에 일정을 넣어야 전체공개할 수 있어요`
-                  : '눌러서 전체공개로 전환'
+                  ? copy.publishBlockedTitle(blockedLabel)
+                  : copy.switchToPublic
             }
             style={{ display: 'grid' }}
             className={`shrink-0 overflow-hidden rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors duration-150 ${
@@ -271,7 +322,7 @@ export default function TripHeader({
                 trip.published ? 'translate-y-0 opacity-100' : '-translate-y-1 opacity-0'
               }`}
             >
-              전체공개
+              {copy.published}
             </span>
             <span
               className={`col-start-1 row-start-1 flex items-center justify-center transition-all duration-150 ease-out ${
@@ -279,7 +330,7 @@ export default function TripHeader({
               }`}
             >
               {publishBlocked && <Icon icon="solar:lock-keyhole-minimalistic-bold" width={11} className="mr-1" aria-hidden="true" />}
-              나만 보기
+              {copy.private}
             </span>
           </button>
 
@@ -290,11 +341,11 @@ export default function TripHeader({
               }`}
             >
               <span aria-hidden="true" className="absolute -top-1 left-4 h-2 w-2 rotate-45 bg-black/90" />
-              {publishBlocked ? `${blockedLabel}에 일정을 넣으면 전체공개할 수 있어요` : '눌러서 전체공개로 바꿔보세요'}
+              {publishBlocked ? copy.publishBlockedHint(blockedLabel) : copy.publishHint}
               <button
                 type="button"
                 onClick={dismissPublishHint}
-                aria-label="안내 닫기"
+                aria-label={copy.dismissHint}
                 className="text-white/70 hover:text-white"
               >
                 <Icon icon="mdi:close" width={12} />
@@ -309,16 +360,16 @@ export default function TripHeader({
             전부 한 줄에 나란히 놓인다. */}
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
           <div className="flex items-center gap-2">
-            <DatePill label="출발일" value={trip.startDate} max={trip.endDate} onChange={(v) => handleDateChange(v, trip.endDate)} disabled={trip.published} />
-            <DatePill label="종료일" value={trip.endDate} min={trip.startDate} onChange={(v) => handleDateChange(trip.startDate, v)} disabled={trip.published} />
+            <DatePill label={copy.startDate} value={trip.startDate} max={trip.endDate} onChange={(v) => handleDateChange(v, trip.endDate)} disabled={trip.published} />
+            <DatePill label={copy.endDate} value={trip.endDate} min={trip.startDate} onChange={(v) => handleDateChange(trip.startDate, v)} disabled={trip.published} />
           </div>
           {trip.published && (
             <span
               className="flex items-center gap-1 text-[11px] font-semibold text-slate-400"
-              title="공개 중인 계획은 날짜를 바꿀 수 없어요. 나만 보기로 전환한 뒤 바꿔주세요."
+              title={copy.dateLockedTitle}
             >
               <Icon icon="solar:lock-keyhole-minimalistic-bold" width={11} aria-hidden="true" />
-              공개 중엔 날짜 고정
+              {copy.dateLockedLabel}
             </span>
           )}
         </div>
@@ -331,7 +382,7 @@ export default function TripHeader({
               style={{ left: indicator.left, top: indicator.top, width: indicator.width, height: indicator.height }}
             />
           )}
-          {VIEWS.map((v) => {
+          {views.map((v) => {
             const active = view === v.value
             return (
               <button

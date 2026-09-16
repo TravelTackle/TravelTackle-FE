@@ -3,8 +3,36 @@ import { Icon } from '@iconify/react'
 import Card from '../ui/Card'
 import Skeleton from '../ui/Skeleton'
 import { getFeedRegionCounts } from '../../api/feed'
+import { useLanguage } from '../../i18n'
 
 const TOP_N = 3
+
+const MONTH_NAMES_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+const T = {
+  ko: {
+    title: (month) => `${month}월 인기 지역`,
+    rowSubtitle: '이번 달 공개된 계획 기준',
+    monthlyLoading: '인기 지역을 집계하는 중',
+    monthlyEmpty: (month) => `${month}월에 공개된 계획이 아직 없어요.`,
+    byRegion: '지역으로 보기',
+    noPosts: '게시물이 올라오면 지역이 여기에 모여요.',
+    all: '전체',
+    podiumAria: (rank, region, count) => `${rank}위 ${region}, 계획 ${count}개`,
+    tripCount: (n) => `${n}건`,
+  },
+  en: {
+    title: (month) => `Popular Regions in ${MONTH_NAMES_EN[month - 1]}`,
+    rowSubtitle: 'Based on plans published this month',
+    monthlyLoading: 'Tallying popular regions',
+    monthlyEmpty: (month) => `No plans published in ${MONTH_NAMES_EN[month - 1]} yet.`,
+    byRegion: 'Browse by region',
+    noPosts: 'Regions will show up here once posts are published.',
+    all: 'All',
+    podiumAria: (rank, region, count) => `Rank ${rank} ${region}, ${count} plans`,
+    tripCount: (n) => `${n}`,
+  },
+}
 
 // 1위 금 · 2위 은 · 3위 동 — 홈 모아보기 순위와 같은 배지
 const RANK_STYLE = [
@@ -65,9 +93,11 @@ export function useRegionChips(items) {
 }
 
 export default function RegionRankPanel({ monthly, chips, loading, active, onSelect, layout = 'sidebar' }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const { top, month, loading: monthlyLoading } = monthly
   const all = chips
-  const title = `${month}월 인기 지역`
+  const title = copy.title(month)
 
   if (layout === 'row') {
     // 갤러리 보기 상단 — 순위 3개를 앞에 두고 나머지 지역 칩을 이어 붙인 한 줄
@@ -96,11 +126,11 @@ export default function RegionRankPanel({ monthly, chips, loading, active, onSel
     <Card className="p-4">
       <div className="flex items-center justify-between">
         <div className="text-[13px] font-bold text-slate-900">{title}</div>
-        <span className="text-[10.5px] text-slate-400">이번 달 공개된 계획 기준</span>
+        <span className="text-[10.5px] text-slate-400">{copy.rowSubtitle}</span>
       </div>
 
       {monthlyLoading ? (
-        <div className="mt-3 flex items-end justify-center gap-2 px-2" role="status" aria-label="인기 지역을 집계하는 중">
+        <div className="mt-3 flex items-end justify-center gap-2 px-2" role="status" aria-label={copy.monthlyLoading}>
           {[52, 76, 44].map((h, i) => (
             <div key={i} className="flex w-full flex-col items-center gap-1.5">
               <Skeleton className="h-3 w-10" style={{ animationDelay: `${i * 90}ms` }} />
@@ -109,19 +139,19 @@ export default function RegionRankPanel({ monthly, chips, loading, active, onSel
           ))}
         </div>
       ) : top.length === 0 ? (
-        <p className="mt-3 rounded-xl bg-slate-50 px-3 py-3 text-center text-[12px] text-slate-400">{month}월에 공개된 계획이 아직 없어요.</p>
+        <p className="mt-3 rounded-xl bg-slate-50 px-3 py-3 text-center text-[12px] text-slate-400">{copy.monthlyEmpty(month)}</p>
       ) : (
-        <Podium top={top} active={active} onSelect={onSelect} />
+        <Podium top={top} active={active} onSelect={onSelect} copy={copy} />
       )}
 
       <div className="mt-3 border-t border-slate-100 pt-3">
-        <div className="mb-2 text-[11px] font-bold text-slate-400">지역으로 보기</div>
+        <div className="mb-2 text-[11px] font-bold text-slate-400">{copy.byRegion}</div>
         {loading ? (
           <div className="flex flex-wrap gap-1.5">
             {[52, 60, 56, 64, 52, 58].map((w, i) => <Skeleton key={i} className="h-7 rounded-full" style={{ width: w, animationDelay: `${300 + i * 50}ms` }} />)}
           </div>
         ) : all.length === 0 ? (
-          <p className="text-[12px] text-slate-400">게시물이 올라오면 지역이 여기에 모여요.</p>
+          <p className="text-[12px] text-slate-400">{copy.noPosts}</p>
         ) : (
           <div className="flex flex-wrap gap-1.5">
             <button
@@ -132,7 +162,7 @@ export default function RegionRankPanel({ monthly, chips, loading, active, onSel
                 !active ? 'border-brand bg-brand text-white' : 'border-slate-200 bg-surface text-slate-500 hover:bg-slate-50'
               }`}
             >
-              전체
+              {copy.all}
             </button>
             {all.map((r) => (
               <RegionChip key={r.region} region={r.region} count={r.count} active={active === r.region} onSelect={onSelect} small />
@@ -151,7 +181,7 @@ const PODIUM = [
   { rank: 3, height: 42, bar: 'bg-slate-100 text-slate-600', label: 'text-slate-500' },
 ]
 
-function Podium({ top, active, onSelect }) {
+function Podium({ top, active, onSelect, copy }) {
   return (
     <div className="mt-3 flex items-end justify-center gap-2 px-1">
       {PODIUM.map((col, i) => {
@@ -164,7 +194,7 @@ function Podium({ top, active, onSelect }) {
             type="button"
             onClick={() => onSelect(isActive ? null : r.region)}
             aria-pressed={isActive}
-            aria-label={`${col.rank}위 ${r.region}, 계획 ${r.count}개`}
+            aria-label={copy.podiumAria(col.rank, r.region, r.count)}
             className="group flex w-full flex-col items-center gap-1.5 rounded-xl px-0.5 pt-1 transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
           >
             {col.rank === 1 && (
@@ -178,7 +208,7 @@ function Podium({ top, active, onSelect }) {
               style={{ height: col.height, animationDelay: `${i * 110}ms` }}
             >
               <span className="text-[15px] font-black leading-none tabular-nums">{col.rank}</span>
-              <span className="mt-0.5 text-[10px] font-semibold opacity-80">{r.count}건</span>
+              <span className="mt-0.5 text-[10px] font-semibold opacity-80">{copy.tripCount(r.count)}</span>
             </div>
           </button>
         )

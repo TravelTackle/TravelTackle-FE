@@ -2,11 +2,29 @@ import { useEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
 import TimeEditPopup from './TimeEditPopup'
 import { TRIP_ITEM_DRAG_TYPE } from '../../lib/dragTypes'
+import { useLanguage } from '../../i18n'
+
+const T = {
+  ko: {
+    memoPlaceholder: '더블클릭해서 메모 남기기',
+    deleteLockedAria: (title) => `${title} — 공개 중인 계획의 마지막 일정이라 지울 수 없어요`,
+    deleteAria: (title) => `${title} 삭제`,
+    deleteLockedTitle: '공개 중인 계획은 각 일차에 일정이 하나 이상 남아야 해요',
+  },
+  en: {
+    memoPlaceholder: 'Double-click to add a note',
+    deleteLockedAria: (title) => `${title} — cannot delete the last item in a published plan`,
+    deleteAria: (title) => `Delete ${title}`,
+    deleteLockedTitle: 'A published plan must keep at least one item on each day',
+  },
+}
 
 // Day 안에 배치된 관광지 카드. 핸들 아이콘 자체만 draggable이라 순서변경/이동 드래그가 거기서만 시작되고,
 // 카드의 나머지 영역(시간 클릭, 메모 더블클릭, 삭제)은 드래그와 무관하게 그대로 동작한다.
 // readOnly=true면 지도 탭의 호버 상세카드처럼 보여주기만 하고 편집 UI(핸들/시간팝업/메모편집/삭제)는 다 숨긴다.
 export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDelete, readOnly = false, deleteLocked = false }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [timePopupOpen, setTimePopupOpen] = useState(false)
   const [editingMemo, setEditingMemo] = useState(false)
   const [memoDraft, setMemoDraft] = useState(item.memo)
@@ -123,7 +141,7 @@ export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDe
                 onDoubleClick={readOnly ? undefined : startMemoEdit}
                 className={`line-clamp-2 text-[12px] text-slate-400 ${readOnly ? '' : 'cursor-text'}`}
               >
-                {item.memo || '더블클릭해서 메모 남기기'}
+                {item.memo || copy.memoPlaceholder}
               </p>
               {/* 2줄을 넘는 메모만 호버 시 전체를 보여준다 — 가로폭은 원래 메모 영역을 넘기지 않고(inset-x-0)
                   세로로만 늘어나며, 마우스를 떼면 다시 페이드아웃된다. */}
@@ -145,8 +163,8 @@ export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDe
         <button
           draggable={false}
           onClick={onDelete}
-          aria-label={deleteLocked ? `${item.cachedTitle} — 공개 중인 계획의 마지막 일정이라 지울 수 없어요` : `${item.cachedTitle} 삭제`}
-          title={deleteLocked ? '공개 중인 계획은 각 일차에 일정이 하나 이상 남아야 해요' : undefined}
+          aria-label={deleteLocked ? copy.deleteLockedAria(item.cachedTitle) : copy.deleteAria(item.cachedTitle)}
+          title={deleteLocked ? copy.deleteLockedTitle : undefined}
           className={`absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-surface shadow-card transition-colors ${
             deleteLocked ? 'cursor-not-allowed text-slate-300' : 'text-rose-300 hover:text-rose-500'
           }`}

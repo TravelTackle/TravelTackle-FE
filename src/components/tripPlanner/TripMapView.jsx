@@ -5,9 +5,25 @@ import DayColumn from './DayColumn'
 import TripItemCard from './TripItemCard'
 import { getItemCoords } from '../../lib/kakaoMapCoords'
 import { tripItemColor, tripItemIcon } from '../../lib/cartThemes'
+import { useLanguage } from '../../i18n'
 
 // 좌표를 아직 하나도 못 받아왔을 때 지도 초기 중심 — 서울시청
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 }
+
+const T = {
+  ko: {
+    refitRoute: '전체 동선 다시 보기',
+    mapLoadFailed: '지도를 불러오지 못했어요. 카카오맵 키(VITE_KAKAO_MAP_KEY) 설정을 확인해주세요.',
+    prevDay: '이전 Day',
+    nextDay: '다음 Day',
+  },
+  en: {
+    refitRoute: 'Reset route view',
+    mapLoadFailed: 'Could not load the map. Please check the Kakao Map key (VITE_KAKAO_MAP_KEY) setting.',
+    prevDay: 'Previous day',
+    nextDay: 'Next day',
+  },
+}
 
 // Day 카드 위, 같은 폭 안에서 좌우 끝에 붙는 화살표 행 — 카드와 겹치지 않고 그 위에 따로 얹힌다.
 const NAV_BUTTON_CLASS =
@@ -16,6 +32,8 @@ const NAV_BUTTON_CLASS =
 // Map 컴포넌트 안에서만 useMap()을 쓸 수 있어서, bounds 맞추는 로직 + 그걸 다시 트리거하는 버튼을 같이 둔다.
 // 진입 시/Day 전환 시 자동 맞춤은 순간이동, 버튼을 직접 눌러서 다시 맞출 때만 panTo로 부드럽게 움직인다.
 function FitBoundsControl({ coords }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const map = useMap()
 
   const fit = useCallback(
@@ -48,8 +66,8 @@ function FitBoundsControl({ coords }) {
   return (
     <button
       type="button"
-      aria-label="전체 동선 다시 보기"
-      title="전체 동선 다시 보기"
+      aria-label={copy.refitRoute}
+      title={copy.refitRoute}
       onClick={() => fit(true)}
       className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-surface text-slate-500 shadow-icon-btn transition-colors hover:text-brand hover:shadow-icon-btn-hover"
     >
@@ -104,6 +122,8 @@ export default function TripMapView({
   onSaveMemo,
   onDeleteItem,
 }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [loading, error] = useKakaoLoader({
     appkey: import.meta.env.VITE_KAKAO_MAP_KEY ?? '',
     libraries: ['services'],
@@ -149,7 +169,7 @@ export default function TripMapView({
     return (
       <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-2 text-center">
         <Icon icon="mdi:map-marker-off-outline" width={28} className="text-slate-300" />
-        <p className="text-[13px] text-slate-400">지도를 불러오지 못했어요. 카카오맵 키(VITE_KAKAO_MAP_KEY) 설정을 확인해주세요.</p>
+        <p className="text-[13px] text-slate-400">{copy.mapLoadFailed}</p>
       </div>
     )
   }
@@ -182,12 +202,12 @@ export default function TripMapView({
 
       <div className="w-full sm:w-[260px] sm:shrink-0">
         <div className="mb-1.5 flex items-center justify-between">
-          <button type="button" aria-label="이전 Day" onClick={() => goDay(-1)} disabled={dayIndex <= 0} className={NAV_BUTTON_CLASS}>
+          <button type="button" aria-label={copy.prevDay} onClick={() => goDay(-1)} disabled={dayIndex <= 0} className={NAV_BUTTON_CLASS}>
             <Icon icon="solar:alt-arrow-left-linear" width={14} />
           </button>
           <button
             type="button"
-            aria-label="다음 Day"
+            aria-label={copy.nextDay}
             onClick={() => goDay(1)}
             disabled={dayIndex >= trip.days.length - 1}
             className={NAV_BUTTON_CLASS}

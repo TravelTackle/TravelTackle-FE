@@ -1,13 +1,11 @@
 // 백엔드 FeedItemResponse/PublicTripDetailResponse를 TravelerFeedPage 컴포넌트가
 // 기대하는 목업 shape(plan/record)로 변환.
+// language(기본 'ko')를 넘기면 표시용 문구(기간 등)가 영어로 바뀐다 — homeFormat.js와 같은 패턴.
+
+import { formatDuration } from '../lib/homeFormat'
 
 function formatTime(time) {
   return time ? time.slice(0, 5) : ''
-}
-
-function toDuration(startDate, endDate) {
-  const nights = Math.round((new Date(endDate) - new Date(startDate)) / 86_400_000)
-  return `${nights}박 ${nights + 1}일`
 }
 
 function adaptDays(days) {
@@ -32,7 +30,7 @@ function adaptDays(days) {
   }))
 }
 
-function adaptPlan({ tripId, ownerName, ownerId, ownerProfileImageUrl, region, title, startDate, endDate, days, feedbackCount, saveCount, createdAt, savedTripId, thumbnailUrl }) {
+function adaptPlan({ tripId, ownerName, ownerId, ownerProfileImageUrl, region, title, startDate, endDate, days, feedbackCount, saveCount, createdAt, savedTripId, thumbnailUrl }, language = 'ko') {
   const adaptedDays = adaptDays(days)
   return {
     id: tripId,
@@ -45,7 +43,7 @@ function adaptPlan({ tripId, ownerName, ownerId, ownerProfileImageUrl, region, t
     feedbackCount: feedbackCount ?? 0,
     saveCount: typeof saveCount === 'number' ? saveCount : null, // 스크랩(내 여행으로 저장) 수 — 좋아요는 도입하지 않기로 해 이 값만 쓴다
     createdAt,
-    duration: toDuration(startDate, endDate),
+    duration: formatDuration(startDate, endDate, language),
     placeCount: adaptedDays.reduce((sum, d) => sum + d.places.length, 0),
     days: adaptedDays,
     // 로그인 사용자가 이미 스크랩한 계획이면 그 SavedTrip id, 아니면 null — 있으면 스크랩된 것으로 취급하고
@@ -75,11 +73,11 @@ function adaptRecord(entry) {
   }
 }
 
-export function adaptFeedItem(entry) {
-  return entry.type === 'PLAN' ? adaptPlan(entry) : adaptRecord(entry)
+export function adaptFeedItem(entry, language = 'ko') {
+  return entry.type === 'PLAN' ? adaptPlan(entry, language) : adaptRecord(entry)
 }
 
-export function adaptPlanDetail(detail) {
+export function adaptPlanDetail(detail, language = 'ko') {
   return adaptPlan({
     tripId: detail.id,
     ownerName: detail.ownerName,
@@ -94,7 +92,7 @@ export function adaptPlanDetail(detail) {
     saveCount: detail.saveCount, // 백엔드 PR #32부터 상세에도 스크랩 수가 온다
     createdAt: detail.createdAt,
     savedTripId: detail.savedTripId,
-  })
+  }, language)
 }
 
 // 보관함(GET /saved-trips) 응답 → 피드 카드(PlanFeedCard/RecordFeedCard)와 같은 모양으로 변환.

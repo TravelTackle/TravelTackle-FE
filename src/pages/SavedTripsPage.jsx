@@ -13,14 +13,46 @@ import FeedDetailDrawer from '../components/travelerFeed/FeedDetailDrawer'
 import FeedbackDrawer from '../components/travelerFeed/FeedbackDrawer'
 import { FeedActionsProvider, targetTripId } from '../components/travelerFeed/FeedActionsContext'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../i18n'
 import { getSavedTrips, saveTrip, unsaveTrip, copySavedTrip } from '../api/trip'
 import { adaptSavedTrip } from '../data/feedAdapter'
 
 const COLUMNS = 3
 
+const T = {
+  ko: {
+    inMyPlans: '내 계획에 있어요 · 보기',
+    copying: '복사하는 중…',
+    copyToPlan: '나의 계획으로 복사하기',
+    copiedToast: '나의 계획으로 복사했어요',
+    title: '보관함',
+    subtitle: '여행자 피드에서 스크랩한 다른 여행자의 계획이에요. 마음에 들면 나의 계획으로 복사해보세요.',
+    loading: '불러오는 중…',
+    empty: '아직 스크랩한 여행이 없어요. 여행자 피드에서 마음에 드는 계획을 찜해보세요.',
+    unsavedToast: '보관함에서 지웠어요',
+    savedToast: '보관함에 저장했어요',
+    failedToast: '처리하지 못했어요. 잠시 후 다시 시도해주세요',
+  },
+  en: {
+    inMyPlans: 'Already in my plans · View',
+    copying: 'Copying…',
+    copyToPlan: 'Copy to my plans',
+    copiedToast: 'Copied to my plans',
+    title: 'Saved',
+    subtitle: "Plans other travelers shared, saved from the traveler feed. If you like one, copy it to your own plans.",
+    loading: 'Loading…',
+    empty: "You haven't saved any trips yet. Save a plan you like from the traveler feed.",
+    unsavedToast: 'Removed from saved',
+    savedToast: 'Saved',
+    failedToast: "Couldn't process that. Please try again later.",
+  },
+}
+
 // 스크랩만으로는 내 계획이 되지 않는다 — 이 버튼을 눌러야 실제 Trip으로 복사된다.
 // 이미 복사한 항목은 버튼 대신 "내 계획에 있어요" 상태로 바뀐다.
 function CopyToPlanButton({ item, onCopied }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [copying, setCopying] = useState(false)
   const [copiedTripId, setCopiedTripId] = useState(item.copiedTripId)
 
@@ -47,7 +79,7 @@ function CopyToPlanButton({ item, onCopied }) {
         className="mt-3 flex h-9 w-full items-center justify-center gap-1.5 rounded-full bg-brand-light text-[12.5px] font-bold text-brand-dark transition-colors hover:bg-teal-100"
       >
         <Icon icon="solar:check-circle-linear" width={14} />
-        내 계획에 있어요 · 보기
+        {copy.inMyPlans}
       </Link>
     )
   }
@@ -59,13 +91,15 @@ function CopyToPlanButton({ item, onCopied }) {
       className="mt-3 flex h-9 w-full items-center justify-center gap-1.5 rounded-full text-[12.5px] font-bold disabled:opacity-60"
     >
       <Icon icon="solar:copy-linear" width={14} />
-      {copying ? '복사하는 중…' : '나의 계획으로 복사하기'}
+      {copying ? copy.copying : copy.copyToPlan}
     </Button>
   )
 }
 
 export default function SavedTripsPage() {
   const { user } = useAuth()
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [drawerItem, setDrawerItem] = useState(null)
@@ -118,17 +152,17 @@ export default function SavedTripsPage() {
       if (savedTripId) {
         await unsaveTrip(savedTripId)
         setSavedIds((m) => { const next = new Map(m); next.delete(tripId); return next })
-        showToast('보관함에서 지웠어요')
+        showToast(copy.unsavedToast)
         // 여기서 지운(스크랩 해제) 항목은 목록에서도 빠져야 하니 다시 불러온다
         setReloadKey((k) => k + 1)
       } else {
         const res = await saveTrip(tripId, item.type === 'record' ? 'RECORD' : 'PLAN')
         setSavedIds((m) => new Map(m).set(tripId, res.savedTripId))
         setSaveDelta((d) => ({ ...d, [tripId]: (d[tripId] ?? 0) + 1 }))
-        showToast('보관함에 저장했어요')
+        showToast(copy.savedToast)
       }
     } catch {
-      showToast('처리하지 못했어요. 잠시 후 다시 시도해주세요')
+      showToast(copy.failedToast)
     } finally {
       setPendingIds((s) => { const next = new Set(s); next.delete(tripId); return next })
     }
@@ -160,7 +194,7 @@ export default function SavedTripsPage() {
   const columns = Array.from({ length: columnCount }, (_, c) => items.filter((_, i) => i % columnCount === c))
 
   function renderCard(it) {
-    const extra = <CopyToPlanButton item={it} onCopied={() => showToast('나의 계획으로 복사했어요')} />
+    const extra = <CopyToPlanButton item={it} onCopied={() => showToast(copy.copiedToast)} />
     return it.type === 'record' ? (
       <RecordFeedCard key={it.savedTripId} item={it} onOpen={setDrawerItem} findPlan={findPlan} extra={extra} />
     ) : (
@@ -175,17 +209,17 @@ export default function SavedTripsPage() {
       <FeedActionsProvider value={feedActions}>
         <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-col gap-5 pb-16 pt-8">
           <div className="border-b border-slate-100 pb-5">
-            <h1 className="text-[19px] font-bold text-slate-900">보관함</h1>
+            <h1 className="text-[19px] font-bold text-slate-900">{copy.title}</h1>
             <p className="mt-1 text-[13px] text-slate-400">
-              여행자 피드에서 스크랩한 다른 여행자의 계획이에요. 마음에 들면 나의 계획으로 복사해보세요.
+              {copy.subtitle}
             </p>
           </div>
 
           {loading ? (
-            <div className="py-20 text-center text-[13px] text-slate-400">불러오는 중…</div>
+            <div className="py-20 text-center text-[13px] text-slate-400">{copy.loading}</div>
           ) : items.length === 0 ? (
             <div className="py-20 text-center text-[13px] text-slate-400">
-              아직 스크랩한 여행이 없어요. 여행자 피드에서 마음에 드는 계획을 찜해보세요.
+              {copy.empty}
             </div>
           ) : (
             <div className="flex gap-5">

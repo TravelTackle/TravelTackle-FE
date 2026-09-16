@@ -3,12 +3,77 @@ import { createPortal } from 'react-dom'
 import { Icon } from '@iconify/react'
 import { THEMES, FALLBACK_AREAS, REGIONS_VISIBLE_COUNT, sortAreasByPopularity } from '../../data/tourSpots'
 import { getTourAreas } from '../../api/tour'
+import { useLanguage } from '../../i18n'
 
 // 선택된 지역/테마 행에 쓰는 하늘색 — Navbar 아바타 배경(#BFD8FA)과 동일한 값 재사용
 const SELECTED_ROW = 'bg-blue-200 text-brand-dark font-bold'
 const IDLE_ROW = 'text-slate-600 hover:bg-slate-50'
 
-function SigunguPicker({ region, sigungu, onSelectSigungu }) {
+// THEMES/FALLBACK_AREAS(및 getTourAreas 응답)의 label/name은 항상 한국어 원본 — API 호출(keyword 등)과
+// 선택 상태 비교(theme?.label === t.label)에 그대로 쓰이므로 절대 바꾸지 않는다. 화면 표시만 아래 맵으로 번역.
+const THEME_LABEL_EN = {
+  '액티비티': 'Activities',
+  '역사 / 문화': 'History & Culture',
+  '자연': 'Nature',
+  '쇼핑': 'Shopping',
+  '맛집': 'Restaurants',
+  '카페': 'Cafes',
+  '축제 / 행사': 'Festivals & Events',
+  '숙박': 'Lodging',
+}
+
+const AREA_LABEL_EN = {
+  서울: 'Seoul',
+  인천: 'Incheon',
+  대전: 'Daejeon',
+  대구: 'Daegu',
+  광주: 'Gwangju',
+  부산: 'Busan',
+  울산: 'Ulsan',
+  세종특별자치시: 'Sejong',
+  경기도: 'Gyeonggi-do',
+  강원특별자치도: 'Gangwon-do',
+  충청북도: 'Chungcheongbuk-do',
+  충청남도: 'Chungcheongnam-do',
+  경상북도: 'Gyeongsangbuk-do',
+  경상남도: 'Gyeongsangnam-do',
+  전북특별자치도: 'Jeonbuk-do',
+  전라남도: 'Jeollanam-do',
+  제주특별자치도: 'Jeju-do',
+}
+
+function themeLabel(label, language) {
+  return language !== 'ko' ? (THEME_LABEL_EN[label] ?? label) : label
+}
+
+function areaLabel(name, language) {
+  return language !== 'ko' ? (AREA_LABEL_EN[name] ?? name) : name
+}
+
+const T = {
+  ko: {
+    searchPlaceholder: '관광지, 맛집, 지역 검색',
+    clearSearch: '검색어 지우기',
+    viewAll: '전체보기',
+    themeSection: '테마',
+    regionSection: '지역',
+    allOfRegion: (name) => `${name} 전체`,
+    more: '더보기',
+    less: '접기',
+  },
+  en: {
+    searchPlaceholder: 'Search destinations, restaurants, regions',
+    clearSearch: 'Clear search',
+    viewAll: 'View all',
+    themeSection: 'Theme',
+    regionSection: 'Region',
+    allOfRegion: (name) => `All of ${name}`,
+    more: 'More',
+    less: 'Less',
+  },
+}
+
+function SigunguPicker({ region, sigungu, onSelectSigungu, language, copy }) {
   const [sigungus, setSigungus] = useState([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
@@ -81,7 +146,7 @@ function SigunguPicker({ region, sigungu, onSelectSigungu }) {
         onClick={toggleOpen}
         className="flex w-full items-center justify-between gap-1 rounded-lg border border-slate-200 bg-surface px-2.5 py-1.5 text-[11.5px] text-slate-600 hover:border-brand/40 transition-colors"
       >
-        <span className="truncate">{sigungu?.name || `${region.name} 전체`}</span>
+        <span className="truncate">{sigungu?.name || copy.allOfRegion(areaLabel(region.name, language))}</span>
         <Icon icon="solar:alt-arrow-down-linear" width={11} className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
@@ -96,7 +161,7 @@ function SigunguPicker({ region, sigungu, onSelectSigungu }) {
             onClick={() => pick(null)}
             className={`block w-full px-3.5 py-2 text-left text-[12px] transition-colors ${!sigungu ? SELECTED_ROW : IDLE_ROW}`}
           >
-            {region.name} 전체
+            {copy.allOfRegion(areaLabel(region.name, language))}
           </button>
           {sigungus.map((s) => (
             <button
@@ -128,6 +193,8 @@ export default function ExploreSidebar({
   onSearchSubmit,
   onSearchClear,
 }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [areas, setAreas] = useState(() => sortAreasByPopularity(FALLBACK_AREAS))
   const [showMoreRegions, setShowMoreRegions] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
@@ -170,7 +237,7 @@ export default function ExploreSidebar({
                 onSearchSubmit()
               }
             }}
-            placeholder="관광지, 맛집, 지역 검색"
+            placeholder={copy.searchPlaceholder}
             className="h-full w-full text-[12px] text-slate-700 outline-none placeholder:text-slate-300"
           />
           {searchValue && (
@@ -178,7 +245,7 @@ export default function ExploreSidebar({
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={onSearchClear}
-              aria-label="검색어 지우기"
+              aria-label={copy.clearSearch}
               className="shrink-0 text-slate-300 hover:text-slate-500"
             >
               <Icon icon="mdi:close-circle" width={15} />
@@ -196,7 +263,7 @@ export default function ExploreSidebar({
           }`}
         >
           <Icon icon="mdi:view-grid" width={15} />
-          전체보기
+          {copy.viewAll}
         </button>
 
         <div className="mt-5 shrink-0">
@@ -207,7 +274,7 @@ export default function ExploreSidebar({
             className="flex w-full items-center justify-between px-1 text-[11px] font-bold text-slate-400 transition-colors hover:text-slate-600"
           >
             <span className="flex items-center gap-1.5">
-              테마
+              {copy.themeSection}
               {!themeOpen && theme && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand" aria-hidden="true" />}
             </span>
             <Icon icon="solar:alt-arrow-down-linear" width={11} className={`transition-transform ${themeOpen ? 'rotate-180' : ''}`} />
@@ -227,7 +294,7 @@ export default function ExploreSidebar({
                     }`}
                   >
                     <Icon icon={t.icon} width={15} />
-                    {t.label}
+                    {themeLabel(t.label, language)}
                   </button>
                 ))}
               </div>
@@ -243,7 +310,7 @@ export default function ExploreSidebar({
             className="flex w-full shrink-0 items-center justify-between px-1 text-[11px] font-bold text-slate-400 transition-colors hover:text-slate-600"
           >
             <span className="flex items-center gap-1.5">
-              지역
+              {copy.regionSection}
               {!regionOpen && region && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand" aria-hidden="true" />}
             </span>
             <Icon icon="solar:alt-arrow-down-linear" width={11} className={`transition-transform ${regionOpen ? 'rotate-180' : ''}`} />
@@ -266,11 +333,11 @@ export default function ExploreSidebar({
                         region?.code === a.code ? SELECTED_ROW : IDLE_ROW
                       }`}
                     >
-                      {a.name}
+                      {areaLabel(a.name, language)}
                     </button>
                     {/* 축제 API는 시/도 단위까지만 받으므로 축제 테마에선 시군구 선택을 감춘다 */}
                     {region?.code === a.code && theme?.kind !== 'festival' && (
-                      <SigunguPicker region={region} sigungu={sigungu} onSelectSigungu={onSelectSigungu} />
+                      <SigunguPicker region={region} sigungu={sigungu} onSelectSigungu={onSelectSigungu} language={language} copy={copy} />
                     )}
                   </div>
                 ))}
@@ -280,7 +347,7 @@ export default function ExploreSidebar({
                     onClick={() => setShowMoreRegions((v) => !v)}
                     className="flex w-full items-center gap-1 rounded-[10px] px-2.5 py-1.5 text-[12px] font-semibold text-slate-400 hover:text-slate-600 transition-colors"
                   >
-                    {showMoreRegions ? '접기' : '더보기'}
+                    {showMoreRegions ? copy.less : copy.more}
                     <Icon
                       icon="solar:alt-arrow-down-linear"
                       width={12}

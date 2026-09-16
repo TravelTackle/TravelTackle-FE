@@ -28,13 +28,24 @@ function endOfMonth(d) {
 }
 
 // 프리셋 — 백엔드는 start~end와 "겹치는" 행사를 돌려주므로 start는 항상 오늘 이후로 잡는다
-export const PERIOD_PRESETS = [
-  { key: 'today', label: '진행 중', hint: '오늘 열리는 행사' },
-  { key: 'week', label: '이번 주', hint: '오늘부터 이번 주 일요일까지' },
-  { key: 'month', label: '이번 달', hint: '오늘부터 이달 말까지' },
-  { key: 'nextMonth', label: '다음 달', hint: '다음 달 한 달간' },
-  { key: 'upcoming', label: '예정 전체', hint: '오늘 이후 모든 행사' },
-]
+export function getPeriodPresets(language = 'ko') {
+  if (language !== 'ko') {
+    return [
+      { key: 'today', label: 'Today', hint: 'Events happening today' },
+      { key: 'week', label: 'This week', hint: 'From today through this Sunday' },
+      { key: 'month', label: 'This month', hint: 'From today through the end of this month' },
+      { key: 'nextMonth', label: 'Next month', hint: 'All of next month' },
+      { key: 'upcoming', label: 'All upcoming', hint: 'All events from today onward' },
+    ]
+  }
+  return [
+    { key: 'today', label: '진행 중', hint: '오늘 열리는 행사' },
+    { key: 'week', label: '이번 주', hint: '오늘부터 이번 주 일요일까지' },
+    { key: 'month', label: '이번 달', hint: '오늘부터 이달 말까지' },
+    { key: 'nextMonth', label: '다음 달', hint: '다음 달 한 달간' },
+    { key: 'upcoming', label: '예정 전체', hint: '오늘 이후 모든 행사' },
+  ]
+}
 
 export const DEFAULT_PRESET = 'month'
 
@@ -69,34 +80,36 @@ export function formatShortDate(iso) {
   return sameYear ? `${m}.${d}` : `${y}.${m}.${d}`
 }
 
-// 기간 한 줄 표기 — "9.12 ~ 9.30", 하루면 "9.12", 끝이 없으면 "9.12부터"
-export function formatRange(start, end) {
+// 기간 한 줄 표기 — "9.12 ~ 9.30", 하루면 "9.12", 끝이 없으면 "9.12부터" (ko) / "From 9.12" (en)
+export function formatRange(start, end, language = 'ko') {
   if (!start) return ''
-  if (!end) return `${formatShortDate(start)}부터`
+  if (!end) return language !== 'ko' ? `From ${formatShortDate(start)}` : `${formatShortDate(start)}부터`
   if (start === end) return formatShortDate(start)
   return `${formatShortDate(start)} ~ ${formatShortDate(end)}`
 }
 
-// 며칠간 열리는지 — "3일간", 하루면 "하루", 두 달 넘으면 생략
-export function formatSpan(start, end) {
+// 며칠간 열리는지 — "3일간"(ko) / "3 days"(en), 하루면 "하루"/"1 day", 두 달 넘으면 생략
+export function formatSpan(start, end, language = 'ko') {
   if (!start || !end) return ''
   const days = Math.round((parseLocal(end) - parseLocal(start)) / DAY_MS) + 1
   if (!Number.isFinite(days) || days < 1) return ''
-  if (days === 1) return '하루'
   if (days > 60) return ''
+  if (language !== 'ko') return days === 1 ? '1 day' : `${days} days`
+  if (days === 1) return '하루'
   return `${days}일간`
 }
 
 // 행사 상태 배지 — tone은 FestivalCard가 색으로 옮긴다
-export function festivalStatus(start, end) {
+export function festivalStatus(start, end, language = 'ko') {
   const t = today()
   const s = parseLocal(start)
   const e = parseLocal(end)
   if (s && s > t) {
     const days = Math.round((s - t) / DAY_MS)
-    return { tone: 'upcoming', label: days === 1 ? '내일 시작' : `D-${days}`, days }
+    const label = language !== 'ko' ? (days === 1 ? 'Starts tomorrow' : `D-${days}`) : days === 1 ? '내일 시작' : `D-${days}`
+    return { tone: 'upcoming', label, days }
   }
-  if (e && e < t) return { tone: 'ended', label: '종료', days: 0 }
-  if (e && e.getTime() === t.getTime()) return { tone: 'closing', label: '오늘 마감', days: 0 }
-  return { tone: 'live', label: '진행 중', days: 0 }
+  if (e && e < t) return { tone: 'ended', label: language !== 'ko' ? 'Ended' : '종료', days: 0 }
+  if (e && e.getTime() === t.getTime()) return { tone: 'closing', label: language !== 'ko' ? 'Last day' : '오늘 마감', days: 0 }
+  return { tone: 'live', label: language !== 'ko' ? 'Ongoing' : '진행 중', days: 0 }
 }

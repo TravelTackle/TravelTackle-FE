@@ -3,8 +3,22 @@ import { Icon } from '@iconify/react'
 import Card from '../ui/Card'
 import CardImage from '../ui/CardImage'
 import { SPOT_DRAG_TYPE } from '../../api/cart'
+import { useLanguage } from '../../i18n'
+
+const T = {
+  ko: {
+    removeFromCart: '카트에서 빼기',
+    addToCart: '카트에 담기',
+  },
+  en: {
+    removeFromCart: 'Remove from cart',
+    addToCart: 'Add to cart',
+  },
+}
 
 export default function TourCard({ spot, carted, onOpen, onToggleCart }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [loading, setLoading] = useState(false)
   const [dragging, setDragging] = useState(false)
 
@@ -42,7 +56,7 @@ export default function TourCard({ spot, carted, onOpen, onToggleCart }) {
         <button
           onClick={handleQuickToggle}
           disabled={loading}
-          aria-label={carted ? '카트에서 빼기' : '카트에 담기'}
+          aria-label={carted ? copy.removeFromCart : copy.addToCart}
           className={`absolute top-2.5 left-2.5 flex h-8 w-8 items-center justify-center rounded-full shadow-card transition-colors ${
             carted ? 'bg-brand text-white' : 'bg-white/95 text-ink hover:text-ink-brand'
           }`}

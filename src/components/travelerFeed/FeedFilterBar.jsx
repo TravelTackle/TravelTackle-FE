@@ -2,22 +2,51 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
 import Button from '../ui/Button'
 import Skeleton from '../ui/Skeleton'
+import { useLanguage } from '../../i18n'
 
-export const FILTERS = [
-  { value: 'all', label: '전체', icon: 'mdi:shuffle-variant' },
-  { value: 'plan', label: '계획', icon: 'mdi:calendar-blank-outline' },
-  { value: 'record', label: '기록', icon: 'mdi:camera-outline' },
-]
+const T = {
+  ko: {
+    filters: [
+      { value: 'all', label: '전체', icon: 'mdi:shuffle-variant' },
+      { value: 'plan', label: '계획', icon: 'mdi:calendar-blank-outline' },
+      { value: 'record', label: '기록', icon: 'mdi:camera-outline' },
+    ],
+    views: [
+      { value: 'list', icon: 'mdi:format-list-bulleted', label: '리스트 보기' },
+      { value: 'gallery', icon: 'mdi:view-grid', label: '갤러리 보기' },
+    ],
+    feedTypeGroup: '피드 종류',
+    viewGroup: '보기 방식',
+    preparingFilters: '피드 필터를 준비하는 중',
+    uploadRecord: '기록 업로드',
+  },
+  en: {
+    filters: [
+      { value: 'all', label: 'All', icon: 'mdi:shuffle-variant' },
+      { value: 'plan', label: 'Plans', icon: 'mdi:calendar-blank-outline' },
+      { value: 'record', label: 'Records', icon: 'mdi:camera-outline' },
+    ],
+    views: [
+      { value: 'list', icon: 'mdi:format-list-bulleted', label: 'List view' },
+      { value: 'gallery', icon: 'mdi:view-grid', label: 'Gallery view' },
+    ],
+    feedTypeGroup: 'Feed type',
+    viewGroup: 'View mode',
+    preparingFilters: 'Preparing feed filters',
+    uploadRecord: 'Upload Record',
+  },
+}
 
-const VIEWS = [
-  { value: 'list', icon: 'mdi:format-list-bulleted', label: '리스트 보기' },
-  { value: 'gallery', icon: 'mdi:view-grid', label: '갤러리 보기' },
-]
+// 하위호환 — 다른 파일에서 FILTERS를 직접 import해 쓰는 곳(예: 마이페이지 프로필 탭)은 한국어 기본값을 쓴다.
+export const FILTERS = T.ko.filters
 
 // 전체/계획/기록 세그먼트 — 흰 썸이 선택 쪽으로 미끄러지고, 활성 라벨만 브랜드 색.
 // 마이페이지 프로필 탭에서도 이 토글을 그대로 재사용한다(스켈레톤/보기방식/업로드 버튼 없이 이 부분만).
 // options: 보여줄 필터 목록 — 마이페이지는 "전체" 없이 계획/기록만 쓰므로 FILTERS 일부만 넘긴다.
-export function FeedTypeFilter({ filter, onFilterChange, options = FILTERS }) {
+export function FeedTypeFilter({ filter, onFilterChange, options }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
+  const items = options ?? copy.filters
   const trackRef = useRef(null)
   const [hover, setHover] = useState(null) // 마우스를 올린 필터 값 — 탑바 알약처럼 썸이 커서를 따라간다
   const [thumb, setThumb] = useState(null) // { x, w } — 썸이 가 있을 버튼(호버 중이면 호버, 아니면 활성) 위치
@@ -44,7 +73,7 @@ export function FeedTypeFilter({ filter, onFilterChange, options = FILTERS }) {
       <div
         ref={trackRef}
         role="group"
-        aria-label="피드 종류"
+        aria-label={copy.feedTypeGroup}
         className="relative flex items-center gap-0.5 rounded-full bg-slate-100 p-1"
         onMouseLeave={() => setHover(null)}
       >
@@ -57,7 +86,7 @@ export function FeedTypeFilter({ filter, onFilterChange, options = FILTERS }) {
             opacity: thumb ? 1 : 0,
           }}
         />
-        {options.map((f) => {
+        {items.map((f) => {
           const active = filter === f.value
           const lit = target === f.value // 썸이 올라와 있는 버튼 — 활성이거나 호버 중
           return (
@@ -89,6 +118,9 @@ let revealedOnce = false
 const MIN_SKELETON_MS = 550
 
 export default function FeedFilterBar({ filter, onFilterChange, view, onViewChange, onUploadClick }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
+  const VIEWS = copy.views
   const [revealed, setRevealed] = useState(revealedOnce)
 
   useEffect(() => {
@@ -102,7 +134,7 @@ export default function FeedFilterBar({ filter, onFilterChange, view, onViewChan
 
   if (!revealed) {
     return (
-      <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2.5" role="status" aria-label="피드 필터를 준비하는 중">
+      <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2.5" role="status" aria-label={copy.preparingFilters}>
         <div className="flex items-center gap-1 rounded-full bg-slate-50 p-1">
           {[64, 64, 64].map((w, i) => (
             <Skeleton key={i} className="h-8 rounded-full" style={{ width: w, animationDelay: `${i * 70}ms` }} />
@@ -122,7 +154,7 @@ export default function FeedFilterBar({ filter, onFilterChange, view, onViewChan
 
       <div className="ai-word" style={{ animationDelay: '120ms' }}>
       <div className="flex items-center gap-2">
-        <div className="relative hidden items-center gap-1 rounded-xl bg-slate-100 p-1 sm:flex" role="group" aria-label="보기 방식">
+        <div className="relative hidden items-center gap-1 rounded-xl bg-slate-100 p-1 sm:flex" role="group" aria-label={copy.viewGroup}>
           {/* 선택된 아이콘 뒤에서 슬라이드로 이동하는 흰색 배경 */}
           <div
             aria-hidden="true"
@@ -156,7 +188,7 @@ export default function FeedFilterBar({ filter, onFilterChange, view, onViewChan
           className="hidden items-center gap-1.5 rounded-full px-4 py-2 text-[12.5px] font-bold shadow-card hover:shadow-card-hover sm:flex"
         >
           <Icon icon="mdi:cloud-upload-outline" width={16} />
-          기록 업로드
+          {copy.uploadRecord}
         </Button>
       </div>
       </div>

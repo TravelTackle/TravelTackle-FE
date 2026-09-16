@@ -3,10 +3,71 @@ import { Icon } from '@iconify/react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { CART_CHANGED_EVENT, SPOT_DRAG_TYPE, addCartItem, getCartItems, removeCartItem } from '../api/cart'
-import { CART_TABS, areaName, cartTheme, themeKey } from '../lib/cartThemes'
+import { CART_TABS, areaName, cartTheme, cartThemeLabel, themeKey } from '../lib/cartThemes'
 import Skeleton from './ui/Skeleton'
+import { useLanguage } from '../i18n'
 
 const MIN_SKELETON_MS = 450
+
+// 플로팅 장바구니 버튼·패널의 문구 — 담긴 장소(item.title)는 사용자가 만든 콘텐츠라 번역하지 않는다
+const T = {
+  ko: {
+    cartTitle: '여행 장바구니',
+    itemCount: (n) => `${n}개`,
+    closeCart: '장바구니 닫기',
+    openCart: '장바구니 열기',
+    searchPlaceholder: '여행지 이름 또는 지역',
+    prevFilter: '이전 필터',
+    nextFilter: '다음 필터',
+    loginRequired: '로그인이 필요해요',
+    addedToCart: '여행 장바구니에 담았어요',
+    alreadyInCart: '이미 장바구니에 있어요',
+    addFailed: '장바구니에 담지 못했어요',
+    removedFromCart: '장바구니에서 뺐어요',
+    removeFailed: '장바구니에서 빼지 못했어요',
+    loginToAddTitle: '로그인하면 장소를 담을 수 있어요',
+    loginToAddDesc: '담아 둔 장소로 바로 여행 계획을 만들어요.',
+    loginCta: '로그인하기',
+    loadingCart: '담은 장소를 불러오는 중',
+    emptyAllTitle: '아직 담은 장소가 없어요',
+    emptyThemeTitle: (label) => `담아둔 ${label} 장소가 없어요`,
+    emptyAllDesc: '여행지 탐색에서 카드를 끌어다 놓거나 담기를 눌러보세요.',
+    emptySearchDesc: '검색어를 바꿔보세요.',
+    emptyThemeDesc: '다른 테마를 골라보세요.',
+    exploreCta: '여행지 탐색하기',
+    removeItemLabel: (title) => `${title} 빼기`,
+    dropHere: '여기에 놓아서 담기',
+    createTripCta: (n) => `담은 장소 ${n}곳으로 계획 만들기`,
+  },
+  en: {
+    cartTitle: 'Travel Cart',
+    itemCount: (n) => `${n}`,
+    closeCart: 'Close cart',
+    openCart: 'Open cart',
+    searchPlaceholder: 'Place name or region',
+    prevFilter: 'Previous filter',
+    nextFilter: 'Next filter',
+    loginRequired: 'Please log in first',
+    addedToCart: 'Added to your travel cart',
+    alreadyInCart: 'Already in your cart',
+    addFailed: "Couldn't add to cart",
+    removedFromCart: 'Removed from cart',
+    removeFailed: "Couldn't remove from cart",
+    loginToAddTitle: 'Log in to save places',
+    loginToAddDesc: 'Turn saved places into a trip plan instantly.',
+    loginCta: 'Log in',
+    loadingCart: 'Loading your saved places',
+    emptyAllTitle: 'No places saved yet',
+    emptyThemeTitle: (label) => `No ${label} places saved`,
+    emptyAllDesc: 'Drag a card from Explore or tap Add to save a place.',
+    emptySearchDesc: 'Try a different search term.',
+    emptyThemeDesc: 'Try another theme.',
+    exploreCta: 'Explore destinations',
+    removeItemLabel: (title) => `Remove ${title}`,
+    dropHere: 'Drop here to add',
+    createTripCta: (n) => `Plan a trip with ${n} saved place${n === 1 ? '' : 's'}`,
+  },
+}
 
 function isSpotDrag(e) {
   return e.dataTransfer?.types?.includes(SPOT_DRAG_TYPE)
@@ -16,6 +77,8 @@ function isSpotDrag(e) {
 // 탐색 카드(SPOT_DRAG_TYPE) 드래그가 시작되면 버튼·패널이 드롭 존으로 깨어난다.
 export default function FloatingCart() {
   const { user } = useAuth()
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
@@ -187,7 +250,7 @@ export default function FloatingCart() {
     }
     setOpen(true)
     if (!user) {
-      showNotice('로그인이 필요해요')
+      showNotice(copy.loginRequired)
       return
     }
     try {
@@ -196,9 +259,9 @@ export default function FloatingCart() {
       setJustAddedId(spot.contentId)
       clearTimeout(highlightTimer.current)
       highlightTimer.current = setTimeout(() => setJustAddedId(null), 2000)
-      showNotice('여행 장바구니에 담았어요')
+      showNotice(copy.addedToCart)
     } catch (err) {
-      showNotice(err.response?.status === 409 ? '이미 장바구니에 있어요' : '장바구니에 담지 못했어요')
+      showNotice(err.response?.status === 409 ? copy.alreadyInCart : copy.addFailed)
     }
   }
 
@@ -206,10 +269,10 @@ export default function FloatingCart() {
     setItems((prev) => prev.filter((i) => i.id !== item.id))
     try {
       await removeCartItem(item.id)
-      showToast('장바구니에서 뺐어요')
+      showToast(copy.removedFromCart)
     } catch {
       setItems((prev) => [item, ...prev]) // 실패 시 되돌림
-      showToast('장바구니에서 빼지 못했어요')
+      showToast(copy.removeFailed)
     }
   }
 
@@ -223,7 +286,7 @@ export default function FloatingCart() {
   const q = query.trim().toLowerCase()
   const visibleItems = items
     .filter((i) => tab === 'all' || themeKey(i.contentTypeId) === tab)
-    .filter((i) => !q || i.title?.toLowerCase().includes(q) || areaName(i.areaCode).toLowerCase().includes(q))
+    .filter((i) => !q || i.title?.toLowerCase().includes(q) || areaName(i.areaCode, language).toLowerCase().includes(q))
 
   return (
     <>
@@ -257,13 +320,13 @@ export default function FloatingCart() {
         >
           {/* 헤더 · 검색 · 칩 — 나의 여행 사이드바(TripCartPanel)와 같은 디자인 */}
           <div className="flex items-center justify-between px-4 pt-4">
-            <h2 className="text-[14px] font-bold text-slate-800">여행 장바구니</h2>
+            <h2 className="text-[14px] font-bold text-slate-800">{copy.cartTitle}</h2>
             <div className="flex items-center gap-2">
-              {user && <span className="rounded-full bg-brand-light px-2 py-0.5 text-[11px] font-bold text-brand">{items.length}개</span>}
+              {user && <span className="rounded-full bg-brand-light px-2 py-0.5 text-[11px] font-bold text-brand">{copy.itemCount(items.length)}</span>}
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                aria-label="장바구니 닫기"
+                aria-label={copy.closeCart}
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark"
               >
                 <Icon icon="solar:close-circle-bold" width={18} />
@@ -279,7 +342,7 @@ export default function FloatingCart() {
                   <input
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="여행지 이름 또는 지역"
+                    placeholder={copy.searchPlaceholder}
                     className="h-full w-full text-[12.5px] text-slate-700 outline-none placeholder:text-slate-300"
                   />
                 </div>
@@ -289,7 +352,7 @@ export default function FloatingCart() {
                 <button
                   type="button"
                   onClick={() => scrollTabs(-1)}
-                  aria-label="이전 필터"
+                  aria-label={copy.prevFilter}
                   tabIndex={canScrollLeft ? 0 : -1}
                   className={`flex h-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-surface text-brand shadow-card transition-all duration-300 hover:border-brand hover:bg-brand-light ${
                     canScrollLeft ? 'mr-1 w-6 border-slate-200 opacity-100' : 'w-0 border-transparent opacity-0'
@@ -318,14 +381,14 @@ export default function FloatingCart() {
                         tab === t.key ? 'border-brand bg-brand text-white' : 'border-slate-200 bg-surface text-slate-500 hover:bg-slate-50'
                       }`}
                     >
-                      {t.label}
+                      {cartThemeLabel(t.key, language)}
                     </button>
                   ))}
                 </div>
                 <button
                   type="button"
                   onClick={() => scrollTabs(1)}
-                  aria-label="다음 필터"
+                  aria-label={copy.nextFilter}
                   tabIndex={canScrollRight ? 0 : -1}
                   className={`flex h-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-surface text-brand shadow-card transition-all duration-300 hover:border-brand hover:bg-brand-light ${
                     canScrollRight ? 'ml-1 w-6 border-slate-200 opacity-100' : 'w-0 border-transparent opacity-0'
@@ -343,18 +406,18 @@ export default function FloatingCart() {
                 <span className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-50 text-slate-300">
                   <Icon icon="solar:cart-large-2-linear" width={26} />
                 </span>
-                <p className="mt-4 text-[13.5px] font-bold text-slate-700">로그인하면 장소를 담을 수 있어요</p>
-                <p className="mt-1 text-[12px] text-slate-400">담아 둔 장소로 바로 여행 계획을 만들어요.</p>
+                <p className="mt-4 text-[13.5px] font-bold text-slate-700">{copy.loginToAddTitle}</p>
+                <p className="mt-1 text-[12px] text-slate-400">{copy.loginToAddDesc}</p>
                 <Link
                   to="/login"
                   onClick={() => setOpen(false)}
                   className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-[12.5px] font-bold text-white transition-colors hover:bg-brand-dark"
                 >
-                  <Icon icon="solar:user-rounded-bold" width={13} /> 로그인하기
+                  <Icon icon="solar:user-rounded-bold" width={13} /> {copy.loginCta}
                 </Link>
               </div>
             ) : loading ? (
-              <div className="flex flex-col gap-2.5" role="status" aria-label="담은 장소를 불러오는 중">
+              <div className="flex flex-col gap-2.5" role="status" aria-label={copy.loadingCart}>
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-surface p-3">
                     <Skeleton className="h-14 w-14 shrink-0 rounded-xl" style={{ animationDelay: `${i * 120}ms` }} />
@@ -374,11 +437,11 @@ export default function FloatingCart() {
                 </span>
                 <p className="mt-4 text-[13.5px] font-bold text-slate-700">
                   {items.length === 0
-                    ? '아직 담은 장소가 없어요'
-                    : `담아둔 ${CART_TABS.find((t) => t.key === tab)?.label} 장소가 없어요`}
+                    ? copy.emptyAllTitle
+                    : copy.emptyThemeTitle(cartThemeLabel(tab, language))}
                 </p>
                 <p className="mt-1 text-[12px] leading-relaxed text-slate-400">
-                  {items.length === 0 ? '여행지 탐색에서 카드를 끌어다 놓거나 담기를 눌러보세요.' : q ? '검색어를 바꿔보세요.' : '다른 테마를 골라보세요.'}
+                  {items.length === 0 ? copy.emptyAllDesc : q ? copy.emptySearchDesc : copy.emptyThemeDesc}
                 </p>
                 {items.length === 0 && (
                   <Link
@@ -386,7 +449,7 @@ export default function FloatingCart() {
                     onClick={() => setOpen(false)}
                     className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-surface px-4 py-2 text-[12.5px] font-bold text-slate-700 transition-all hover:border-brand hover:text-brand"
                   >
-                    <Icon icon="solar:compass-linear" width={14} /> 여행지 탐색하기
+                    <Icon icon="solar:compass-linear" width={14} /> {copy.exploreCta}
                   </Link>
                 )}
               </div>
@@ -409,15 +472,15 @@ export default function FloatingCart() {
                     <div className="min-w-0 flex-1">
                       <span className="inline-flex items-center gap-1 rounded border border-slate-200 px-1.5 py-px text-[10px] font-semibold text-slate-400">
                         <Icon icon={cartTheme(item.contentTypeId).icon} width={10} />
-                        {cartTheme(item.contentTypeId).label}
+                        {cartThemeLabel(cartTheme(item.contentTypeId).key, language)}
                       </span>
                       <p className="mt-0.5 truncate text-[12.5px] font-bold text-slate-800">{item.title}</p>
-                      <p className="text-[11px] text-slate-400">{areaName(item.areaCode)}</p>
+                      <p className="text-[11px] text-slate-400">{areaName(item.areaCode, language)}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleRemove(item)}
-                      aria-label={`${item.title} 빼기`}
+                      aria-label={copy.removeItemLabel(item.title)}
                       className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-100"
                     >
                       <Icon icon="solar:trash-bin-minimalistic-linear" width={13} />
@@ -441,7 +504,7 @@ export default function FloatingCart() {
                   className="pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-full skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-[300%]"
                 />
                 <Icon icon="solar:calendar-add-bold" width={16} />
-                담은 장소 {items.length}곳으로 계획 만들기
+                {copy.createTripCta(items.length)}
               </Link>
             </div>
           )}
@@ -454,7 +517,7 @@ export default function FloatingCart() {
             >
               <p className="flex items-center gap-1.5 text-[13px] font-bold text-brand">
                 <Icon icon="solar:cart-plus-bold" width={18} />
-                여기에 놓아서 담기
+                {copy.dropHere}
               </p>
             </div>
           )}
@@ -463,7 +526,7 @@ export default function FloatingCart() {
 
       {dragActive && !open && (
         <div className="pointer-events-none mb-2 whitespace-nowrap rounded-full bg-black/90 px-3 py-1.5 text-[11.5px] font-bold text-white shadow-popup">
-          여기에 놓아서 담기
+          {copy.dropHere}
         </div>
       )}
 
@@ -483,7 +546,7 @@ export default function FloatingCart() {
               ? ''
               : 'animate-float'
         }`}
-        aria-label={open ? '장바구니 닫기' : '장바구니 열기'}
+        aria-label={open ? copy.closeCart : copy.openCart}
         aria-expanded={open}
       >
         <span className={`flex transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${open ? 'rotate-90' : 'rotate-0'}`}>

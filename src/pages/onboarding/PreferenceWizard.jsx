@@ -4,44 +4,113 @@ import OnboardingHeader from '../../components/onboarding/OnboardingHeader'
 import OptionCard from '../../components/onboarding/OptionCard'
 import Button from '../../components/ui/Button'
 import { useAuth } from '../../context/AuthContext'
+import { useLanguage } from '../../i18n'
 import * as preferencesApi from '../../api/preferences'
-import { INTEREST_TAGS, TRAVEL_STYLES, BUDGET_LEVELS, PREFERRED_REGIONS } from '../../data/preferenceOptions'
+import { getPreferenceOptions } from '../../data/preferenceOptions'
 
-const STEPS = [
-  {
-    key: 'interestTags',
-    multiple: true,
-    title: '이번 여행에서 가장 끌리는 것은 무엇인가요?',
-    options: INTEREST_TAGS,
-    grid: 'grid-cols-2 sm:grid-cols-3',
+const T = {
+  ko: {
+    wizardTitle: '나만의 여행 취향 설정',
+    headline: (name) => `${name}님의 여행 취향을 알려주세요`,
+    subheadline: '더 정확한 참견과 추천을 위해 필요해요',
+    skip: '건너뛰기',
+    multipleSelect: '중복 선택 가능',
+    prev: '이전',
+    saving: '저장 중...',
+    complete: '완료',
+    next: '다음',
+    confirmSkip: '선호도 설정을 건너뛸까요? 나중에 마이페이지에서 언제든 설정할 수 있어요.',
+    errorSaveFailed: '선호도 저장에 실패했어요. 잠시 후 다시 시도해주세요.',
   },
-  {
-    key: 'travelStyle',
-    multiple: false,
-    title: '여행할 때 어떤 스타일에 가까우신가요?',
-    options: TRAVEL_STYLES,
-    grid: 'grid-cols-1',
+  en: {
+    wizardTitle: 'Set up your travel preferences',
+    headline: (name) => `Tell us your travel preferences, ${name}`,
+    subheadline: 'This helps us give you more accurate feedback and recommendations',
+    skip: 'Skip',
+    multipleSelect: 'Select multiple',
+    prev: 'Back',
+    saving: 'Saving...',
+    complete: 'Done',
+    next: 'Next',
+    confirmSkip: 'Skip preference setup? You can always set this later from My Page.',
+    errorSaveFailed: 'Failed to save your preferences. Please try again shortly.',
   },
-  {
-    key: 'budgetLevel',
-    multiple: false,
-    title: '여행에서 소비하는 편은 어느 쪽인가요?',
-    subtitle: '숙박비/항공권 제외',
-    options: BUDGET_LEVELS,
-    grid: 'grid-cols-1 sm:grid-cols-2',
-  },
-  {
-    key: 'preferredRegions',
-    multiple: true,
-    title: '가고 싶은 지역이 있으신가요?',
-    options: PREFERRED_REGIONS,
-    grid: 'grid-cols-2 sm:grid-cols-3',
-  },
-]
+}
+
+function getSteps(language, options) {
+  const { INTEREST_TAGS, TRAVEL_STYLES, BUDGET_LEVELS, PREFERRED_REGIONS } = options
+  if (language !== 'ko') {
+    return [
+      {
+        key: 'interestTags',
+        multiple: true,
+        title: 'What excites you most about this trip?',
+        options: INTEREST_TAGS,
+        grid: 'grid-cols-2 sm:grid-cols-3',
+      },
+      {
+        key: 'travelStyle',
+        multiple: false,
+        title: 'Which travel style fits you best?',
+        options: TRAVEL_STYLES,
+        grid: 'grid-cols-1',
+      },
+      {
+        key: 'budgetLevel',
+        multiple: false,
+        title: 'How much do you tend to spend while traveling?',
+        subtitle: 'Excludes lodging/flights',
+        options: BUDGET_LEVELS,
+        grid: 'grid-cols-1 sm:grid-cols-2',
+      },
+      {
+        key: 'preferredRegions',
+        multiple: true,
+        title: 'Any regions you want to visit?',
+        options: PREFERRED_REGIONS,
+        grid: 'grid-cols-2 sm:grid-cols-3',
+      },
+    ]
+  }
+  return [
+    {
+      key: 'interestTags',
+      multiple: true,
+      title: '이번 여행에서 가장 끌리는 것은 무엇인가요?',
+      options: INTEREST_TAGS,
+      grid: 'grid-cols-2 sm:grid-cols-3',
+    },
+    {
+      key: 'travelStyle',
+      multiple: false,
+      title: '여행할 때 어떤 스타일에 가까우신가요?',
+      options: TRAVEL_STYLES,
+      grid: 'grid-cols-1',
+    },
+    {
+      key: 'budgetLevel',
+      multiple: false,
+      title: '여행에서 소비하는 편은 어느 쪽인가요?',
+      subtitle: '숙박비/항공권 제외',
+      options: BUDGET_LEVELS,
+      grid: 'grid-cols-1 sm:grid-cols-2',
+    },
+    {
+      key: 'preferredRegions',
+      multiple: true,
+      title: '가고 싶은 지역이 있으신가요?',
+      options: PREFERRED_REGIONS,
+      grid: 'grid-cols-2 sm:grid-cols-3',
+    },
+  ]
+}
 
 export default function PreferenceWizard() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
+  const STEPS = getSteps(language, getPreferenceOptions(language))
   const [stepIndex, setStepIndex] = useState(0)
   const [answers, setAnswers] = useState({
     interestTags: new Set(),
@@ -72,7 +141,7 @@ export default function PreferenceWizard() {
   }
 
   const handleSkip = () => {
-    if (window.confirm('선호도 설정을 건너뛸까요? 나중에 마이페이지에서 언제든 설정할 수 있어요.')) {
+    if (window.confirm(copy.confirmSkip)) {
       navigate('/')
     }
   }
@@ -103,7 +172,7 @@ export default function PreferenceWizard() {
       })
       navigate('/onboarding/complete')
     } catch {
-      setError('선호도 저장에 실패했어요. 잠시 후 다시 시도해주세요.')
+      setError(copy.errorSaveFailed)
     } finally {
       setSubmitting(false)
     }
@@ -114,11 +183,11 @@ export default function PreferenceWizard() {
       {/* flex-1 + 질문 영역 flex-1: 스텝별 옵션 수가 달라도 헤더·진행바·버튼 위치가 고정된다 */}
       <div className="mx-auto flex w-full max-w-[580px] flex-1 flex-col">
         <div className="mb-7">
-          <p className="text-[13px] font-bold text-brand">나만의 여행 취향 설정</p>
+          <p className="text-[13px] font-bold text-brand">{copy.wizardTitle}</p>
           <h1 className="mt-1.5 text-[22px] sm:text-[26px] leading-[1.25] font-extrabold tracking-tight text-slate-900">
-            {user?.name}님의 여행 취향을 알려주세요
+            {copy.headline(user?.name)}
           </h1>
-          <p className="text-[14px] text-slate-500 mt-2">더 정확한 참견과 추천을 위해 필요해요</p>
+          <p className="text-[14px] text-slate-500 mt-2">{copy.subheadline}</p>
         </div>
 
         <div className="flex items-center justify-between mb-2">
@@ -130,7 +199,7 @@ export default function PreferenceWizard() {
             onClick={handleSkip}
             className="text-[13px] font-medium text-slate-400 hover:text-slate-600 transition-colors"
           >
-            건너뛰기
+            {copy.skip}
           </button>
         </div>
         <div className="h-1.5 w-full rounded-full bg-slate-100 mb-5 overflow-hidden">
@@ -146,7 +215,7 @@ export default function PreferenceWizard() {
               Q{stepIndex + 1}. {step.title}
             </h2>
             {step.subtitle && <p className="text-[12px] text-slate-400 mt-1.5">{step.subtitle}</p>}
-            {step.multiple && <p className="text-[12px] text-brand-dark font-semibold mt-1.5">중복 선택 가능</p>}
+            {step.multiple && <p className="text-[12px] text-brand-dark font-semibold mt-1.5">{copy.multipleSelect}</p>}
           </div>
 
           <div className={`grid ${step.grid} gap-2.5`}>
@@ -166,14 +235,14 @@ export default function PreferenceWizard() {
 
         <div className="flex items-center justify-between mt-5">
           <Button variant="light" onClick={handlePrev} className="h-11 px-6 rounded-xl font-bold text-[14px]">
-            이전
+            {copy.prev}
           </Button>
           <Button
             onClick={handleNext}
             disabled={!isAnswered || submitting}
             className="h-11 px-6 rounded-xl font-bold text-[14px] disabled:opacity-40"
           >
-            {submitting ? '저장 중...' : stepIndex === STEPS.length - 1 ? '완료' : '다음'}
+            {submitting ? copy.saving : stepIndex === STEPS.length - 1 ? copy.complete : copy.next}
           </Button>
         </div>
       </div>

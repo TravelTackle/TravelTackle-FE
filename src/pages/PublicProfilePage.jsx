@@ -14,6 +14,7 @@ import FeedDetailDrawer from '../components/travelerFeed/FeedDetailDrawer'
 import FeedbackDrawer from '../components/travelerFeed/FeedbackDrawer'
 import { FeedActionsProvider, targetTripId } from '../components/travelerFeed/FeedActionsContext'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../i18n'
 import { getSavedTrips, saveTrip, unsaveTrip } from '../api/trip'
 import { getUserFeed, getUserProfile } from '../api/feed'
 import { adaptFeedItem } from '../data/feedAdapter'
@@ -23,6 +24,35 @@ const GALLERY_COLUMNS = 3
 const PROFILE_FILTERS = FILTERS.filter((f) => f.value !== 'all')
 const PAGE_SIZE = 30
 
+const T = {
+  ko: {
+    userNotFound: '사용자를 찾을 수 없어요.',
+    planLabel: '계획',
+    recordLabel: '기록',
+    emptyPlan: '아직 만든 여행 계획이 없어요.',
+    emptyRecord: '아직 남긴 여행 기록이 없어요.',
+    loginToSave: '로그인하면 내 여행으로 스크랩할 수 있어요',
+    unsaved: '스크랩을 해제했어요',
+    saved: '보관함에 스크랩했어요',
+    loginRequired: '로그인이 필요해요',
+    saveErrorOwnPlan: '내 계획은 스크랩할 수 없어요',
+    saveErrorGeneric: '스크랩에 실패했어요. 잠시 후 다시 시도해주세요',
+  },
+  en: {
+    userNotFound: 'Could not find this user.',
+    planLabel: 'Plans',
+    recordLabel: 'Records',
+    emptyPlan: "This user hasn't created any trip plans yet.",
+    emptyRecord: "This user hasn't left any trip records yet.",
+    loginToSave: 'Log in to save this to your trips',
+    unsaved: 'Removed from saved',
+    saved: 'Saved',
+    loginRequired: 'Login required',
+    saveErrorOwnPlan: "You can't save your own plan",
+    saveErrorGeneric: "Couldn't save that. Please try again later",
+  },
+}
+
 // 다른 사용자의 공개 프로필 — 마이페이지(MyPageSettings)의 본인 갤러리와 같은 모양이지만,
 // 편집 UI(설정 버튼·공개 토글·수정/삭제)는 전부 없다. FeedDetailDrawer/FeedUserHeader가
 // 이미 로그인 유저 id와 글 작성자 id를 비교해 내 것이 아니면 그 UI들을 스스로 숨기므로,
@@ -31,6 +61,8 @@ export default function PublicProfilePage() {
   const { userId } = useParams()
   const { user, loading: authLoading } = useAuth()
   const navigate = useNavigate()
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const isSelf = !authLoading && !!user && String(user.userId) === String(userId)
 
   // 본인 프로필로 들어오면 편집 가능한 마이페이지로 보낸다 — 이 화면은 읽기 전용이라 자기 글도 편집할 수 없다.
@@ -139,7 +171,7 @@ export default function PublicProfilePage() {
     const tripId = targetTripId(item)
     if (!tripId) return
     if (!user) {
-      showToast('로그인하면 내 여행으로 스크랩할 수 있어요')
+      showToast(copy.loginToSave)
       return
     }
     if (pendingIds.has(tripId)) return
@@ -150,21 +182,21 @@ export default function PublicProfilePage() {
         await unsaveTrip(savedTripId)
         setSavedIds((m) => { const next = new Map(m); next.delete(tripId); return next })
         setSaveDelta((d) => ({ ...d, [tripId]: (d[tripId] ?? 0) - 1 }))
-        showToast('스크랩을 해제했어요')
+        showToast(copy.unsaved)
       } else {
         const saved = await saveTrip(tripId, item.type === 'record' ? 'RECORD' : 'PLAN')
         setSavedIds((m) => new Map(m).set(tripId, saved.savedTripId))
         setSaveDelta((d) => ({ ...d, [tripId]: (d[tripId] ?? 0) + 1 }))
-        showToast('보관함에 스크랩했어요')
+        showToast(copy.saved)
       }
     } catch (err) {
       const data = err?.response?.data
       showToast(
         err?.response?.status === 401
-          ? '로그인이 필요해요'
+          ? copy.loginRequired
           : data?.code === 'TRIP_011'
-            ? '내 계획은 스크랩할 수 없어요'
-            : data?.message || '스크랩에 실패했어요. 잠시 후 다시 시도해주세요',
+            ? copy.saveErrorOwnPlan
+            : data?.message || copy.saveErrorGeneric,
       )
     } finally {
       setPendingIds((s) => { const next = new Set(s); next.delete(tripId); return next })
@@ -212,7 +244,7 @@ export default function PublicProfilePage() {
       <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-1 flex-col gap-8 py-12">
         <FeedActionsProvider value={feedActions}>
           {profileError ? (
-            <div className="py-20 text-center text-[13px] text-slate-400">사용자를 찾을 수 없어요.</div>
+            <div className="py-20 text-center text-[13px] text-slate-400">{copy.userNotFound}</div>
           ) : (
             <div className="flex flex-col gap-8">
               <div className="flex items-center gap-5">
@@ -231,10 +263,10 @@ export default function PublicProfilePage() {
                       <h1 className={`text-[24px] font-extrabold ${profile?.name ? 'text-slate-900' : 'text-slate-300'}`}>{profile?.name || '—'}</h1>
                       <div className="mt-2 flex items-center gap-4">
                         <span className="text-[16px] text-slate-500">
-                          계획 <b className="text-slate-900">{profile?.planCount ?? 0}</b>
+                          {copy.planLabel} <b className="text-slate-900">{profile?.planCount ?? 0}</b>
                         </span>
                         <span className="text-[16px] text-slate-500">
-                          기록 <b className="text-slate-900">{profile?.recordCount ?? 0}</b>
+                          {copy.recordLabel} <b className="text-slate-900">{profile?.recordCount ?? 0}</b>
                         </span>
                       </div>
                     </div>
@@ -257,7 +289,7 @@ export default function PublicProfilePage() {
                 </div>
               ) : filteredItems.length === 0 ? (
                 <div className="py-20 text-center text-[13px] text-slate-400">
-                  {filter === 'record' ? '아직 남긴 여행 기록이 없어요.' : '아직 만든 여행 계획이 없어요.'}
+                  {filter === 'record' ? copy.emptyRecord : copy.emptyPlan}
                 </div>
               ) : (
                 <>

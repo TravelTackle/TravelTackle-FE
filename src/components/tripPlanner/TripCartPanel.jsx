@@ -1,12 +1,40 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { CART_CHANGED_EVENT, CART_ITEM_DRAG_TYPE, getCartItems, removeCartItem } from '../../api/cart'
-import { CART_TABS, areaName, cartTheme, themeKey } from '../../lib/cartThemes'
+import { CART_TABS, areaName, cartTheme, cartThemeLabel, themeKey } from '../../lib/cartThemes'
+import { useLanguage } from '../../i18n'
+
+const T = {
+  ko: {
+    title: '여행 장바구니',
+    itemCount: (n) => `${n}개`,
+    close: '여행 장바구니 닫기',
+    addTargetHint: (label) => `${label}에 추가할 장소를 선택하세요`,
+    searchPlaceholder: '여행지 이름 또는 지역',
+    prevFilter: '이전 필터',
+    nextFilter: '다음 필터',
+    empty: '담아둔 장소가 없어요',
+    remove: (title) => `${title} 빼기`,
+  },
+  en: {
+    title: 'Trip cart',
+    itemCount: (n) => `${n}`,
+    close: 'Close trip cart',
+    addTargetHint: (label) => `Choose a place to add to ${label}`,
+    searchPlaceholder: 'Destination name or region',
+    prevFilter: 'Previous filter',
+    nextFilter: 'Next filter',
+    empty: 'No places saved yet',
+    remove: (title) => `Remove ${title}`,
+  },
+}
 
 // 계획 편집 화면 우측의 여행 장바구니 사이드바 패널. FloatingCart와 같은 실 데이터(api/cart.js)를 쓴다.
 // 접힌 상태는 이 컴포넌트가 아니라 부모(TripPlannerPage)가 아예 마운트를 안 하는 식으로 처리하고,
 // 대신 우측 하단에 뜨는 전용 플로팅 버튼(TripCartFloatingButton)이 그 자리를 대신한다.
 export default function TripCartPanel({ onToggle, onAddItem, targetDayLabel }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   // 모바일(터치)에서 draggable="true"인 요소는 탭이 드래그 제스처 인식기에 먼저 먹혀서 클릭이
   // 씹히는 경우가 있다 — 데스크톱(마우스)에서만 드래그를 켜고, 모바일에서는 탭으로만 담게 한다.
   const [isDesktop] = useState(() => window.matchMedia('(min-width: 640px)').matches)
@@ -97,19 +125,19 @@ export default function TripCartPanel({ onToggle, onAddItem, targetDayLabel }) {
   const q = query.trim().toLowerCase()
   const visibleItems = items
     .filter((i) => tab === 'all' || themeKey(i.contentTypeId) === tab)
-    .filter((i) => !q || i.title?.toLowerCase().includes(q) || areaName(i.areaCode).toLowerCase().includes(q))
+    .filter((i) => !q || i.title?.toLowerCase().includes(q) || areaName(i.areaCode, language).toLowerCase().includes(q))
 
   return (
     // 모바일에서는 챗봇/장바구니 위젯처럼 화면 전체를 채우고(28px 라운드), sm 이상에서는 기존 사이드 패널 크기로 되돌아온다.
     <div className="flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-slate-100 bg-surface shadow-card sm:h-auto sm:max-h-[calc(100vh-160px)] sm:w-[340px] sm:shrink-0 sm:rounded-2xl">
       <div className="flex items-center justify-between px-4 pt-4">
-        <h2 className="text-[14px] font-bold text-slate-800">여행 장바구니</h2>
+        <h2 className="text-[14px] font-bold text-slate-800">{copy.title}</h2>
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-brand-light px-2 py-0.5 text-[11px] font-bold text-brand">{items.length}개</span>
+          <span className="rounded-full bg-brand-light px-2 py-0.5 text-[11px] font-bold text-brand">{copy.itemCount(items.length)}</span>
           {/* 기존 플로팅 장바구니의 닫기(X) 버튼과 같은 생김새 — 파란 원 + 흰 X + 개수 배지 */}
           <button
             onClick={onToggle}
-            aria-label="여행 장바구니 닫기"
+            aria-label={copy.close}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark"
           >
             <Icon icon="solar:close-circle-bold" width={18} />
@@ -119,7 +147,7 @@ export default function TripCartPanel({ onToggle, onAddItem, targetDayLabel }) {
 
       {onAddItem && targetDayLabel && (
         <p className="mx-4 mt-2 rounded-lg bg-brand-light px-3 py-2 text-[11.5px] font-bold text-brand">
-          {targetDayLabel}에 추가할 장소를 선택하세요
+          {copy.addTargetHint(targetDayLabel)}
         </p>
       )}
 
@@ -129,7 +157,7 @@ export default function TripCartPanel({ onToggle, onAddItem, targetDayLabel }) {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="여행지 이름 또는 지역"
+            placeholder={copy.searchPlaceholder}
             className="h-full w-full text-[12.5px] text-slate-700 outline-none placeholder:text-slate-300"
           />
         </div>
@@ -139,7 +167,7 @@ export default function TripCartPanel({ onToggle, onAddItem, targetDayLabel }) {
         <button
           type="button"
           onClick={() => scrollTabs(-1)}
-          aria-label="이전 필터"
+          aria-label={copy.prevFilter}
           tabIndex={canScrollLeft ? 0 : -1}
           className={`flex h-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-surface text-brand shadow-card transition-all duration-300 hover:border-brand hover:bg-brand-light ${
             canScrollLeft ? 'mr-1 w-6 border-slate-200 opacity-100' : 'w-0 border-transparent opacity-0'
@@ -167,14 +195,14 @@ export default function TripCartPanel({ onToggle, onAddItem, targetDayLabel }) {
                 tab === t.key ? 'border-brand bg-brand text-white' : 'border-slate-200 bg-surface text-slate-500 hover:bg-slate-50'
               }`}
             >
-              {t.label}
+              {cartThemeLabel(t.key, language)}
             </button>
           ))}
         </div>
         <button
           type="button"
           onClick={() => scrollTabs(1)}
-          aria-label="다음 필터"
+          aria-label={copy.nextFilter}
           tabIndex={canScrollRight ? 0 : -1}
           className={`flex h-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-surface text-brand shadow-card transition-all duration-300 hover:border-brand hover:bg-brand-light ${
             canScrollRight ? 'ml-1 w-6 border-slate-200 opacity-100' : 'w-0 border-transparent opacity-0'
@@ -188,7 +216,7 @@ export default function TripCartPanel({ onToggle, onAddItem, targetDayLabel }) {
         {visibleItems.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 py-10 text-center">
             <Icon icon="solar:cart-large-2-linear" width={26} className="text-slate-300" />
-            <p className="text-[12.5px] font-semibold text-slate-500">담아둔 장소가 없어요</p>
+            <p className="text-[12.5px] font-semibold text-slate-500">{copy.empty}</p>
           </div>
         ) : (
           <ul className="flex flex-col gap-2.5">
@@ -221,17 +249,17 @@ export default function TripCartPanel({ onToggle, onAddItem, targetDayLabel }) {
                 <div className="min-w-0 flex-1">
                   <span className="inline-flex items-center gap-1 rounded border border-slate-200 px-1.5 py-px text-[10px] font-semibold text-slate-400">
                     <Icon icon={cartTheme(item.contentTypeId).icon} width={10} />
-                    {cartTheme(item.contentTypeId).label}
+                    {cartThemeLabel(cartTheme(item.contentTypeId).key, language)}
                   </span>
                   <p className="mt-0.5 truncate text-[12.5px] font-bold text-slate-800">{item.title}</p>
-                  <p className="text-[11px] text-slate-400">{areaName(item.areaCode)}</p>
+                  <p className="text-[11px] text-slate-400">{areaName(item.areaCode, language)}</p>
                 </div>
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
                     handleRemove(item)
                   }}
-                  aria-label={`${item.title} 빼기`}
+                  aria-label={copy.remove(item.title)}
                   className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-100"
                 >
                   <Icon icon="solar:trash-bin-minimalistic-linear" width={13} />

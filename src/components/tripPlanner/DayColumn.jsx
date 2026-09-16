@@ -4,12 +4,28 @@ import TripItemCard from './TripItemCard'
 import { CART_ITEM_DRAG_TYPE } from '../../api/cart'
 import { TRIP_ITEM_DRAG_TYPE } from '../../lib/dragTypes'
 import { tripItemColor, tripItemIcon } from '../../lib/cartThemes'
+import { useLanguage } from '../../i18n'
 
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
+const WEEKDAYS = {
+  ko: ['일', '월', '화', '수', '목', '금', '토'],
+  en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+}
 
-function formatDay(dateStr) {
+const T = {
+  ko: {
+    placeCount: (n) => `${n}개의 장소`,
+    addPlaceHint: '탭하거나 드래그하여 장소 추가',
+  },
+  en: {
+    placeCount: (n) => `${n} place${n === 1 ? '' : 's'}`,
+    addPlaceHint: 'Tap or drag to add a place',
+  },
+}
+
+function formatDay(dateStr, language) {
   const d = new Date(`${dateStr}T00:00:00`)
-  return { md: `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`, wd: WEEKDAYS[d.getDay()] }
+  const weekdays = WEEKDAYS[language] ?? WEEKDAYS.en
+  return { md: `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`, wd: weekdays[d.getDay()] }
 }
 
 function getDropIndex(container, clientY) {
@@ -48,10 +64,12 @@ export default function DayColumn({
   deleteLocked = false, // 공개 중인 계획에서 이 날의 마지막 일정일 때 — 삭제 버튼을 잠근다(TRIP_023)
   className = '',
 }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [dragOver, setDragOver] = useState(false)
   const [dropIndex, setDropIndex] = useState(null)
   const listRef = useRef(null)
-  const { md, wd } = formatDay(day.date)
+  const { md, wd } = formatDay(day.date, language)
 
   function isRelevantDrag(e) {
     return e.dataTransfer?.types?.includes(CART_ITEM_DRAG_TYPE) || e.dataTransfer?.types?.includes(TRIP_ITEM_DRAG_TYPE)
@@ -161,10 +179,10 @@ export default function DayColumn({
             onClick={() => onOpenCart?.()}
             className="flex flex-1 flex-col items-center gap-1 rounded-lg py-3 text-center transition-colors hover:bg-brand-light/40"
           >
-            <p className="text-[11px] text-slate-400">{day.items.length}개의 장소</p>
+            <p className="text-[11px] text-slate-400">{copy.placeCount(day.items.length)}</p>
             <p className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
               <Icon icon="solar:widget-add-linear" width={13} />
-              탭하거나 드래그하여 장소 추가
+              {copy.addPlaceHint}
             </p>
           </button>
         </div>

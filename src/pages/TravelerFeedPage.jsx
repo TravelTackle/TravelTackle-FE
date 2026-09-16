@@ -21,15 +21,62 @@ import { useAuth } from '../context/AuthContext'
 import { getSavedTrips, saveTrip, unsaveTrip } from '../api/trip'
 import { getFeed, getFeedDetail } from '../api/feed'
 import { adaptFeedItem, adaptPlanDetail, adaptRecordDetail } from '../data/feedAdapter'
+import { useLanguage } from '../i18n'
 
-const SORT_OPTIONS = [
-  { value: 'relevance', label: '관련도순' },
-  { value: 'latest', label: '최신순' },
-  { value: 'oldest', label: '오래된순' },
-]
+const T = {
+  ko: {
+    sortOptions: [
+      { value: 'relevance', label: '관련도순' },
+      { value: 'latest', label: '최신순' },
+      { value: 'oldest', label: '오래된순' },
+    ],
+    uploadRecord: '기록 업로드',
+    searchPlaceholder: '여행 계획, 기록 검색',
+    clearSearch: '검색어 지우기',
+    notFoundPost: '게시글을 찾을 수 없어요',
+    loginToSave: '로그인하면 내 여행으로 스크랩할 수 있어요',
+    unsaved: '스크랩을 해제했어요',
+    saved: '보관함에 스크랩했어요',
+    alreadySaved: '이미 보관함에 있는 계획이에요',
+    loginRequired: '로그인이 필요해요',
+    cantSaveOwn: '내 계획은 스크랩할 수 없어요',
+    saveFailed: '스크랩에 실패했어요. 잠시 후 다시 시도해주세요',
+    allSeen: '모든 피드를 다 확인했어요',
+    noFeed: '해당하는 피드가 없어요.',
+    recordUploaded: '기록을 올렸어요',
+    recordSavedPrivate: '기록을 저장했어요 · 계획을 공개하면 피드에 보여요',
+    loadingFeed: '피드를 불러오는 중',
+  },
+  en: {
+    sortOptions: [
+      { value: 'relevance', label: 'Relevance' },
+      { value: 'latest', label: 'Newest' },
+      { value: 'oldest', label: 'Oldest' },
+    ],
+    uploadRecord: 'Upload Record',
+    searchPlaceholder: 'Search trip plans, records',
+    clearSearch: 'Clear search',
+    notFoundPost: "Couldn't find that post",
+    loginToSave: 'Log in to save this to your trips',
+    unsaved: 'Removed from saved',
+    saved: 'Saved to your trips',
+    alreadySaved: 'This plan is already saved',
+    loginRequired: 'Please log in',
+    cantSaveOwn: "You can't save your own plan",
+    saveFailed: "Couldn't save it. Please try again later",
+    allSeen: "You've seen the whole feed",
+    noFeed: 'No matching feed.',
+    recordUploaded: 'Record uploaded',
+    recordSavedPrivate: 'Record saved · Publish your plan to show it in the feed',
+    loadingFeed: 'Loading feed',
+  },
+}
 
 export default function TravelerFeedPage() {
   const { user } = useAuth()
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
+  const SORT_OPTIONS = copy.sortOptions
   const [realItems, setRealItems] = useState([])
   const [feedLoading, setFeedLoading] = useState(true)
   const [searchInput, setSearchInput] = useState('')
@@ -73,7 +120,7 @@ export default function TravelerFeedPage() {
     getFeed({ page: 0, size: 50, keyword: searchKeyword || undefined, sort: sortOption })
       .then((res) => {
         if (ignore) return
-        setRealItems(res.content.map(adaptFeedItem))
+        setRealItems(res.content.map((entry) => adaptFeedItem(entry, language)))
         setHasMore(!res.last)
       })
       .catch(() => {
@@ -83,7 +130,7 @@ export default function TravelerFeedPage() {
       })
       .finally(() => { if (!ignore) setFeedLoading(false) })
     return () => { ignore = true }
-  }, [searchKeyword, sortOption, reloadKey])
+  }, [searchKeyword, sortOption, reloadKey, language])
 
   useEffect(() => () => clearTimeout(endCheckTimer.current), [])
 
@@ -94,13 +141,13 @@ export default function TravelerFeedPage() {
     setLoadingMore(true)
     getFeed({ page: nextPage, size: 50, keyword: searchKeyword || undefined, sort: sortOption })
       .then((res) => {
-        setRealItems((prev) => [...prev, ...res.content.map(adaptFeedItem)])
+        setRealItems((prev) => [...prev, ...res.content.map((entry) => adaptFeedItem(entry, language))])
         setPage(nextPage)
         setHasMore(!res.last)
       })
       .catch(() => setHasMore(false))
       .finally(() => setLoadingMore(false))
-  }, [feedLoading, loadingMore, hasMore, page, searchKeyword, sortOption])
+  }, [feedLoading, loadingMore, hasMore, page, searchKeyword, sortOption, language])
 
   const sentinelRef = useRef(null)
   useEffect(() => {
@@ -181,18 +228,18 @@ export default function TravelerFeedPage() {
     getFeedDetail(tripId)
       .then((detail) => {
         if (ignore) return
-        const resolved = isRecord ? adaptRecordDetail(detail) : adaptPlanDetail(detail)
+        const resolved = isRecord ? adaptRecordDetail(detail) : adaptPlanDetail(detail, language)
         if (!resolved) {
-          showToast('게시글을 찾을 수 없어요')
+          showToast(copy.notFoundPost)
           return
         }
         setDrawerItem(resolved)
         setPinnedItem(resolved)
       })
-      .catch(() => { if (!ignore) showToast('게시글을 찾을 수 없어요') })
+      .catch(() => { if (!ignore) showToast(copy.notFoundPost) })
       .finally(() => { if (!ignore) clearOpenParam() })
     return () => { ignore = true }
-  }, [openId, realItems, feedLoading, setSearchParams])
+  }, [openId, realItems, feedLoading, setSearchParams, language])
   const [uploadOpen, setUploadOpen] = useState(false)
   const [toast, setToast] = useState('')
   const toastTimer = useRef(null)
@@ -237,7 +284,7 @@ export default function TravelerFeedPage() {
     const tripId = targetTripId(item)
     if (!tripId) return
     if (!user) {
-      showToast('로그인하면 내 여행으로 스크랩할 수 있어요')
+      showToast(copy.loginToSave)
       return
     }
     if (pendingIds.has(tripId)) return
@@ -248,12 +295,12 @@ export default function TravelerFeedPage() {
         await unsaveTrip(savedTripId)
         setSavedIds((m) => { const next = new Map(m); next.delete(tripId); return next })
         setSaveDelta((d) => ({ ...d, [tripId]: (d[tripId] ?? 0) - 1 }))
-        showToast('스크랩을 해제했어요')
+        showToast(copy.unsaved)
       } else {
         const saved = await saveTrip(tripId, item.type === 'record' ? 'RECORD' : 'PLAN')
         setSavedIds((m) => new Map(m).set(tripId, saved.savedTripId))
         setSaveDelta((d) => ({ ...d, [tripId]: (d[tripId] ?? 0) + 1 }))
-        showToast('보관함에 스크랩했어요')
+        showToast(copy.saved)
       }
     } catch (err) {
       const data = err?.response?.data
@@ -261,21 +308,21 @@ export default function TravelerFeedPage() {
         // 이미 보관함에 있음 — 목록을 다시 받아 상태만 맞춘다
         const list = await getSavedTrips().catch(() => [])
         setSavedIds(new Map(list.map((t) => [t.originalTripId, t.savedTripId])))
-        showToast('이미 보관함에 있는 계획이에요')
+        showToast(copy.alreadySaved)
       } else {
         showToast(
           err?.response?.status === 401
-            ? '로그인이 필요해요'
+            ? copy.loginRequired
             : data?.code === 'TRIP_011'
-              ? '내 계획은 스크랩할 수 없어요'
-              : data?.message || '스크랩에 실패했어요. 잠시 후 다시 시도해주세요',
+              ? copy.cantSaveOwn
+              : data?.message || copy.saveFailed,
         )
       }
     } finally {
       setPendingIds((s) => { const next = new Set(s); next.delete(tripId); return next })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, savedIds, pendingIds])
+  }, [user, savedIds, pendingIds, copy])
 
   const openFeedback = useCallback((item) => {
     const tripId = targetTripId(item)
@@ -345,7 +392,7 @@ export default function TravelerFeedPage() {
     <div ref={sentinelRef} className="flex h-10 items-center justify-center">
       {(loadingMore || endChecking) && <Icon icon="mdi:loading" width={18} className="animate-spin text-slate-300" />}
       {endReached && !loadingMore && !endChecking && (
-        <span className="text-[12px] text-slate-400">모든 피드를 다 확인했어요</span>
+        <span className="text-[12px] text-slate-400">{copy.allSeen}</span>
       )}
     </div>
   )
@@ -374,7 +421,7 @@ export default function TravelerFeedPage() {
           className="flex items-center justify-center gap-1.5 self-start rounded-full px-4 py-2 text-[12.5px] font-bold shadow-card hover:shadow-card-hover sm:hidden"
         >
           <Icon icon="mdi:cloud-upload-outline" width={16} />
-          기록 업로드
+          {copy.uploadRecord}
         </Button>
 
         {/* 인기 지역은 필터탭과 달리 스크롤하면 같이 흘러가도록 sticky 래퍼 밖에 둠 */}
@@ -422,9 +469,9 @@ export default function TravelerFeedPage() {
                 </div>
               )}
               {feedLoading ? (
-                <FeedCardSkeletons count={3} />
+                <FeedCardSkeletons count={3} loadingLabel={copy.loadingFeed} />
               ) : items.length === 0 ? (
-                <div className="py-20 text-center text-[13px] text-slate-400">해당하는 피드가 없어요.</div>
+                <div className="py-20 text-center text-[13px] text-slate-400">{copy.noFeed}</div>
               ) : (
                 items.map(renderCard)
               )}
@@ -448,7 +495,7 @@ export default function TravelerFeedPage() {
                       setSearchKeyword(searchInput.trim())
                     }
                   }}
-                  placeholder="여행 계획, 기록 검색"
+                  placeholder={copy.searchPlaceholder}
                   className="h-full w-full text-[12px] text-slate-700 outline-none placeholder:text-slate-300"
                 />
                 {searchInput && (
@@ -459,7 +506,7 @@ export default function TravelerFeedPage() {
                       setSearchInput('')
                       setSearchKeyword('')
                     }}
-                    aria-label="검색어 지우기"
+                    aria-label={copy.clearSearch}
                     className="shrink-0 text-slate-300 hover:text-slate-500"
                   >
                     <Icon icon="mdi:close-circle" width={15} />
@@ -475,11 +522,11 @@ export default function TravelerFeedPage() {
           <>
             {feedLoading ? (
               <div className="flex gap-6">
-                <div className="flex min-w-0 flex-1 flex-col gap-5"><FeedCardSkeletons count={2} /></div>
-                <div className="flex min-w-0 flex-1 flex-col gap-5"><FeedCardSkeletons count={2} /></div>
+                <div className="flex min-w-0 flex-1 flex-col gap-5"><FeedCardSkeletons count={2} loadingLabel={copy.loadingFeed} /></div>
+                <div className="flex min-w-0 flex-1 flex-col gap-5"><FeedCardSkeletons count={2} loadingLabel={copy.loadingFeed} /></div>
               </div>
             ) : items.length === 0 ? (
-              <div className="py-20 text-center text-[13px] text-slate-400">해당하는 피드가 없어요.</div>
+              <div className="py-20 text-center text-[13px] text-slate-400">{copy.noFeed}</div>
             ) : (
               <div className="flex gap-6">
                 <div className="flex min-w-0 flex-1 flex-col gap-5">{galleryLeft.map(renderCard)}</div>
@@ -516,7 +563,7 @@ export default function TravelerFeedPage() {
         onUploaded={(_, trip) => {
           setReloadKey((k) => k + 1)
           // 피드엔 공개 계획의 기록만 올라온다 — 비공개면 저장만 됐다고 알려준다
-          showToast(trip?.published ? '기록을 올렸어요' : '기록을 저장했어요 · 계획을 공개하면 피드에 보여요')
+          showToast(trip?.published ? copy.recordUploaded : copy.recordSavedPrivate)
         }}
       />
 
@@ -532,11 +579,11 @@ export default function TravelerFeedPage() {
 }
 
 // 피드 카드 골격 — 작성자 줄, 사진 영역, 제목·메타, 액션바. 계획/기록 공통으로 쓰는 단순한 형태
-function FeedCardSkeletons({ count }) {
+function FeedCardSkeletons({ count, loadingLabel }) {
   return (
     <>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="rounded-2xl border border-slate-100 bg-surface p-4" role="status" aria-label="피드를 불러오는 중">
+        <div key={i} className="rounded-2xl border border-slate-100 bg-surface p-4" role="status" aria-label={loadingLabel}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Skeleton className="h-8 w-8 rounded-full" style={{ animationDelay: `${i * 120}ms` }} />

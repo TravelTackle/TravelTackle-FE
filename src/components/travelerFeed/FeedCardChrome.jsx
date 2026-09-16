@@ -7,22 +7,56 @@ import Chip from '../ui/Chip'
 import { publishTrip, unpublishTrip } from '../../api/trip'
 import { targetTripId, useFeedActions } from './FeedActionsContext'
 import { formatFeedDate } from '../../lib/homeFormat'
+import { useLanguage } from '../../i18n'
 
-const TYPE_CHIP = {
-  plan: { label: '여행 계획', className: 'bg-brand-light text-brand-dark' },
-  record: { label: '여행 기록', className: 'bg-emerald-50 text-emerald-600' },
-}
-
-// TripHeader(나의 여행 - 나의 계획)에서 게시 전환 시 뜨는 토스트와 같은 문구·스타일
-const PUBLISH_TOAST = {
-  on: '게시했어요! 여행자 피드에서 확인할 수 있어요.',
-  off: '비공개로 전환했어요.',
+const T = {
+  ko: {
+    typeChip: {
+      plan: { label: '여행 계획', className: 'bg-brand-light text-brand-dark' },
+      record: { label: '여행 기록', className: 'bg-emerald-50 text-emerald-600' },
+    },
+    // TripHeader(나의 여행 - 나의 계획)에서 게시 전환 시 뜨는 토스트와 같은 문구·스타일
+    publishToast: {
+      on: '게시했어요! 여행자 피드에서 확인할 수 있어요.',
+      off: '비공개로 전환했어요.',
+    },
+    publishOn: '전체공개',
+    publishOff: '나만 보기',
+    publishTitleOn: '눌러서 나만 보기로 전환',
+    publishTitleOff: '눌러서 전체공개로 전환',
+    feedbackTitle: (n) => `참견 ${n}개 보기`,
+    feedbackLeave: '참견 남기기',
+    cantSaveOwn: '내 계획은 스크랩할 수 없어요',
+    unsave: '스크랩 해제',
+    save: '스크랩',
+  },
+  en: {
+    typeChip: {
+      plan: { label: 'Trip Plan', className: 'bg-brand-light text-brand-dark' },
+      record: { label: 'Trip Record', className: 'bg-emerald-50 text-emerald-600' },
+    },
+    publishToast: {
+      on: 'Published! You can find it in the traveler feed.',
+      off: 'Switched to private.',
+    },
+    publishOn: 'Public',
+    publishOff: 'Private',
+    publishTitleOn: 'Tap to switch to private',
+    publishTitleOff: 'Tap to switch to public',
+    feedbackTitle: (n) => `View ${n} feedback`,
+    feedbackLeave: 'Leave feedback',
+    cantSaveOwn: "You can't save your own plan",
+    unsave: 'Unsave',
+    save: 'Save',
+  },
 }
 
 // TripHeader(나의 여행 - 나의 계획)의 나만보기/전체공개 토글과 완전히 같은 디자인·동작 —
 // 두 라벨을 같은 grid 셀에 겹쳐 버튼 폭은 고정하고 위아래로 슬라이드+페이드하며 전환한다.
 // item.published가 있는(=내 계획인) 카드에서만 쓰이므로 상태는 로컬로 들고 직접 API를 호출한다.
 function PublishToggle({ item }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [published, setPublished] = useState(item.published)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState('')
@@ -41,7 +75,7 @@ function PublishToggle({ item }) {
     setSaving(true)
     setPublished(next)
     // TripHeader와 동일하게 낙관적으로 먼저 알리고, 실패하면 조용히 되돌린다(토스트는 다시 취소하지 않음)
-    showToast(next ? PUBLISH_TOAST.on : PUBLISH_TOAST.off)
+    showToast(next ? copy.publishToast.on : copy.publishToast.off)
     try {
       await (next ? publishTrip(item.id) : unpublishTrip(item.id))
     } catch {
@@ -57,7 +91,7 @@ function PublishToggle({ item }) {
         type="button"
         onClick={handleToggle}
         disabled={saving}
-        title={published ? '눌러서 나만 보기로 전환' : '눌러서 전체공개로 전환'}
+        title={published ? copy.publishTitleOn : copy.publishTitleOff}
         style={{ display: 'grid' }}
         className={`shrink-0 overflow-hidden rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors duration-150 disabled:opacity-60 ${
           published ? 'bg-brand-light text-brand' : 'bg-rose-50 text-rose-600'
@@ -68,14 +102,14 @@ function PublishToggle({ item }) {
             published ? 'translate-y-0 opacity-100' : '-translate-y-1 opacity-0'
           }`}
         >
-          전체공개
+          {copy.publishOn}
         </span>
         <span
           className={`col-start-1 row-start-1 flex items-center justify-center transition-all duration-150 ease-out ${
             published ? 'translate-y-1 opacity-0' : 'translate-y-0 opacity-100'
           }`}
         >
-          나만 보기
+          {copy.publishOff}
         </span>
       </button>
 
@@ -95,7 +129,9 @@ function PublishToggle({ item }) {
 
 // 카드/상세 사이드바에서 공통으로 쓰는 작성자 헤더 (아바타 + 닉네임 + 지역 + 타입 칩)
 export function FeedUserHeader({ item, showChip = true }) {
-  const chip = TYPE_CHIP[item.type]
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
+  const chip = copy.typeChip[item.type]
   // item.published는 내 계획(마이페이지 프로필 탭)에서만 채워 넣는 값 — 남의 계획엔 없어서 자연히 안 보인다.
   const showPublishToggle = showChip && item.type === 'plan' && typeof item.published === 'boolean'
   // 계획은 수정된 적 있으면 최신 수정일, 없으면 작성일. 기록은 항상 작성일.
@@ -135,6 +171,8 @@ export function FeedUserHeader({ item, showChip = true }) {
 // 카드/상세 사이드바 하단 공통 액션바 — 참견(말풍선 + 수)과 스크랩(북마크 + 수).
 // 동작과 저장 상태는 FeedActionsContext(피드 페이지 제공)에서 온다. item이 없거나 컨텍스트가 없으면 아이콘만 보인다.
 export function FeedActionBar({ item, bordered = true, size = 20 }) {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const { user, savedIds, pendingIds, saveDelta, feedbackDelta, toggleSave, openFeedback } = useFeedActions()
   const tripId = targetTripId(item)
   // 백엔드는 본인 계획 저장을 막는다(TRIP_011). 작성자 id가 내려올 때만 미리 잠그고, 없으면 서버 판단에 맡긴다 —
@@ -150,7 +188,7 @@ export function FeedActionBar({ item, bordered = true, size = 20 }) {
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); if (item) openFeedback(item) }}
-        aria-label={feedbackCount ? `참견 ${feedbackCount}개 보기` : '참견 남기기'}
+        aria-label={feedbackCount ? copy.feedbackTitle(feedbackCount) : copy.feedbackLeave}
         className={`group/act flex items-center gap-1.5 rounded-full py-1 pr-2 transition-colors hover:text-rose-500 ${
           feedbackCount ? 'text-rose-500' : 'text-slate-400'
         }`}
@@ -163,8 +201,8 @@ export function FeedActionBar({ item, bordered = true, size = 20 }) {
         onClick={(e) => { e.stopPropagation(); if (item && !isMine) toggleSave(item) }}
         disabled={pending || isMine}
         aria-pressed={saved}
-        aria-label={isMine ? '내 계획은 스크랩할 수 없어요' : saved ? '스크랩 해제' : '스크랩'}
-        title={isMine ? '내 계획은 스크랩할 수 없어요' : undefined}
+        aria-label={isMine ? copy.cantSaveOwn : saved ? copy.unsave : copy.save}
+        title={isMine ? copy.cantSaveOwn : undefined}
         className={`group/act flex items-center gap-1.5 rounded-full py-1 pl-2 transition-colors ${
           isMine ? 'cursor-not-allowed text-slate-300' : pending ? 'cursor-wait' : saved ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'
         }`}

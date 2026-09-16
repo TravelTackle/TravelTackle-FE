@@ -38,6 +38,36 @@ import {
   updateItemTime,
   updateTripTitle,
 } from '../lib/tripMutations'
+import { useLanguage } from '../i18n'
+
+const T = {
+  ko: {
+    detailLoadFailed: '계획을 불러오지 못했어요.',
+    retry: '다시 시도',
+    loading: '불러오는 중이에요...',
+    prevDay: '이전 날',
+    nextDay: '다음 날',
+    publishBlocked: (days) => `모든 일차에 일정이 1개 이상 있어야 전체공개할 수 있어요. 비어 있는 일차: ${days}`,
+    published: '게시했어요! 여행자 피드에서 확인할 수 있어요.',
+    unpublished: '비공개로 전환했어요.',
+    dateChangeBlocked: '공개 중인 계획은 날짜를 바꿀 수 없어요. 나만 보기로 전환한 뒤 바꿔주세요.',
+    addedToDay: (title, dayNumber) => `${title}을(를) Day ${dayNumber}에 추가했어요`,
+    protectMessage: '공개 중인 계획은 각 일차에 일정이 하나 이상 남아 있어야 해요. 나만 보기로 전환하면 자유롭게 지울 수 있어요.',
+  },
+  en: {
+    detailLoadFailed: 'Could not load the plan.',
+    retry: 'Retry',
+    loading: 'Loading...',
+    prevDay: 'Previous day',
+    nextDay: 'Next day',
+    publishBlocked: (days) => `Every day needs at least one item to make this public. Empty days: ${days}`,
+    published: 'Published! You can see it in the traveler feed.',
+    unpublished: 'Switched to private.',
+    dateChangeBlocked: 'You cannot change dates on a published plan. Switch to private first.',
+    addedToDay: (title, dayNumber) => `Added ${title} to Day ${dayNumber}`,
+    protectMessage: 'A published plan must keep at least one item on each day. Switch to private to delete freely.',
+  },
+}
 
 // 13인치(1440px 기준) 화면에서 보이는 좌우 여백을 그대로 최댓값으로 고정한다 — 그보다 큰 화면에서는 여백이
 // 계속 커지는 대신 헤더/Day 영역의 폭 자체가 늘어난다. 566 = (헤더 콘텐츠 폭 1180px - 좌우 패딩 24px*2)/2.
@@ -53,6 +83,8 @@ const LAST_TRIP_ID_KEY = 'tripPlanner:lastActiveTripId'
 // 계획 생성/목록·제목·기간·Day 일정·메모·게시 여부는 실 API(/api/trips)로 저장되고, 화면엔 낙관적으로 즉시 반영한다.
 // 지도 탭은 아직 미구현이다.
 export default function TripPlannerPage() {
+  const { language } = useLanguage()
+  const copy = T[language] ?? T.en
   const [tripSummaries, setTripSummaries] = useState([])
   const [loadingTrips, setLoadingTrips] = useState(true)
   const [activeTripId, setActiveTripId] = useState(null)
@@ -309,14 +341,14 @@ export default function TripPlannerPage() {
   function handlePublishToggle() {
     const willPublish = !activeTrip.published
     if (willPublish && emptyDays.length > 0) {
-      showToast(`모든 일차에 일정이 1개 이상 있어야 전체공개할 수 있어요. 비어 있는 일차: ${emptyDays.map((n) => `Day ${n}`).join(', ')}`)
+      showToast(copy.publishBlocked(emptyDays.map((n) => `Day ${n}`).join(', ')))
       return
     }
     const snapshot = activeTrip
     const tripId = activeTrip.id
     setActiveTrip((t) => togglePublished(t))
     setTripSummaries((prev) => prev.map((t) => (t.id === tripId ? { ...t, published: willPublish } : t)))
-    showToast(willPublish ? '게시했어요! 여행자 피드에서 확인할 수 있어요.' : '비공개로 전환했어요.')
+    showToast(willPublish ? copy.published : copy.unpublished)
     runSync(() => (willPublish ? publishTrip(tripId) : unpublishTrip(tripId)), {
       onError: () => {
         setActiveTrip(snapshot)
@@ -344,7 +376,7 @@ export default function TripPlannerPage() {
   function handleUpdateDates(startDate, endDate) {
     // 공개 중엔 날짜 변경 불가(백엔드 TRIP_024) — 날짜를 바꾸면 일정이 전부 초기화돼 공개 조건이 깨진다
     if (activeTrip.published) {
-      showToast('공개 중인 계획은 날짜를 바꿀 수 없어요. 나만 보기로 전환한 뒤 바꿔주세요.')
+      showToast(copy.dateChangeBlocked)
       return
     }
     const tripId = activeTrip.id
@@ -372,7 +404,7 @@ export default function TripPlannerPage() {
     if (!selectedDay) return
     // 모바일에선 장바구니가 화면 전체를 덮어 그 뒤 Day가 안 보이니, 추가됐다는 걸 토스트로 바로 알려준다
     // (데스크톱은 사이드바 옆에서 바로 눈에 보이지만, 조용히 담기면 모바일에선 됐는지 안 됐는지 알 수 없었음).
-    showToast(`${cartItem.title}을(를) Day ${selectedDay.dayNumber}에 추가했어요`)
+    showToast(copy.addedToDay(cartItem.title, selectedDay.dayNumber))
     handleAddCartItem(selectedDay.id, cartItem, selectedDay.items.length)
     // 모바일 전체화면 장바구니는 담자마자 바로 닫아서 방금 추가된 결과(Day)가 바로 보이게 한다.
     // 데스크톱은 사이드바라 열어둔 채로 계속 담을 수 있게 그대로 둔다.
@@ -432,7 +464,7 @@ export default function TripPlannerPage() {
   }
 
   // 공개 중인 계획은 어느 날도 비면 안 된다(백엔드 TRIP_023) — 그 날의 마지막 일정을 지우거나 다른 날로 옮기는 걸 막는다
-  const PROTECT_MESSAGE = '공개 중인 계획은 각 일차에 일정이 하나 이상 남아 있어야 해요. 나만 보기로 전환하면 자유롭게 지울 수 있어요.'
+  const PROTECT_MESSAGE = copy.protectMessage
   function wouldEmptyDay(dayId) {
     const day = activeTrip.days.find((d) => d.id === dayId)
     return activeTrip.published && day && day.items.length <= 1
@@ -543,13 +575,13 @@ export default function TripPlannerPage() {
         <Section as="main" className="flex flex-col gap-5 pt-8 pb-5">
           <div className="flex flex-col items-center gap-3 py-24 text-center">
             <Icon icon="solar:danger-triangle-bold" width={26} className="text-rose-300" />
-            <p className="text-[13px] text-slate-400">계획을 불러오지 못했어요.</p>
+            <p className="text-[13px] text-slate-400">{copy.detailLoadFailed}</p>
             <button
               type="button"
               onClick={() => setDetailReloadKey((k) => k + 1)}
               className="rounded-full bg-brand-light px-4 py-1.5 text-[12.5px] font-bold text-brand hover:bg-brand-light/70"
             >
-              다시 시도
+              {copy.retry}
             </button>
           </div>
         </Section>
@@ -562,7 +594,7 @@ export default function TripPlannerPage() {
               !loadingTrips && (
                 <div className="flex flex-col items-center gap-2 py-24 text-center">
                   <Icon icon="mdi:loading" width={22} className="animate-spin text-slate-300" />
-                  <p className="text-[13px] text-slate-400">불러오는 중이에요...</p>
+                  <p className="text-[13px] text-slate-400">{copy.loading}</p>
                 </div>
               )
             )}
@@ -592,7 +624,7 @@ export default function TripPlannerPage() {
                     className="flex items-center gap-1 rounded-full border border-slate-200 bg-surface px-3 py-1.5 text-[12px] font-bold text-slate-600 transition-colors disabled:opacity-30"
                   >
                     <Icon icon="solar:alt-arrow-left-linear" width={14} />
-                    이전 날
+                    {copy.prevDay}
                   </button>
                   <span className="text-[13px] font-extrabold text-slate-700">
                     {selectedDay ? `Day ${selectedDay.dayNumber}` : ''}
@@ -603,7 +635,7 @@ export default function TripPlannerPage() {
                     disabled={selectedDayIndex === -1 || selectedDayIndex >= activeTrip.days.length - 1}
                     className="flex items-center gap-1 rounded-full border border-slate-200 bg-surface px-3 py-1.5 text-[12px] font-bold text-slate-600 transition-colors disabled:opacity-30"
                   >
-                    다음 날
+                    {copy.nextDay}
                     <Icon icon="solar:alt-arrow-right-linear" width={14} />
                   </button>
                 </div>
