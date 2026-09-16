@@ -108,7 +108,7 @@ function TypingBubble({ copy }) {
     <div className="chat-in-left flex flex-col items-start" role="status" aria-label={copy.typingBubbleAria}>
       <div className="flex">
         <BotAvatar />
-        <div className="flex h-9 items-center gap-1 rounded-2xl rounded-tl-sm border border-slate-100 bg-white px-3.5">
+        <div className="flex h-9 items-center gap-1 rounded-2xl rounded-tl-sm border border-slate-100 bg-surface px-3.5">
           {[0, 1, 2].map((dot) => (
             <span
               key={dot}
@@ -256,16 +256,19 @@ export default function ChatbotWidget() {
   return (
     // 루트는 pointer-events-none — 닫힌 패널의 투명 영역이 아래 요소(장바구니 버튼) 클릭을 가로채지 않게
     <div className="pointer-events-none fixed bottom-6 right-6 z-50 flex flex-col items-end">
-      {/* Popup — floating chat window */}
+      {/* Popup — 모바일(<sm)에서는 화면 전체(네비바 포함)를 채우고, sm 이상에서는 기존처럼 우측 하단에
+          뜨는 작은 팝업. 모서리 라운드(28px)는 두 경우 모두 동일하게 유지한다 */}
       <div
-        className={`relative mb-4 origin-bottom-right transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          open ? 'pointer-events-auto translate-y-0 scale-100 opacity-100' : 'pointer-events-none translate-y-3 scale-90 opacity-0'
+        className={`fixed inset-0 z-[70] origin-bottom-right transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] sm:static sm:z-auto sm:mb-4 sm:inset-auto ${
+          open
+            ? 'translate-y-0 opacity-100 pointer-events-auto sm:scale-100'
+            : 'translate-y-full opacity-0 pointer-events-none sm:translate-y-3 sm:scale-90'
         }`}
       >
-        {/* Soft blurred contact shadow, for the floating feel */}
-        <div className="absolute -bottom-4 left-6 right-6 h-9 bg-slate-900/25 blur-2xl rounded-full -z-10" />
+        {/* Soft blurred contact shadow, for the floating feel — 전체화면에선 의미 없어서 sm 이상에서만 */}
+        <div className="hidden sm:block absolute -bottom-4 left-6 right-6 h-9 bg-slate-900/25 blur-2xl rounded-full -z-10" />
 
-        <div className="w-[300px] h-[480px] bg-white rounded-[28px] ring-1 ring-black/5 shadow-popup overflow-hidden flex flex-col">
+        <div className="h-full w-full rounded-[28px] bg-surface ring-1 ring-black/5 shadow-popup overflow-hidden flex flex-col sm:h-[480px] sm:w-[300px]">
           {/* Header */}
           <div className="shrink-0 bg-brand pt-5 pb-3 px-4 flex items-center gap-2.5">
             <IconBadge className="w-8 h-8 rounded-full bg-white/20 shrink-0">
@@ -273,7 +276,7 @@ export default function ChatbotWidget() {
             </IconBadge>
             <div className="flex-1 min-w-0">
               <div className="text-[13px] font-bold text-white leading-tight">{copy.botName}</div>
-              <div className="flex items-center gap-1.5 text-[10.5px] text-blue-50/90">
+              <div className="flex items-center gap-1.5 text-[10.5px] text-white/90">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="chat-ping absolute inset-0 rounded-full bg-emerald-300" />
                   <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-300" />
@@ -319,7 +322,7 @@ export default function ChatbotWidget() {
                     className={`max-w-[76%] whitespace-pre-wrap px-3 py-2 text-[12.5px] leading-snug ${
                       isUser
                         ? 'bg-brand text-white rounded-2xl rounded-tr-sm shadow-[0_4px_12px_rgba(37,99,235,0.25)]'
-                        : 'bg-white border border-slate-100 text-slate-700 rounded-2xl rounded-tl-sm'
+                        : 'bg-surface border border-slate-100 text-slate-700 rounded-2xl rounded-tl-sm'
                     }`}
                   >
                     {typed ? <TypedText text={m.text} animate onProgress={() => scrollToBottom(false)} /> : m.text}
@@ -331,7 +334,7 @@ export default function ChatbotWidget() {
           </div>
 
           {/* Composer */}
-          <div className="shrink-0 border-t border-slate-100 bg-white p-2.5">
+          <div className="shrink-0 border-t border-slate-100 bg-surface p-2.5">
             {error && (
               <p className="chat-in-left mb-2 px-1 text-[11px] text-rose-500" role="alert">
                 {error}
@@ -346,7 +349,7 @@ export default function ChatbotWidget() {
                 onKeyDown={handleKeyDown}
                 placeholder={sending ? copy.inputPlaceholderWaiting : copy.inputPlaceholder}
                 disabled={sending || !greeted}
-                className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-full px-3.5 py-2 text-[12.5px] outline-none transition-all focus:border-brand/50 focus:bg-white focus:ring-4 focus:ring-brand/10 disabled:opacity-60"
+                className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-full px-3.5 py-2 text-[12.5px] outline-none transition-all focus:border-brand/50 focus:bg-surface focus:ring-4 focus:ring-brand/10 disabled:opacity-60"
               />
               <Button
                 onClick={handleSend}
@@ -363,11 +366,12 @@ export default function ChatbotWidget() {
         </div>
       </div>
 
-      {/* Floating action button */}
+      {/* Floating action button — 열려 있을 때 모바일에서는 전체화면 패널 자체 헤더에 닫기 버튼이
+          있으므로 원형 버튼은 숨긴다(sm 이상에서는 기존처럼 작은 팝업 옆에 계속 보여준다) */}
       <Button
         onClick={toggleOpen}
-        className={`pointer-events-auto w-14 h-14 rounded-full border-[3px] border-white shadow-float flex items-center justify-center hover:scale-105 hover:shadow-float-hover ${
-          open ? '' : 'animate-float'
+        className={`pointer-events-auto h-14 w-14 items-center justify-center rounded-full border-[3px] border-surface shadow-float hover:scale-105 hover:shadow-float-hover ${
+          open ? 'hidden sm:flex' : 'flex animate-float'
         }`}
         aria-label={open ? copy.closeChat : copy.openChat}
         aria-expanded={open}

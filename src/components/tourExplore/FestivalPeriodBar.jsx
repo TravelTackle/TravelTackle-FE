@@ -4,7 +4,7 @@ import Skeleton from '../ui/Skeleton'
 import { PERIOD_PRESETS, formatRange } from '../../lib/festivalPeriod'
 
 const INPUT =
-  'h-8 rounded-lg border border-slate-200 bg-white px-2 text-[12px] text-slate-700 outline-none transition-colors [color-scheme:light] hover:border-brand/40 focus:border-brand'
+  'h-8 rounded-lg border border-slate-200 bg-surface px-2 text-[12px] text-slate-700 outline-none transition-colors hover:border-brand/40 focus:border-brand'
 
 // 첫 진입에만 스켈레톤 → 드러나기 모션을 재생한다. 같은 세션에서 테마를 오갈 때 매번 반복되면 새로고침처럼 느껴진다.
 let revealedOnce = false
@@ -84,7 +84,7 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
 
   if (!revealed) {
     return (
-      <div className="mb-5 flex h-[54px] items-center gap-4 rounded-2xl border border-slate-100 bg-white px-4 shadow-card" role="status" aria-label="축제·행사 기간 필터를 준비하는 중">
+      <div className="mb-5 flex h-[54px] items-center gap-4 rounded-2xl border border-slate-100 bg-surface px-4 shadow-card" role="status" aria-label="축제·행사 기간 필터를 준비하는 중">
         <div className="flex min-w-0 items-center gap-2.5">
           <Skeleton className="h-4 w-20" />
           <Skeleton className="h-3 w-28" style={{ animationDelay: '80ms' }} />
@@ -100,7 +100,7 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
   }
 
   return (
-    <div className="relative mb-5 flex flex-wrap items-center gap-x-4 gap-y-2.5 rounded-2xl border border-slate-100 bg-white px-4 py-2.5 shadow-card">
+    <div className="relative mb-5 flex flex-wrap items-center gap-x-4 gap-y-2.5 rounded-2xl border border-slate-100 bg-surface px-4 py-2.5 shadow-card">
       {/* 제목 · 기간 · 결과 수 */}
       <div className="flex min-w-0 items-baseline gap-2.5">
         <h2 className="flex shrink-0 gap-x-[0.22em] text-[15px] font-bold text-slate-900">
@@ -127,17 +127,18 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
       </div>
 
       {/* 프리셋 세그먼트 — 흰 썸이 선택 쪽으로 미끄러진다. 직접 선택 중엔 썸이 사라진다.
-          ai-word는 display:inline-block을 강제하므로 flex 트랙이 아니라 바깥 래퍼에 건다 */}
-      <div className="ai-word ml-auto min-w-0 max-w-full" style={{ animationDelay: '320ms' }}>
+          ai-word는 display:inline-block을 강제하므로 flex 트랙이 아니라 바깥 래퍼에 건다.
+          모바일(sm 미만)에선 둘째 줄 전체 폭으로 내려가고(order-3) 버튼이 폭을 나눠 갖는다 */}
+      <div className="ai-word order-3 w-full min-w-0 sm:order-2 sm:ml-auto sm:w-auto sm:max-w-full" style={{ animationDelay: '320ms' }}>
       <div
         ref={trackRef}
         role="tablist"
         aria-label="기간 프리셋"
-        className="relative flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full bg-slate-100 p-1 scrollbar-hide"
+        className="relative flex w-full items-center gap-0.5 overflow-x-auto rounded-full bg-slate-100 p-1 scrollbar-hide sm:w-auto sm:max-w-full"
       >
         <span
           aria-hidden="true"
-          className="mode-thumb pointer-events-none absolute inset-y-1 left-0 rounded-full bg-white shadow-card"
+          className="mode-thumb pointer-events-none absolute inset-y-1 left-0 rounded-full bg-surface shadow-card"
           style={{
             width: thumb ? thumb.w : 0,
             transform: `translateX(${thumb ? thumb.x : 0}px) scale(${thumb ? 1 : 0.6})`,
@@ -157,7 +158,7 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
                 setCustomOpen(false)
                 onChange({ preset: p.key })
               }}
-              className={`relative z-10 shrink-0 rounded-full px-3 py-1.5 text-[12.5px] font-semibold whitespace-nowrap transition-colors duration-300 ${
+              className={`relative z-10 flex-1 shrink-0 rounded-full px-2 py-1.5 text-center text-[12.5px] font-semibold whitespace-nowrap transition-colors duration-300 sm:flex-none sm:px-3 ${
                 active ? 'text-brand-dark' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -168,8 +169,8 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
       </div>
       </div>
 
-      {/* 날짜 직접 선택 — 바 높이를 늘리지 않고 아래로 뜨는 팝오버 */}
-      <div className="relative z-30 ai-word" style={{ animationDelay: '380ms' }}>
+      {/* 날짜 직접 선택 — 모바일에선 제목 줄 오른쪽 끝(order-2), sm부터 세그먼트 뒤(order-3) */}
+      <div className="ai-word order-2 ml-auto sm:order-3 sm:ml-0" style={{ animationDelay: '380ms' }}>
         <button
           ref={triggerRef}
           type="button"
@@ -181,33 +182,35 @@ export default function FestivalPeriodBar({ period, onChange, regionName, loadin
               ? 'border-brand bg-brand text-white'
               : customOpen
                 ? 'border-brand bg-brand-light text-brand-dark'
-                : 'border-slate-200 bg-white text-slate-600 hover:border-brand/40 hover:text-brand-dark'
+                : 'border-slate-200 bg-surface text-slate-600 hover:border-brand/40 hover:text-brand-dark'
           }`}
         >
           <Icon icon="solar:calendar-search-linear" width={14} />
           {isCustom ? rangeLabel : '직접 선택'}
           <Icon icon="solar:alt-arrow-down-linear" width={11} className={`transition-transform ${customOpen ? 'rotate-180' : ''}`} />
         </button>
-
-        {customOpen && (
-          <div
-            ref={popRef}
-            role="dialog"
-            aria-label="기간 직접 선택"
-            className="nav-pop absolute right-0 top-[calc(100%+8px)] z-30 flex items-center gap-2 rounded-2xl border border-slate-100 bg-white p-3 text-[12px] text-slate-500 shadow-popup"
-          >
-            <label className="flex items-center gap-1.5">
-              <span className="font-semibold text-slate-400">시작</span>
-              <input type="date" value={period.start} onChange={(e) => setDate('start', e.target.value)} className={INPUT} />
-            </label>
-            <span className="text-slate-300">~</span>
-            <label className="flex items-center gap-1.5">
-              <span className="font-semibold text-slate-400">종료</span>
-              <input type="date" value={period.end || ''} min={period.start} onChange={(e) => setDate('end', e.target.value)} className={INPUT} />
-            </label>
-          </div>
-        )}
       </div>
+
+      {/* 팝오버 — 트리거가 아니라 바(relative)에 붙인다. 트리거 기준 right-0이면 모바일에서 트리거가 왼쪽에 있을 때
+          왼쪽 화면 밖으로 밀려 잘린다. 모바일은 바 폭에 맞춰 시작·종료를 세로로, sm부터 오른쪽 아래에 가로로 */}
+      {customOpen && (
+        <div
+          ref={popRef}
+          role="dialog"
+          aria-label="기간 직접 선택"
+          className="nav-pop absolute left-3 right-3 top-[calc(100%+8px)] z-30 flex flex-col gap-2 rounded-2xl border border-slate-100 bg-surface p-3 text-[12px] text-slate-500 shadow-popup sm:left-auto sm:right-4 sm:flex-row sm:items-center"
+        >
+          <label className="flex items-center justify-between gap-3 sm:justify-start sm:gap-1.5">
+            <span className="shrink-0 font-semibold text-slate-400">시작</span>
+            <input type="date" value={period.start} onChange={(e) => setDate('start', e.target.value)} className={`${INPUT} flex-1 sm:flex-none`} />
+          </label>
+          <span className="hidden text-slate-300 sm:inline">~</span>
+          <label className="flex items-center justify-between gap-3 sm:justify-start sm:gap-1.5">
+            <span className="shrink-0 font-semibold text-slate-400">종료</span>
+            <input type="date" value={period.end || ''} min={period.start} onChange={(e) => setDate('end', e.target.value)} className={`${INPUT} flex-1 sm:flex-none`} />
+          </label>
+        </div>
+      )}
     </div>
   )
 }

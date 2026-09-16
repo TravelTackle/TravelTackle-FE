@@ -2,6 +2,8 @@ import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { LanguageProvider } from './i18n'
+import { ThemeProvider } from './theme'
+import { NotificationProvider } from './notifications/NotificationContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import HomePage from './pages/HomePage'
 import TourExplorePage from './pages/TourExplorePage'
@@ -17,6 +19,7 @@ import TripPlannerPage from './pages/TripPlannerPage'
 import SavedTripsPage from './pages/SavedTripsPage'
 import MyPageSettings from './pages/MyPageSettings'
 import MyPageAccountSettings from './pages/MyPageAccountSettings'
+import PublicProfilePage from './pages/PublicProfilePage'
 
 // react-router는 라우트가 바뀌어도 스크롤 위치를 그대로 두므로, 스크롤된 채로 다른 페이지로 이동하면
 // 새 페이지가 이전 스크롤 위치에서 열린 것처럼 보인다 — 경로가 바뀔 때마다 맨 위로 되돌린다.
@@ -31,13 +34,16 @@ function ScrollToTop() {
 function App() {
   return (
     <BrowserRouter>
+      <ThemeProvider>
       <LanguageProvider>
       <AuthProvider>
+      <NotificationProvider>
         <ScrollToTop />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/explore" element={<TourExplorePage />} />
           <Route path="/feed" element={<TravelerFeedPage />} />
+          <Route path="/profile/:userId" element={<PublicProfilePage />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
@@ -99,8 +105,10 @@ function App() {
             }
           />
         </Routes>
+      </NotificationProvider>
       </AuthProvider>
       </LanguageProvider>
+      </ThemeProvider>
     </BrowserRouter>
   )
 }

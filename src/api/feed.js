@@ -9,6 +9,17 @@ export function getFeedDetail(tripId) {
   return client.get(`/feed/${tripId}`).then((res) => res.data)
 }
 
+// 특정 유저의 공개 계획/기록만 모은 피드 (비로그인 가능) — 응답 형태는 getFeed와 완전히 동일한
+// Page<FeedItemResponse>라 adaptFeedItem을 그대로 재사용할 수 있다. keyword 검색은 지원하지 않는다.
+export function getUserFeed(userId, params) {
+  return client.get(`/feed/users/${userId}`, { params }).then((res) => res.data)
+}
+
+// 공개 프로필 요약 — { id, name, profileImageUrl, planCount, recordCount } (비로그인 가능, 공개된 것만 집계)
+export function getUserProfile(userId) {
+  return client.get(`/feed/users/${userId}/profile`).then((res) => res.data)
+}
+
 // 기간 내 인기 지역 집계 (비로그인 가능). 공개 계획에 담긴 지역별 계획 수 [{ region, tripCount }]가
 // 내림차순으로 온다 — 한 계획에 여러 지역이 있으면 각 지역에 1씩, 같은 지역은 계획당 1번만 센다.
 // from/to는 YYYY-MM-DD(계획 생성일 기준, 양끝 포함), 생략하면 무제한. size 최대 50.

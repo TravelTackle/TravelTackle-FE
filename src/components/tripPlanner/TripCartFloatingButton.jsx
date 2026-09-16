@@ -23,11 +23,11 @@ export default function TripCartFloatingButton({ onOpen }) {
       <button
         onClick={onOpen}
         aria-label="여행 장바구니 열기"
-        className="pointer-events-auto relative flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-white bg-brand text-white shadow-float transition-all hover:scale-105 hover:bg-brand-dark hover:shadow-float-hover"
+        className="pointer-events-auto relative flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-surface bg-brand text-white shadow-float transition-all hover:scale-105 hover:bg-brand-dark hover:shadow-float-hover"
       >
         <Icon icon="solar:cart-large-2-bold" width={24} />
         {count > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">
+          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-surface">
             {count > 99 ? '99+' : count}
           </span>
         )}

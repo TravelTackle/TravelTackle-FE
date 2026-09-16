@@ -6,6 +6,7 @@ import Footer from '../components/Footer'
 import ChatbotWidget from '../components/ChatbotWidget'
 import FloatingCart from '../components/FloatingCart'
 import Section from '../components/ui/Section'
+import Button from '../components/ui/Button'
 import FeedFilterBar from '../components/travelerFeed/FeedFilterBar'
 import RegionRankPanel, { useMonthlyRegions, useRegionChips } from '../components/travelerFeed/RegionRankPanel'
 import Skeleton from '../components/ui/Skeleton'
@@ -18,8 +19,8 @@ import FeedbackDrawer from '../components/travelerFeed/FeedbackDrawer'
 import { FeedActionsProvider, targetTripId } from '../components/travelerFeed/FeedActionsContext'
 import { useAuth } from '../context/AuthContext'
 import { getSavedTrips, saveTrip, unsaveTrip } from '../api/trip'
-import { getFeed } from '../api/feed'
-import { adaptFeedItem } from '../data/feedAdapter'
+import { getFeed, getFeedDetail } from '../api/feed'
+import { adaptFeedItem, adaptPlanDetail, adaptRecordDetail } from '../data/feedAdapter'
 
 const SORT_OPTIONS = [
   { value: 'relevance', label: '관련도순' },
@@ -152,19 +153,46 @@ export default function TravelerFeedPage() {
   const [filter, setFilter] = useState(initialFilter)
   const [region, setRegion] = useState(null)
   const [drawerItem, setDrawerItem] = useState(null)
+  // 홈 등에서 ?open=으로 들어온 아이템 — 목록 맨 위에 고정해서 보여준다
+  const [pinnedItem, setPinnedItem] = useState(null)
 
+  // openId가 지금 로드된 페이지(최대 50개, 현재 검색·정렬 조건)에 없을 수 있다 — 오래됐거나
+  // 다른 정렬 조건 밖의 글이면 못 찾으므로, 그럴 땐 상세를 직접 조회해서 연다.
   useEffect(() => {
     if (!openId) return
-    const target = realItems.find((i) => i.id === openId)
-    if (!target) return
-    setDrawerItem(target)
-    // 한 번 열었으면 주소에서 지워 새로고침·뒤로가기 때 다시 열리지 않게
-    setSearchParams((prev) => {
+    const clearOpenParam = () => setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
       next.delete('open')
       return next
     }, { replace: true })
-  }, [openId, realItems, setSearchParams])
+
+    const target = realItems.find((i) => i.id === openId)
+    if (target) {
+      setDrawerItem(target)
+      setPinnedItem(target)
+      clearOpenParam()
+      return
+    }
+    if (feedLoading) return // 첫 페이지가 아직 로딩 중이면 그 결과에서 먼저 찾아본다
+
+    let ignore = false
+    const isRecord = openId.endsWith('-record')
+    const tripId = isRecord ? openId.slice(0, -'-record'.length) : openId
+    getFeedDetail(tripId)
+      .then((detail) => {
+        if (ignore) return
+        const resolved = isRecord ? adaptRecordDetail(detail) : adaptPlanDetail(detail)
+        if (!resolved) {
+          showToast('게시글을 찾을 수 없어요')
+          return
+        }
+        setDrawerItem(resolved)
+        setPinnedItem(resolved)
+      })
+      .catch(() => { if (!ignore) showToast('게시글을 찾을 수 없어요') })
+      .finally(() => { if (!ignore) clearOpenParam() })
+    return () => { ignore = true }
+  }, [openId, realItems, feedLoading, setSearchParams])
   const [uploadOpen, setUploadOpen] = useState(false)
   const [toast, setToast] = useState('')
   const toastTimer = useRef(null)
@@ -281,8 +309,11 @@ export default function TravelerFeedPage() {
     return true
   }
 
-  // 실 데이터는 이미 서버가 keyword로 걸러서 준 결과라 그대로 믿는다
-  const allItems = realItems
+  // 실 데이터는 이미 서버가 keyword로 걸러서 준 결과라 그대로 믿는다. pinnedItem(홈 등에서 열고 들어온 글)이 있으면 맨 위로 꽂는다.
+  const allItems = useMemo(() => {
+    if (!pinnedItem) return realItems
+    return [pinnedItem, ...realItems.filter((i) => i.id !== pinnedItem.id)]
+  }, [realItems, pinnedItem])
   const allItemsRef = useRef(allItems)
   allItemsRef.current = allItems
   const items = allItems.filter(matchesFilters)
@@ -320,13 +351,13 @@ export default function TravelerFeedPage() {
   )
 
   return (
-    <div className="bg-white text-slate-900">
+    <div className="bg-surface text-slate-900">
       <Navbar />
 
       <FeedActionsProvider value={feedActions}>
       {/* 필터 버튼 왼쪽 끝은 탑바 로고, 기록 업로드 버튼 오른쪽 끝은 프로필 알약과 같은 선 — 탑바 컨테이너(1200px, px-4 sm:px-6)와 폭을 맞춘다 */}
       <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-col gap-5 pb-8">
-        <div className="sticky top-16 z-10 bg-white pt-2.5">
+        <div className="sticky top-16 z-10 bg-surface pt-2.5">
           <FeedFilterBar
             filter={filter}
             onFilterChange={setFilter}
@@ -335,6 +366,16 @@ export default function TravelerFeedPage() {
             onUploadClick={() => setUploadOpen(true)}
           />
         </div>
+
+        {/* 기록 업로드 — 모바일 전용. FeedFilterBar 안의 같은 버튼은 sm 이상에서만 보이고(스티키 필터탭과
+            같이 고정), 모바일에서는 스티키 영역 밖인 여기에 따로 둬서 페이지와 함께 자연스럽게 스크롤된다. */}
+        <Button
+          onClick={() => setUploadOpen(true)}
+          className="flex items-center justify-center gap-1.5 self-start rounded-full px-4 py-2 text-[12.5px] font-bold shadow-card hover:shadow-card-hover sm:hidden"
+        >
+          <Icon icon="mdi:cloud-upload-outline" width={16} />
+          기록 업로드
+        </Button>
 
         {/* 인기 지역은 필터탭과 달리 스크롤하면 같이 흘러가도록 sticky 래퍼 밖에 둠 */}
         {view === 'gallery' && (
@@ -360,7 +401,7 @@ export default function TravelerFeedPage() {
                     />
                   </button>
                   {sortMenuOpen && (
-                    <div className="absolute left-0 top-full z-30 mt-1.5 w-28 rounded-xl border border-slate-100 bg-white py-1 shadow-popup">
+                    <div className="absolute left-0 top-full z-30 mt-1.5 w-28 rounded-xl border border-slate-100 bg-surface py-1 shadow-popup">
                       {SORT_OPTIONS.map((o) => (
                         <button
                           key={o.value}
@@ -391,7 +432,7 @@ export default function TravelerFeedPage() {
             </div>
             <aside className="order-1 flex w-full shrink-0 flex-col gap-4 md:order-2 md:sticky md:top-[134px] md:w-[300px] md:self-start">
               <div
-                className={`flex h-9 items-center gap-1.5 rounded-lg border bg-white px-2.5 shadow-card transition-colors ${
+                className={`flex h-9 items-center gap-1.5 rounded-lg border bg-surface px-2.5 shadow-card transition-colors ${
                   searchFocused ? 'border-brand/40' : 'border-slate-200'
                 }`}
               >
@@ -480,7 +521,7 @@ export default function TravelerFeedPage() {
       />
 
       <div
-        className={`fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-slate-900/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
+        className={`fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-black/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
           toast ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
         }`}
       >
@@ -495,7 +536,7 @@ function FeedCardSkeletons({ count }) {
   return (
     <>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="rounded-2xl border border-slate-100 bg-white p-4" role="status" aria-label="피드를 불러오는 중">
+        <div key={i} className="rounded-2xl border border-slate-100 bg-surface p-4" role="status" aria-label="피드를 불러오는 중">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Skeleton className="h-8 w-8 rounded-full" style={{ animationDelay: `${i * 120}ms` }} />

@@ -5,6 +5,12 @@ const client = axios.create({
   withCredentials: true,
 })
 
+// 요청을 보낸 화면(라우트 경로)을 X-Client-Screen 헤더로 함께 보낸다 — 백엔드 로그·분석에서 어느 화면의 호출인지 구분용.
+// 값은 해시·쿼리를 뺀 pathname(예: /feed, /mypage/settings). SSE(EventSource)는 헤더를 못 붙이므로 제외된다.
+export function currentScreen() {
+  return typeof window === 'undefined' ? '' : window.location.pathname || '/'
+}
+
 // 앱에서 선택한 언어(브라우저 기본값이 아님)를 모든 요청에 함께 실어 보낸다.
 // - language 쿼리 파라미터: TourAPI 언어별 서비스 선택(백엔드 TourController/RecommendationService)용.
 // - Accept-Language 헤더: 백엔드 에러 메시지 언어 판별(GlobalExceptionHandler)용 — 브라우저 OS 언어와
@@ -18,6 +24,12 @@ client.interceptors.request.use((config) => {
   }
   config.params = { ...(config.params || {}), language }
   config.headers = { ...(config.headers || {}), 'Accept-Language': language }
+  return config
+})
+
+client.interceptors.request.use((config) => {
+  config.headers = config.headers ?? {}
+  config.headers['X-Client-Screen'] = currentScreen()
   return config
 })
 
@@ -45,7 +57,7 @@ client.interceptors.response.use(
     if (err.response?.status === 401 && !original._retry && !isAuthEndpoint) {
       original._retry = true
       try {
-        await axios.post('/api/auth/refresh', {}, { withCredentials: true })
+        await axios.post('/api/auth/refresh', {}, { withCredentials: true, headers: { 'X-Client-Screen': currentScreen() } })
         return client(original)
       } catch {
         // not logged in — let the caller's own .catch() handle the fallback

@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { Link } from 'react-router-dom'
 import { Icon } from '@iconify/react'
+import Avatar from '../ui/Avatar'
 import Chip from '../ui/Chip'
-import IconBadge from '../ui/IconBadge'
 import { publishTrip, unpublishTrip } from '../../api/trip'
 import { targetTripId, useFeedActions } from './FeedActionsContext'
+import { formatFeedDate } from '../../lib/homeFormat'
 
 const TYPE_CHIP = {
   plan: { label: '여행 계획', className: 'bg-brand-light text-brand-dark' },
@@ -82,7 +84,7 @@ function PublishToggle({ item }) {
           중앙에 뜨게 한다 */}
       {toast &&
         createPortal(
-          <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-900/90 px-4 py-2.5 text-[12.5px] font-semibold text-white shadow-popup">
+          <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/90 px-4 py-2.5 text-[12.5px] font-semibold text-white shadow-popup">
             {toast}
           </div>,
           document.body,
@@ -96,17 +98,30 @@ export function FeedUserHeader({ item, showChip = true }) {
   const chip = TYPE_CHIP[item.type]
   // item.published는 내 계획(마이페이지 프로필 탭)에서만 채워 넣는 값 — 남의 계획엔 없어서 자연히 안 보인다.
   const showPublishToggle = showChip && item.type === 'plan' && typeof item.published === 'boolean'
+  // 계획은 수정된 적 있으면 최신 수정일, 없으면 작성일. 기록은 항상 작성일.
+  const feedDate = formatFeedDate(item.type === 'plan' ? item.updatedAt ?? item.createdAt : item.createdAt)
+  const meta = [item.region, feedDate].filter(Boolean).join(' · ')
+  // 작성자 id가 있을 때만 프로필로 이동 — 없으면(레거시/추천 데이터 등) 그냥 텍스트로 둔다.
+  // 카드 전체가 클릭 영역이라 여기서 이동하면 stopPropagation으로 카드의 상세 열기를 막아야 한다.
+  const profileTo = item.user.id != null ? `/profile/${item.user.id}` : null
+  const identity = (
+    <>
+      <Avatar user={{ name: item.user.nickname, profileImageUrl: item.user.profileImageUrl }} size={32} />
+      <div>
+        <div className="text-[13px] font-bold text-slate-900">{item.user.nickname}</div>
+        <div className="text-[11px] text-slate-400">{meta}</div>
+      </div>
+    </>
+  )
   return (
     <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <IconBadge className="h-8 w-8 rounded-full bg-slate-200 text-slate-400">
-          <Icon icon="mdi:account" width={16} />
-        </IconBadge>
-        <div>
-          <div className="text-[13px] font-bold text-slate-900">{item.user.nickname}</div>
-          <div className="text-[11px] text-slate-400">{item.region}</div>
-        </div>
-      </div>
+      {profileTo ? (
+        <Link to={profileTo} onClick={(e) => e.stopPropagation()} className="flex items-center gap-2 hover:opacity-80">
+          {identity}
+        </Link>
+      ) : (
+        <div className="flex items-center gap-2">{identity}</div>
+      )}
       {showChip && (
         <div className="flex shrink-0 items-center gap-1.5">
           {showPublishToggle && <PublishToggle item={item} />}

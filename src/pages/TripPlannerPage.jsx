@@ -60,8 +60,9 @@ export default function TripPlannerPage() {
   const [detailError, setDetailError] = useState(false)
   const [detailReloadKey, setDetailReloadKey] = useState(0)
   const [selectedDayId, setSelectedDayId] = useState(null)
-  const [cartOpen, setCartOpen] = useState(true)
-  const [cartMounted, setCartMounted] = useState(true)
+  // 모바일에서는 장바구니가 화면 전체를 덮기 때문에 기본으로 닫아 두고, 데스크톱은 기존처럼 항상 열어 둔다.
+  const [cartOpen, setCartOpen] = useState(() => window.matchMedia('(min-width: 640px)').matches)
+  const [cartMounted, setCartMounted] = useState(() => window.matchMedia('(min-width: 640px)').matches)
   const cartCloseTimer = useRef(null)
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [view, setView] = useState('list')
@@ -124,6 +125,17 @@ export default function TripPlannerPage() {
   }, [activeTrip, selectedDayId])
 
   useEffect(() => () => clearTimeout(cartCloseTimer.current), [])
+
+  // 데스크톱에서 장바구니를 열어둔 채로 창 폭을 모바일 크기로 줄이면, 그대로 두면 전체화면 장바구니가
+  // 갑자기 뒤덮은 채로 남는다 — 모바일 폭으로 넘어가는 순간 자동으로 닫는다.
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 640px)')
+    function handleChange(e) {
+      if (!e.matches) closeCart()
+    }
+    mq.addEventListener('change', handleChange)
+    return () => mq.removeEventListener('change', handleChange)
+  }, [])
 
   useEffect(
     () => () => {
@@ -203,8 +215,15 @@ export default function TripPlannerPage() {
   // 닫을 때는 그 트랜지션이 끝난 뒤에야 실제로 언마운트한다.
   function openCart() {
     clearTimeout(cartCloseTimer.current)
+    if (cartMounted) {
+      setCartOpen(true)
+      return
+    }
+    // 마운트가 안 된 상태(모바일 기본값)에서 마운트와 열림을 같은 프레임에 함께 켜면 처음 그려질 때부터
+    // 이미 "열린" 모습이라 챗봇/장바구니 위젯과 달리 슬라이드·페이드 전환이 재생되지 않는다 — 닫힌 모습으로
+    // 한 프레임 먼저 그려지게 한 뒤 다음 프레임에 열림 상태로 바꿔 애니메이션이 실제로 보이게 한다.
     setCartMounted(true)
-    setCartOpen(true)
+    requestAnimationFrame(() => requestAnimationFrame(() => setCartOpen(true)))
   }
 
   function closeCart() {
@@ -276,6 +295,16 @@ export default function TripPlannerPage() {
 
   // 전체공개 조건(백엔드 TRIP_022): 모든 일차에 일정이 1개 이상. 미리 계산해 토글과 안내에 쓴다
   const emptyDays = activeTrip ? activeTrip.days.filter((d) => d.items.length === 0).map((d) => d.dayNumber) : []
+  const selectedDay = activeTrip?.days.find((d) => d.id === selectedDayId) ?? null
+  const selectedDayIndex = activeTrip?.days.findIndex((d) => d.id === selectedDayId) ?? -1
+
+  // 모바일에서는 Day를 옆으로 스크롤하는 대신 이 버튼으로 한 번에 하루씩 이동한다.
+  function goToAdjacentDay(offset) {
+    if (!activeTrip) return
+    const nextIndex = selectedDayIndex + offset
+    if (nextIndex < 0 || nextIndex >= activeTrip.days.length) return
+    setSelectedDayId(activeTrip.days[nextIndex].id)
+  }
 
   function handlePublishToggle() {
     const willPublish = !activeTrip.published
@@ -331,10 +360,31 @@ export default function TripPlannerPage() {
     )
   }
 
+  // 모바일에선 드래그가 안 먹혀서(터치엔 HTML5 드래그가 안 붙는다) 대신 이걸 쓴다 — Day의
+  // "장소 추가" 버튼을 누르면 그 Day를 선택 상태로 만들고 장바구니를 여는데, 이 상태에서
+  // 장바구니 항목을 누르면 지금 선택된 Day 맨 끝에 그대로 추가된다.
+  function openCartToAddInto(dayId) {
+    setSelectedDayId(dayId)
+    openCart()
+  }
+
+  function handleCartItemTap(cartItem) {
+    if (!selectedDay) return
+    // 모바일에선 장바구니가 화면 전체를 덮어 그 뒤 Day가 안 보이니, 추가됐다는 걸 토스트로 바로 알려준다
+    // (데스크톱은 사이드바 옆에서 바로 눈에 보이지만, 조용히 담기면 모바일에선 됐는지 안 됐는지 알 수 없었음).
+    showToast(`${cartItem.title}을(를) Day ${selectedDay.dayNumber}에 추가했어요`)
+    handleAddCartItem(selectedDay.id, cartItem, selectedDay.items.length)
+    // 모바일 전체화면 장바구니는 담자마자 바로 닫아서 방금 추가된 결과(Day)가 바로 보이게 한다.
+    // 데스크톱은 사이드바라 열어둔 채로 계속 담을 수 있게 그대로 둔다.
+    if (!window.matchMedia('(min-width: 640px)').matches) closeCart()
+  }
+
   function handleAddCartItem(dayId, cartItem, index) {
     const snapshot = activeTrip
     const tripId = activeTrip.id
-    const tempId = crypto.randomUUID()
+    // crypto.randomUUID()는 보안 컨텍스트(https 또는 localhost)에서만 존재한다 — 폰에서 LAN IP(http)로
+    // 접속하면 이 함수 자체가 없어서 여기서 예외가 나 조용히 추가가 실패했다(토스트는 그 전에 이미 떴었음).
+    const tempId = globalThis.crypto?.randomUUID?.() || `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`
     const beforeDay = activeTrip.days.find((d) => d.id === dayId)
     const appendedAtEnd = index >= beforeDay.items.length
     const { trip: next, item: newItem } = insertCartItemIntoDay(activeTrip, dayId, cartItem, index, tempId)
@@ -464,14 +514,15 @@ export default function TripPlannerPage() {
   const showDetailLoading = activeTripId && !activeTrip && !detailError
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-slate-900">
+    <div className="flex min-h-screen flex-col bg-surface text-slate-900">
       <Navbar />
 
       {activeTrip ? (
         // sticky는 자기 "부모"의 박스 높이만큼만 붙어있을 수 있다 — 예전엔 이 헤더가 Section 하나만 감싸고 있어서
         // Section 높이 = 헤더 높이라 붙어있을 여유가 사실상 없었다(그래서 스크롤하면 카트와 어긋나 보였음).
         // Day+카트도 함께 담고 있는 페이지 루트를 부모로 삼도록 Section 밖으로 빼고, 1180px 정렬만 안쪽에서 그대로 재현한다.
-        <div className="sticky top-16 z-30 bg-white pb-5 pt-2.5">
+        // 모바일에서는 제목 영역이 스티키로 붙으면 자리를 너무 많이 차지해서, sm 이상에서만 스티키로 둔다.
+        <div className="z-30 bg-surface pb-5 pt-2.5 sm:sticky sm:top-16">
           <div style={{ paddingLeft: SIDE_PADDING, paddingRight: SIDE_PADDING }}>
             <TripHeader
               trip={activeTrip}
@@ -530,32 +581,64 @@ export default function TripPlannerPage() {
                 (제목/리스트·지도 토글)의 우측 경계를 넘지 않는다. transition으로 카트 열림/닫힘에 따른
                 폭 변화가 순간 스냅되지 않고 부드럽게 이어지게 한다. */}
             {view === 'list' ? (
-              <div
-                ref={dayScrollRef}
-                onMouseDown={handleDayScrollMouseDown}
-                onClickCapture={handleDayScrollClickCapture}
-                className="flex min-w-0 flex-1 gap-3 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-6 transition-all duration-300"
-                style={{ maxWidth: DAY_BOX_MAX_WIDTH }}
-              >
-                {activeTrip.days.map((day) => (
-                  <DayColumn
-                    key={day.id}
-                    day={day}
-                    selected={day.id === selectedDayId}
-                    onSelect={() => setSelectedDayId(day.id)}
-                    onAddCartItem={handleAddCartItem}
-                    onReorderItem={handleReorderItem}
-                    onMoveItem={handleMoveItem}
-                    onSaveTime={handleSaveTime}
-                    onSaveMemo={handleSaveMemo}
-                    onDeleteItem={handleDeleteItem}
-                    deleteLocked={activeTrip.published && day.items.length <= 1}
-                  />
-                ))}
+              <div className="flex min-w-0 flex-1 flex-col gap-2" style={{ maxWidth: DAY_BOX_MAX_WIDTH }}>
+                {/* 모바일에서는 Day를 옆으로 스크롤하는 대신, 항상 보이는 이전/다음 버튼으로 한 번에
+                    하루씩만 보여준다 — sm 이상에서는 이 바를 숨기고 기존 가로 스크롤 방식 그대로 쓴다. */}
+                <div className="flex items-center justify-between gap-2 sm:hidden">
+                  <button
+                    type="button"
+                    onClick={() => goToAdjacentDay(-1)}
+                    disabled={selectedDayIndex <= 0}
+                    className="flex items-center gap-1 rounded-full border border-slate-200 bg-surface px-3 py-1.5 text-[12px] font-bold text-slate-600 transition-colors disabled:opacity-30"
+                  >
+                    <Icon icon="solar:alt-arrow-left-linear" width={14} />
+                    이전 날
+                  </button>
+                  <span className="text-[13px] font-extrabold text-slate-700">
+                    {selectedDay ? `Day ${selectedDay.dayNumber}` : ''}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => goToAdjacentDay(1)}
+                    disabled={selectedDayIndex === -1 || selectedDayIndex >= activeTrip.days.length - 1}
+                    className="flex items-center gap-1 rounded-full border border-slate-200 bg-surface px-3 py-1.5 text-[12px] font-bold text-slate-600 transition-colors disabled:opacity-30"
+                  >
+                    다음 날
+                    <Icon icon="solar:alt-arrow-right-linear" width={14} />
+                  </button>
+                </div>
+
+                <div
+                  ref={dayScrollRef}
+                  onMouseDown={handleDayScrollMouseDown}
+                  onClickCapture={handleDayScrollClickCapture}
+                  className="flex gap-3 rounded-2xl border border-slate-200 bg-surface p-6 transition-all duration-300 sm:overflow-x-auto"
+                >
+                  {activeTrip.days.map((day) => (
+                    // 모바일에서는 선택된 Day만 남기고 나머지는 display:none — contents로 감싸서 sm 이상에서는
+                    // 이 wrapper 자체가 레이아웃에서 사라지고 DayColumn이 그대로 가로 스크롤 행의 항목이 된다.
+                    <div key={day.id} className={day.id === selectedDayId ? 'contents' : 'hidden sm:contents'}>
+                      <DayColumn
+                        day={day}
+                        selected={day.id === selectedDayId}
+                        onSelect={() => setSelectedDayId(day.id)}
+                        onAddCartItem={handleAddCartItem}
+                        onOpenCart={() => openCartToAddInto(day.id)}
+                        onReorderItem={handleReorderItem}
+                        onMoveItem={handleMoveItem}
+                        onSaveTime={handleSaveTime}
+                        onSaveMemo={handleSaveMemo}
+                        onDeleteItem={handleDeleteItem}
+                        deleteLocked={activeTrip.published && day.items.length <= 1}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : (
               <div
-                className="flex min-h-[720px] min-w-0 flex-1 gap-3 rounded-2xl border border-slate-200 bg-white p-6 transition-all duration-300"
+                // 모바일에서는 지도가 위, Day 목록이 그 아래로 세로 배치 — sm 이상에서는 기존처럼 좌우로 나란히 놓인다.
+                className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 rounded-2xl border border-slate-200 bg-surface p-6 transition-all duration-300 sm:min-h-[720px] sm:flex-row"
                 style={{ maxWidth: DAY_BOX_MAX_WIDTH }}
               >
                 <TripMapView
@@ -563,6 +646,7 @@ export default function TripPlannerPage() {
                   selectedDayId={selectedDayId}
                   onSelectDay={setSelectedDayId}
                   onAddCartItem={handleAddCartItem}
+                  onOpenCart={() => openCartToAddInto(selectedDayId)}
                   onReorderItem={handleReorderItem}
                   onMoveItem={handleMoveItem}
                   onSaveTime={handleSaveTime}
@@ -573,12 +657,16 @@ export default function TripPlannerPage() {
             )}
 
             {cartMounted && (
+              // 모바일에서는 챗봇/장바구니 위젯과 같은 방식으로 화면 전체를 덮고, sm 이상에서는
+              // 기존처럼 헤더 아래 sticky 위치에 고정된 패널로 되돌아온다.
               <div
-                className={`sticky top-[135px] self-start origin-bottom-right ${
-                  cartOpen ? 'animate-cart-pop-in' : 'pointer-events-none scale-90 opacity-0 transition-all duration-200'
+                className={`fixed inset-0 z-[70] origin-bottom-right transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] sm:sticky sm:inset-auto sm:top-[135px] sm:z-auto sm:self-start ${
+                  cartOpen
+                    ? 'translate-y-0 opacity-100 pointer-events-auto sm:animate-cart-pop-in'
+                    : 'translate-y-full opacity-0 pointer-events-none sm:translate-y-0 sm:scale-90 sm:transition-all sm:duration-200'
                 }`}
               >
-                <TripCartPanel onToggle={closeCart} />
+                <TripCartPanel onToggle={closeCart} onAddItem={handleCartItemTap} targetDayLabel={selectedDay ? `Day ${activeTrip.days.findIndex((d) => d.id === selectedDay.id) + 1}` : null} />
               </div>
             )}
           </div>
@@ -597,7 +685,8 @@ export default function TripPlannerPage() {
       )}
 
       {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-900/90 px-4 py-2.5 text-[12.5px] font-semibold text-white shadow-popup">
+        // 모바일 전체화면 장바구니(z-[70])보다 위에 떠야 담았다는 게 그 위에서도 바로 보인다
+        <div className="fixed bottom-6 left-1/2 z-[80] -translate-x-1/2 whitespace-nowrap rounded-full bg-black/90 px-4 py-2.5 text-[12.5px] font-semibold text-white shadow-popup">
           {toast}
         </div>
       )}

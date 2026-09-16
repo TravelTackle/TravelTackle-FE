@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import Section from './ui/Section'
 import Skeleton from './ui/Skeleton'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../theme'
 import { useLanguage } from '../i18n'
 
 // 언어별 3단계 슬라이드 내용 — 나중에 언어가 늘면 이 함수에 분기 하나만 추가하면 된다.
@@ -16,6 +17,7 @@ function getSteps(language) {
         desc: 'Pick regions and interests to build a day-by-day itinerary easily.',
         icon: 'solar:map-linear',
         bg: 'linear-gradient(135deg,#EFF6FF,#DBEAFE)',
+        bgDark: 'linear-gradient(135deg,#14213d,#1b2f5e)',
         color: '#2563EB',
         cta: { label: 'Start planning', to: '/trips', guestLabel: 'Log in to start planning', guestTo: '/login' },
       },
@@ -25,6 +27,7 @@ function getSteps(language) {
         desc: 'Sharpen your itinerary with honest feedback from locals and seasoned travelers.',
         icon: 'solar:chat-round-dots-linear',
         bg: 'linear-gradient(135deg,#EEF2FF,#E0E7FF)',
+        bgDark: 'linear-gradient(135deg,#171d3f,#232a63)',
         color: '#4F46E5',
         cta: { label: 'View traveler feed', to: '/feed' },
       },
@@ -34,6 +37,7 @@ function getSteps(language) {
         desc: 'Travel a proven route, then leave a record for the next traveler.',
         icon: 'solar:check-circle-linear',
         bg: 'linear-gradient(135deg,#ECFDF5,#D1FAE5)',
+        bgDark: 'linear-gradient(135deg,#0f2a24,#134036)',
         color: '#0F766E',
         cta: { label: 'Explore destinations', to: '/explore' },
       },
@@ -46,6 +50,7 @@ function getSteps(language) {
       desc: '관심 지역과 취향을 고르면 날짜별 일정을 쉽게 만들 수 있어요.',
       icon: 'solar:map-linear',
       bg: 'linear-gradient(135deg,#EFF6FF,#DBEAFE)',
+      bgDark: 'linear-gradient(135deg,#14213d,#1b2f5e)',
       color: '#2563EB',
       cta: { label: '여행 계획 시작하기', to: '/trips', guestLabel: '로그인하고 계획 시작하기', guestTo: '/login' },
     },
@@ -55,6 +60,7 @@ function getSteps(language) {
       desc: '현지인과 여행 고수의 솔직한 참견으로 일정을 더 탄탄하게 다듬어요.',
       icon: 'solar:chat-round-dots-linear',
       bg: 'linear-gradient(135deg,#EEF2FF,#E0E7FF)',
+      bgDark: 'linear-gradient(135deg,#171d3f,#232a63)',
       color: '#4F46E5',
       cta: { label: '여행자 피드 보기', to: '/feed' },
     },
@@ -64,6 +70,7 @@ function getSteps(language) {
       desc: '검증된 코스로 여행을 떠나고, 기록으로 남겨 다음 여행자에게 이어줘요.',
       icon: 'solar:check-circle-linear',
       bg: 'linear-gradient(135deg,#ECFDF5,#D1FAE5)',
+      bgDark: 'linear-gradient(135deg,#0f2a24,#134036)',
       color: '#0F766E',
       cta: { label: '여행지 탐색하기', to: '/explore' },
     },
@@ -134,11 +141,11 @@ function SlideCta({ to, label, icon, color }) {
     <Link
       to={to}
       style={{ color, '--cta-ring': `${color}55` }}
-      className="group cta-pulse relative mt-6 inline-flex w-fit items-center gap-2.5 overflow-hidden rounded-full border border-white bg-white/85 py-2 pl-2 pr-5 text-[13.5px] font-bold shadow-card backdrop-blur transition-all duration-200 hover:-translate-y-px hover:bg-white hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+      className="group cta-pulse relative mt-6 inline-flex w-fit items-center gap-2.5 overflow-hidden rounded-full border border-surface bg-white/85 py-2 pl-2 pr-5 text-[13.5px] font-bold shadow-card backdrop-blur transition-all duration-200 hover:-translate-y-px hover:bg-surface hover:shadow-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
     >
       <span
         aria-hidden="true"
-        className="cta-shine pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white to-transparent opacity-80"
+        className="cta-shine pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-surface to-transparent opacity-80"
       />
       <span
         className="flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-110"
@@ -166,12 +173,13 @@ function SlideSkeleton({ loadingLabel }) {
 
 // 양옆 미리보기 카드 — 눌러서 그 단계로 바로 이동
 function SideCard({ step, onClick, label }) {
+  const dark = useTheme().resolved === 'dark'
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={`${label}: ${step.title}`}
-      style={{ background: step.bg }}
+      style={{ background: dark ? step.bgDark : step.bg }}
       className="hidden lg:flex w-[190px] xl:w-[220px] h-[240px] shrink-0 flex-col items-center justify-center rounded-2xl border border-slate-100 px-6 text-center opacity-60 transition-all duration-300 hover:opacity-100 hover:-translate-y-0.5 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
     >
       <div className="w-11 h-11 rounded-xl bg-white/80 flex items-center justify-center mb-3 shadow-sm">
@@ -185,6 +193,7 @@ function SideCard({ step, onClick, label }) {
 
 export default function HeroSlider() {
   const { user, loading: authLoading } = useAuth()
+  const dark = useTheme().resolved === 'dark' // 슬라이드 배경은 인라인 그라데이션이라 변수 뒤집기가 안 닿는다 — 다크용을 따로 고른다
   const { language } = useLanguage()
   const copy = T[language] ?? T.en
   const steps = getSteps(language)
@@ -251,8 +260,50 @@ export default function HeroSlider() {
   const nextIdx = (idx + 1) % total
   const current = steps[idx]
 
+  // 제목 한 단어(또는 키워드 버튼) 렌더링 — 일반 span과 슬라이드 이동 버튼을 여기서 나눠 그린다.
+  // 아래 h1에서 그룹으로 묶어 렌더링할 때도 재사용한다("여행을 완성하세요"가 줄바꿈될 때
+  // 항상 통째로 다음 줄로 넘어가도록 묶어야 해서 map을 두 번 나눠 부른다).
+  function renderHeadlinePart(part, i) {
+    if (part.step == null) {
+      return (
+        <span key={i} className={`ai-word ${part.suffix ? '-ml-[0.16em]' : ''}`} style={{ animationDelay: `${i * 80}ms` }} aria-hidden="true">
+          {part.text}
+        </span>
+      )
+    }
+    // 키워드는 현재 슬라이드와 함께 켜지고, 누르면 그 단계로 이동한다
+    return (
+      <button
+        key={i}
+        type="button"
+        onClick={() => jumpTo(part.step)}
+        aria-label={copy.jumpToStep(part.step + 1, steps[part.step].title)}
+        aria-current={idx === part.step ? 'step' : undefined}
+        className={`ai-word group relative isolate rounded-xl px-1.5 transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+          idx === part.step ? 'text-white' : 'text-brand hover:text-brand-dark'
+        }`}
+        style={{ animationDelay: `${i * 80}ms` }}
+      >
+        {/* 채움은 크기가 아니라 투명도로 오가서, 넘어가는 순간 흰 글자가 흰 배경에 묻히지 않는다 */}
+        <span
+          aria-hidden="true"
+          className={`absolute inset-0 -z-10 rounded-xl bg-gradient-to-br from-brand-mid to-brand transition-all duration-300 ease-out ${
+            idx === part.step ? 'scale-100 opacity-100 shadow-[0_8px_20px_rgba(37,99,235,0.3)]' : 'scale-90 opacity-0'
+          }`}
+        />
+        <span
+          aria-hidden="true"
+          className={`absolute inset-0 -z-20 rounded-xl bg-brand-light transition-opacity duration-200 ${
+            idx === part.step ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
+          }`}
+        />
+        {part.text}
+      </button>
+    )
+  }
+
   return (
-    <section className="bg-white">
+    <section className="bg-surface">
       <Section as="div" className="pt-8 pb-10 sm:pt-10 sm:pb-12">
         {pending ? (
           // 첫 로딩 — 제목 자리를 어절 단위 스켈레톤으로 잡아 둔다
@@ -266,46 +317,13 @@ export default function HeroSlider() {
             className="flex flex-wrap items-baseline justify-center gap-x-[0.22em] gap-y-1 text-center text-[27px] sm:text-[32px] font-extrabold tracking-[-0.02em] text-slate-900"
             aria-label={copy.headlineAria}
           >
-            {headline.map((part, i) =>
-              part.step == null ? (
-                <span
-                  key={i}
-                  className={`ai-word ${part.suffix ? '-ml-[0.16em]' : ''}`}
-                  style={{ animationDelay: `${i * 80}ms` }}
-                  aria-hidden="true"
-                >
-                  {part.text}
-                </span>
-              ) : (
-                // 키워드는 현재 슬라이드와 함께 켜지고, 누르면 그 단계로 이동한다
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => jumpTo(part.step)}
-                  aria-label={copy.jumpToStep(part.step + 1, steps[part.step].title)}
-                  aria-current={idx === part.step ? 'step' : undefined}
-                  className={`ai-word group relative isolate rounded-xl px-1.5 transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
-                    idx === part.step ? 'text-white' : 'text-brand hover:text-brand-dark'
-                  }`}
-                  style={{ animationDelay: `${i * 80}ms` }}
-                >
-                  {/* 채움은 크기가 아니라 투명도로 오가서, 넘어가는 순간 흰 글자가 흰 배경에 묻히지 않는다 */}
-                  <span
-                    aria-hidden="true"
-                    className={`absolute inset-0 -z-10 rounded-xl bg-gradient-to-br from-brand-mid to-brand transition-all duration-300 ease-out ${
-                      idx === part.step ? 'scale-100 opacity-100 shadow-[0_8px_20px_rgba(37,99,235,0.3)]' : 'scale-90 opacity-0'
-                    }`}
-                  />
-                  <span
-                    aria-hidden="true"
-                    className={`absolute inset-0 -z-20 rounded-xl bg-brand-light transition-opacity duration-200 ${
-                      idx === part.step ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
-                    }`}
-                  />
-                  {part.text}
-                </button>
-              ),
-            )}
+            {headline.slice(0, headline.length - 3).map((part, i) => renderHeadlinePart(part, i))}
+            {/* 마지막 3어절(한국어 "여행을 완성 하세요")은 한 덩어리로 묶어서, 줄바꿈이 필요할 때 셋이 통째로
+                다음 줄로 넘어가게 한다 — 묶지 않으면 "완성"만 첫 줄에 남고 "하세요"만 둘째 줄에 떨어지는 등
+                문구 중간이 어색하게 갈렸다. */}
+            <span className="inline-flex flex-nowrap items-baseline gap-x-[0.22em]">
+              {headline.slice(headline.length - 3).map((part, i) => renderHeadlinePart(part, headline.length - 3 + i))}
+            </span>
           </h1>
         )}
 
@@ -331,7 +349,7 @@ export default function HeroSlider() {
                 <div
                   key={`${step.tag}-${i}`}
                   className="relative h-full w-full shrink-0 overflow-hidden"
-                  style={{ background: step.bg }}
+                  style={{ background: dark ? step.bgDark : step.bg }}
                   aria-hidden={i !== pos || clone}
                   inert={i !== pos || clone}
                 >
@@ -364,17 +382,17 @@ export default function HeroSlider() {
 
             <button
               onClick={() => go(-1)}
-              className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/85 hover:bg-white flex items-center justify-center shadow-sm transition-colors"
+              className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/85 hover:bg-surface flex items-center justify-center shadow-sm transition-colors"
               aria-label={copy.prevStep}
             >
-              <Icon icon="solar:alt-arrow-left-linear" width={19} className="text-slate-500" />
+              <Icon icon="solar:alt-arrow-left-linear" width={19} className="text-ink" />
             </button>
             <button
               onClick={() => go(1)}
-              className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/85 hover:bg-white flex items-center justify-center shadow-sm transition-colors"
+              className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/85 hover:bg-surface flex items-center justify-center shadow-sm transition-colors"
               aria-label={copy.nextStep}
             >
-              <Icon icon="solar:alt-arrow-right-linear" width={19} className="text-slate-500" />
+              <Icon icon="solar:alt-arrow-right-linear" width={19} className="text-ink" />
             </button>
 
             <p className="sr-only" aria-live="polite">{copy.stepAnnounce(idx + 1, current.title)}</p>
@@ -383,11 +401,11 @@ export default function HeroSlider() {
               <span className="text-[11px] font-bold text-slate-500 tabular-nums">{idx + 1} / {total}</span>
               <button
                 onClick={() => setPlaying((value) => !value)}
-                className="w-6 h-6 rounded-full bg-white/70 hover:bg-white flex items-center justify-center transition-colors"
+                className="w-6 h-6 rounded-full bg-white/70 hover:bg-surface flex items-center justify-center transition-colors"
                 aria-label={playing ? copy.pause : copy.play}
                 aria-pressed={!playing}
               >
-                <Icon icon={playing ? 'solar:pause-bold' : 'solar:play-bold'} width={9} className="text-slate-700" />
+                <Icon icon={playing ? 'solar:pause-bold' : 'solar:play-bold'} width={9} className="text-ink" />
               </button>
             </div>
           </div>

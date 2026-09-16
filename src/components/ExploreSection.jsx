@@ -5,6 +5,7 @@ import Section from './ui/Section'
 import Card from './ui/Card'
 import Chip from './ui/Chip'
 import Skeleton from './ui/Skeleton'
+import CardImage, { ImagePlaceholder } from './ui/CardImage'
 import { getRecommendedSpots, getTourContents } from '../api/tour'
 import { shortRegion } from '../lib/homeFormat'
 import { useAuth } from '../context/AuthContext'
@@ -141,7 +142,7 @@ function regionKey(region) {
 
 function RegionChip({ children }) {
   return (
-    <Chip className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold bg-white/90 text-slate-700 shadow-card">
+    <Chip className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold bg-white/90 text-ink shadow-card">
       {children}
     </Chip>
   )
@@ -151,13 +152,9 @@ function RegionChip({ children }) {
 function SpotCard({ spot, copy }) {
   const region = spot.address ? shortRegion(spot.address) : ''
   return (
-    <Card as={Link} to="/explore" shadow className="group block overflow-hidden">
+    <Card as={Link} to={`/explore?open=${encodeURIComponent(spot.contentId)}`} shadow className="group block overflow-hidden">
       <div className="relative h-[150px] overflow-hidden bg-slate-100">
-        {spot.imageUrl ? (
-          <img src={spot.imageUrl} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" alt={spot.title} loading="lazy" />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200" />
-        )}
+        <CardImage src={spot.imageUrl} alt={spot.title} className="absolute inset-0 h-full w-full" imgClassName="transition-transform duration-500 ease-out group-hover:scale-105" />
         {region && <RegionChip>{region}</RegionChip>}
       </div>
       <div className="p-3">
@@ -183,7 +180,9 @@ function PlanCard({ item }) {
             ))}
           </div>
         ) : (
-          <div className="w-full h-[150px] bg-gradient-to-br from-blue-50 to-slate-200" />
+          <div className="h-[150px] w-full">
+            <ImagePlaceholder />
+          </div>
         )}
         {item.region && <RegionChip>{item.region}</RegionChip>}
       </div>
@@ -206,11 +205,7 @@ function RecordCard({ item }) {
   return (
     <Card as={Link} to={`/feed?open=${encodeURIComponent(item.id)}&filter=record`} className="group block overflow-hidden">
       <div className="relative overflow-hidden">
-        {item.imageUrl ? (
-          <img src={item.imageUrl} className="w-full h-[150px] object-cover bg-slate-100 transition-transform duration-500 ease-out group-hover:scale-105" alt="" loading="lazy" />
-        ) : (
-          <div className="w-full h-[150px] bg-gradient-to-br from-emerald-50 to-slate-200" />
-        )}
+        <CardImage src={item.imageUrl} className="h-[150px] w-full" imgClassName="bg-slate-100 transition-transform duration-500 ease-out group-hover:scale-105" />
         {item.region && <RegionChip>{item.region}</RegionChip>}
       </div>
       <div className="p-3">
@@ -244,7 +239,7 @@ function SpotSkeletonGrid({ copy }) {
       </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         {Array.from({ length: SPOT_COUNT }).map((_, i) => (
-          <div key={i} className="overflow-hidden rounded-2xl border border-slate-100 bg-white">
+          <div key={i} className="overflow-hidden rounded-2xl border border-slate-100 bg-surface">
             <div className="relative h-[150px]">
               <Skeleton className="absolute inset-0 rounded-none" style={{ animationDelay: `${i * 90}ms` }} />
               <Skeleton className="absolute left-2 top-2 h-5 w-10 rounded-full" style={{ animationDelay: `${i * 90 + 40}ms` }} />
@@ -321,7 +316,7 @@ function SpotCaption({ spots, user, region, language, copy }) {
           className="group relative flex shrink-0 items-center gap-2 overflow-hidden rounded-full bg-brand-light py-1.5 pl-1.5 pr-4 text-[12px] font-bold text-brand transition-colors duration-300 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         >
           <span aria-hidden="true" className="absolute inset-0 origin-left scale-x-0 bg-brand transition-transform duration-300 ease-out group-hover:scale-x-100" />
-          <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-white text-brand transition-transform duration-300 group-hover:scale-110">
+          <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-surface text-brand transition-transform duration-300 group-hover:scale-110">
             <Icon icon="solar:magic-stick-3-bold" width={13} />
           </span>
           <span className="relative">{copy.registerPrefs}</span>
@@ -335,7 +330,7 @@ function SkeletonGrid({ loadingLabel }) {
   return (
     <div className="mt-5 grid grid-cols-2 md:grid-cols-3 gap-4" role="status" aria-label={loadingLabel}>
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="rounded-2xl overflow-hidden border border-slate-100 bg-white">
+        <div key={i} className="rounded-2xl overflow-hidden border border-slate-100 bg-surface">
           <div className="relative">
             <Skeleton className="h-[150px] w-full rounded-none" style={{ animationDelay: `${i * 110}ms` }} />
             <Skeleton className="absolute left-2 top-2 h-5 w-10 rounded-full" style={{ animationDelay: `${i * 110 + 40}ms` }} />
@@ -353,7 +348,7 @@ function SkeletonGrid({ loadingLabel }) {
 function EmptyState({ icon, title, desc, to, cta }) {
   return (
     <div className="mt-5 flex flex-col items-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-6 py-14 text-center">
-      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-300 shadow-card">
+      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface text-slate-300 shadow-card">
         <Icon icon={icon} width={22} />
       </span>
       <p className="mt-3 text-[13.5px] font-bold text-slate-700">{title}</p>
@@ -557,7 +552,7 @@ export default function ExploreSection({ feed }) {
           className="group relative flex shrink-0 items-center gap-2 overflow-hidden rounded-full bg-brand-light py-2 pl-2 pr-4 text-[12.5px] font-bold text-brand transition-colors duration-300 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         >
           <span aria-hidden="true" className="absolute inset-0 origin-left scale-x-0 bg-brand transition-transform duration-300 ease-out group-hover:scale-x-100" />
-          <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-white text-brand transition-transform duration-300 group-hover:scale-110">
+          <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-surface text-brand transition-transform duration-300 group-hover:scale-110">
             <Icon icon={activeTab.icon} width={13} />
           </span>
           <span className="relative">{copy.seeAllOf(activeTab.label)}</span>
@@ -568,7 +563,7 @@ export default function ExploreSection({ feed }) {
       <div className="relative mt-6 grid grid-cols-3 rounded-full bg-slate-100 p-1" role="tablist" aria-label={copy.contentTypeAria}>
         <span
           aria-hidden="true"
-          className="mode-thumb pointer-events-none absolute inset-y-1 left-1 w-[calc((100%-8px)/3)] rounded-full bg-white shadow-card"
+          className="mode-thumb pointer-events-none absolute inset-y-1 left-1 w-[calc((100%-8px)/3)] rounded-full bg-surface shadow-card"
           style={{ transform: `translateX(${tabs.findIndex((t) => t.key === tab) * 100}%)` }}
         />
         {tabs.map((t) => {
@@ -608,7 +603,7 @@ export default function ExploreSection({ feed }) {
               className={`shrink-0 rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold transition-all duration-200 ${
                 active
                   ? 'border-brand bg-brand text-white shadow-[0_4px_12px_rgba(37,99,235,0.28)]'
-                  : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-800'
+                  : 'border-slate-200 bg-surface text-slate-500 hover:border-slate-300 hover:text-slate-800'
               }`}
             >
               {regionDisplay(r.label, language)}

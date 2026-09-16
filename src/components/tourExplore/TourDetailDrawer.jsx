@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '@iconify/react'
 import Button from '../ui/Button'
+import CardImage from '../ui/CardImage'
 import { getTourContentDetail } from '../../api/tour'
 
 const stripTags = (html) => (html ? html.replace(/<[^>]*>/g, '') : '')
@@ -37,7 +38,7 @@ export default function TourDetailDrawer({ contentId, onClose, onToggleCart, car
       {open && <button aria-label="상세 패널 닫기" onClick={onClose} className="fixed inset-0 z-[55] cursor-default" />}
 
       <div
-        className={`fixed top-16 bottom-0 right-0 z-[56] w-full max-w-[420px] overflow-y-auto bg-white shadow-popup transition-transform duration-300 ${
+        className={`fixed top-16 bottom-0 right-0 z-[56] w-full max-w-[420px] overflow-y-auto bg-surface shadow-popup transition-transform duration-300 ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -71,11 +72,7 @@ export default function TourDetailDrawer({ contentId, onClose, onToggleCart, car
             ) : (
               <>
                 <div className="px-4">
-                  {detail.imageUrl ? (
-                    <img src={detail.imageUrl} alt={detail.title} className="h-[240px] w-full rounded-2xl object-cover" />
-                  ) : (
-                    <div className="h-[240px] w-full rounded-2xl bg-gradient-to-br from-slate-200 to-slate-300" />
-                  )}
+                  <CardImage src={detail.imageUrl} alt={detail.title} className="h-[240px] w-full overflow-hidden rounded-2xl" />
                 </div>
 
                 <div className="p-4">

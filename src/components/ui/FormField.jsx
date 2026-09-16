@@ -12,7 +12,7 @@ export default function FormField({ label, type = 'text', error, className = '',
       <div className="relative">
         <input
           type={inputType}
-          className={`w-full h-12 px-4 rounded-xl border bg-white text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all ${
+          className={`w-full h-12 px-4 rounded-xl border bg-surface text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all ${
             error ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-brand'
           } ${isPassword ? 'pr-11' : ''}`}
           {...props}

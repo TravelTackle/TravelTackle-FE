@@ -2,7 +2,7 @@ import logoIcon from '../../assets/logo-icon.svg'
 
 export default function IntroPanel() {
   return (
-    <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-brand-light via-white to-teal-50 flex items-center justify-center">
+    <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-brand-light via-surface to-teal-50 flex items-center justify-center">
       <div
         className="absolute inset-0 opacity-[0.06]"
         style={{ backgroundImage: 'radial-gradient(circle, #0D9488 1px, transparent 1px)', backgroundSize: '22px 22px' }}

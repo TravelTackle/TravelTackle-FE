@@ -212,7 +212,7 @@ function FlipSwitch({ value, onToggle }) {
     >
       <span
         aria-hidden="true"
-        className="mode-thumb pointer-events-none absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-white shadow-card"
+        className="mode-thumb pointer-events-none absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-surface shadow-card"
         style={{ transform: `translateX(${index * 100}%)` }}
       />
       {SIDES.map((side) => {

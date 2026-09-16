@@ -33,7 +33,9 @@ const PROFILE_FILTERS = FILTERS.filter((f) => f.value !== 'all')
 // 3열로 그대로 배치한다 — 새 카드 UI를 따로 만들지 않는다.
 function MyProfileGallery({ user, authLoading, planItems, recordItems, loading, filter, onFilterChange, onOpenSettings, onOpenCard }) {
   const items = filter === 'plan' ? planItems : recordItems
-  const columns = Array.from({ length: GALLERY_COLUMNS }, (_, c) => items.filter((_, i) => i % GALLERY_COLUMNS === c))
+  // 모바일(<sm)에서는 3열이 각 칸을 너무 좁게 눌러서 카드가 찌부러지므로 1열로 — 데스크톱은 기존처럼 3열
+  const [columnCount] = useState(() => (window.matchMedia('(min-width: 640px)').matches ? GALLERY_COLUMNS : 1))
+  const columns = Array.from({ length: columnCount }, (_, c) => items.filter((_, i) => i % columnCount === c))
 
   function findPlan(planId) {
     return planItems.find((p) => p.id === planId) ?? null
@@ -100,7 +102,7 @@ function MyProfileGallery({ user, authLoading, planItems, recordItems, loading, 
 
       {loading ? (
         <div className="flex gap-5">
-          {Array.from({ length: GALLERY_COLUMNS }).map((_, c) => (
+          {Array.from({ length: columnCount }).map((_, c) => (
             <div key={c} className="flex min-w-0 flex-1 flex-col gap-5">
               <Skeleton className="h-56 w-full rounded-2xl" style={{ animationDelay: `${c * 80}ms` }} />
               <Skeleton className="h-56 w-full rounded-2xl" style={{ animationDelay: `${c * 80 + 120}ms` }} />
@@ -127,9 +129,10 @@ function MyProfileGallery({ user, authLoading, planItems, recordItems, loading, 
 export default function MyPageSettings() {
   const { user, loading: authLoading } = useAuth()
   const navigate = useNavigate()
-  // Navbar 알림에서 ?feedback=<tripId>로 들어오면 그 계획의 참견 드로어를 바로 연다
+  // Navbar 알림에서 ?feedback=<tripId>(참견)나 ?open=<tripId>(스크랩)로 들어오면 그 계획의 사이드바를 바로 연다
   const [searchParams, setSearchParams] = useSearchParams()
   const feedbackTripId = searchParams.get('feedback')
+  const openTripId = searchParams.get('open')
   const [feedFilter, setFeedFilter] = useState('plan')
   const [planItems, setPlanItems] = useState([])
   const [recordItems, setRecordItems] = useState([])
@@ -155,7 +158,7 @@ export default function MyPageSettings() {
             const saveCount = typeof detail?.saveCount === 'number' ? detail.saveCount : null
             const plan = detail
               ? {
-                  ...adaptPlanDetail({ ...detail, ownerName: user?.name, region: '' }),
+                  ...adaptPlanDetail({ ...detail, ownerName: user?.name, ownerProfileImageUrl: user?.profileImageUrl }),
                   createdAt: detail.createdAt,
                   feedbackCount: feedbackMap.get(t.id) ?? 0,
                   // 나만보기/전체공개 토글(FeedUserHeader)이 이 값이 있을 때만 보인다 — TripDetailResponse에만 있는 필드.
@@ -168,7 +171,8 @@ export default function MyPageSettings() {
                   ...adaptRecordDetail({
                     id: t.id,
                     ownerName: user?.name,
-                    region: '',
+                    ownerProfileImageUrl: user?.profileImageUrl,
+                    region: detail?.region ?? '',
                     record,
                     feedbackCount: feedbackMap.get(t.id) ?? 0,
                     savedTripId: null,
@@ -233,6 +237,23 @@ export default function MyPageSettings() {
     )
   }, [feedbackTripId, galleryLoading, planItems, openFeedback, setSearchParams])
 
+  // 스크랩 알림 — 참견 드로어 없이 계획 상세 드로어만 연다
+  useEffect(() => {
+    if (!openTripId || galleryLoading) return
+    const target = planItems.find((p) => p.id === openTripId)
+    if (!target) return
+    setFeedFilter('plan')
+    setDrawerItem(target)
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('open')
+        return next
+      },
+      { replace: true },
+    )
+  }, [openTripId, galleryLoading, planItems, setSearchParams])
+
   // 내 계획/기록이라 스크랩은 의미가 없어(FeedActionBar가 본인 글이면 알아서 막는다) 저장 관련 값은 빈 상태로 둔다.
   const feedActions = useMemo(
     () => ({ user, savedIds: new Map(), pendingIds: new Set(), saveDelta: {}, feedbackDelta, toggleSave: () => {}, openFeedback }),
@@ -240,7 +261,7 @@ export default function MyPageSettings() {
   )
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-slate-900">
+    <div className="flex min-h-screen flex-col bg-surface text-slate-900">
       <Navbar />
 
       {/* 토글 좌우 끝을 Navbar 컨테이너(1200px, px-4 sm:px-6)와 맞춘다 — TourExplorePage와 동일한 패턴 */}

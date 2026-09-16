@@ -5,7 +5,7 @@ import { THEMES, FALLBACK_AREAS, REGIONS_VISIBLE_COUNT, sortAreasByPopularity } 
 import { getTourAreas } from '../../api/tour'
 
 // 선택된 지역/테마 행에 쓰는 하늘색 — Navbar 아바타 배경(#BFD8FA)과 동일한 값 재사용
-const SELECTED_ROW = 'bg-[#BFD8FA] text-brand-dark font-bold'
+const SELECTED_ROW = 'bg-blue-200 text-brand-dark font-bold'
 const IDLE_ROW = 'text-slate-600 hover:bg-slate-50'
 
 function SigunguPicker({ region, sigungu, onSelectSigungu }) {
@@ -79,7 +79,7 @@ function SigunguPicker({ region, sigungu, onSelectSigungu }) {
         ref={triggerRef}
         onMouseDown={(e) => e.preventDefault()}
         onClick={toggleOpen}
-        className="flex w-full items-center justify-between gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11.5px] text-slate-600 hover:border-brand/40 transition-colors"
+        className="flex w-full items-center justify-between gap-1 rounded-lg border border-slate-200 bg-surface px-2.5 py-1.5 text-[11.5px] text-slate-600 hover:border-brand/40 transition-colors"
       >
         <span className="truncate">{sigungu?.name || `${region.name} 전체`}</span>
         <Icon icon="solar:alt-arrow-down-linear" width={11} className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -89,7 +89,7 @@ function SigunguPicker({ region, sigungu, onSelectSigungu }) {
         <div
           ref={panelRef}
           style={{ position: 'fixed', ...pos, maxHeight: PANEL_MAX_HEIGHT }}
-          className="z-50 overflow-y-auto rounded-2xl border border-slate-100 bg-white py-1.5 shadow-[0_12px_28px_rgba(15,23,42,0.12)]"
+          className="z-50 overflow-y-auto rounded-2xl border border-slate-100 bg-surface py-1.5 shadow-[0_12px_28px_rgba(15,23,42,0.12)]"
         >
           <button
             onMouseDown={(e) => e.preventDefault()}
@@ -131,8 +131,11 @@ export default function ExploreSidebar({
   const [areas, setAreas] = useState(() => sortAreasByPopularity(FALLBACK_AREAS))
   const [showMoreRegions, setShowMoreRegions] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
-  const [themeOpen, setThemeOpen] = useState(true)
-  const [regionOpen, setRegionOpen] = useState(true)
+  // 모바일에서는 사이드바가 카드 그리드 위에 세로로 먼저 오는데, 테마·지역이 펼쳐진 채로 시작하면
+  // 관광지가 스크롤해야만 보여서 접어서 시작한다. md 이상(사이드바가 옆으로 붙는 레이아웃)에서는
+  // 기존처럼 펼친 채로 시작한다.
+  const [themeOpen, setThemeOpen] = useState(() => window.matchMedia('(min-width: 768px)').matches)
+  const [regionOpen, setRegionOpen] = useState(() => window.matchMedia('(min-width: 768px)').matches)
   const isAll = !theme && !region
 
   useEffect(() => {
@@ -151,7 +154,7 @@ export default function ExploreSidebar({
     <aside className="w-full shrink-0 md:w-[164px]">
       <div className="sticky top-24 flex max-h-[calc(100vh-7rem)] flex-col">
         <div
-          className={`mb-3 flex h-9 shrink-0 items-center gap-1.5 rounded-lg border bg-white px-2.5 shadow-card transition-colors ${
+          className={`mb-3 flex h-9 shrink-0 items-center gap-1.5 rounded-lg border bg-surface px-2.5 shadow-card transition-colors ${
             searchFocused ? 'border-brand/40' : 'border-slate-200'
           }`}
         >
@@ -183,11 +186,13 @@ export default function ExploreSidebar({
           )}
         </div>
 
+        {/* 모바일에선 기본값 자체가 "전체보기"라 굳이 버튼으로 안 둬도 되고, 테마를 고르면 그 테마만
+            보이는 걸로 충분히 알 수 있어서 뺐다. 사이드바가 옆에 붙는 데스크톱(md 이상)에서는 그대로 둔다. */}
         <button
           onMouseDown={(e) => e.preventDefault()}
           onClick={onSelectAll}
-          className={`flex w-full shrink-0 items-center gap-2 rounded-[10px] px-3 py-2 text-[12.5px] font-bold transition-colors ${
-            isAll ? 'bg-brand text-white' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+          className={`hidden w-full shrink-0 items-center gap-2 rounded-[10px] px-3 py-2 text-[12.5px] font-bold transition-colors md:flex ${
+            isAll ? 'bg-brand text-white' : 'bg-surface text-slate-700 border border-slate-200 hover:bg-slate-50'
           }`}
         >
           <Icon icon="mdi:view-grid" width={15} />

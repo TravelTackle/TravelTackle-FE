@@ -32,8 +32,8 @@ export default function TripCreateModal({ onClose, onCreate }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4" onClick={onClose}>
-      <div className="w-full max-w-[380px] rounded-2xl bg-white p-6 shadow-popup" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={onClose}>
+      <div className="w-full max-w-[380px] rounded-2xl bg-surface p-6 shadow-popup" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-[16px] font-bold text-slate-800">여행 계획 만들기</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="닫기">

@@ -1,13 +1,16 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage, LANGUAGES } from '../i18n'
+import { useTheme, THEME_MODES } from '../theme'
 import logoHorizontal from '../assets/logo-horizontal.svg'
-import { getReceivedFeedback, dismissReceivedFeedback } from '../api/feed'
+import logoHorizontalDark from '../assets/logo-horizontal-dark.svg' // '트레블' 글자만 밝은 색 — 다크 모드에서 검정 글자가 묻히지 않게
+import { useNotifications } from '../notifications/NotificationContext'
+import NotificationPanel from './NotificationPanel'
 import { updateProfile } from '../api/auth'
-import { formatDate } from '../lib/homeFormat'
 import Skeleton from './ui/Skeleton'
+import Avatar from './ui/Avatar'
 
 // 화면 구조는 언어와 무관하게 동일(대안 A) — 메뉴도 같은 3개 항목을 그대로 두고 라벨만 번역한다.
 function getNav(language) {
@@ -48,16 +51,9 @@ const T = {
     homeAria: '트레블 참견 홈',
     logoAlt: '트레블 참견',
     notifications: '알림',
-    notificationsUnread: (n) => `알림 · 읽지 않은 참견 ${n}개`,
-    receivedFeedbackTitle: '내 계획에 달린 참견',
-    newFeedback: (n) => `새 참견 ${n}`,
-    clearAll: '전체 지우기',
-    loadError: '알림을 불러오지 못했어요.',
-    empty: '아직 달린 참견이 없어요. 계획을 공개하면 다른 여행자의 참견을 받을 수 있어요.',
-    feedbackCount: (n) => `참견 ${n}개`,
-    newFeedbackInline: (n) => ` · 새 참견 ${n}`,
-    dismissAria: (title) => `${title} 알림 지우기`,
+    notificationsUnread: (n) => `알림 · 읽지 않은 알림 ${n}개`,
     languageSelect: '언어 선택',
+    languageLabel: '언어',
     myPage: '마이페이지',
     myTrips: '나의 여행',
     logout: '로그아웃',
@@ -68,21 +64,21 @@ const T = {
     closeMenu: '메뉴 닫기',
     loginCta: '로그인하고 참견 시작하기',
     checkingLogin: '로그인 정보를 확인하는 중',
+    toLightMode: '라이트 모드로 전환',
+    toDarkMode: '다크 모드로 전환',
+    followingSystem: '시스템 설정을 따르는 중',
+    screenMode: '화면 모드',
+    modeLight: '라이트',
+    modeDark: '다크',
+    modeSystem: '시스템',
   },
   en: {
     homeAria: 'Travel Tackle Home',
     logoAlt: 'Travel Tackle',
     notifications: 'Notifications',
     notificationsUnread: (n) => `Notifications · ${n} unread`,
-    receivedFeedbackTitle: 'Feedback on My Trips',
-    newFeedback: (n) => `${n} new`,
-    clearAll: 'Clear all',
-    loadError: 'Could not load notifications.',
-    empty: 'No feedback yet. Publish a trip to get feedback from other travelers.',
-    feedbackCount: (n) => `${n} feedback`,
-    newFeedbackInline: (n) => ` · ${n} new`,
-    dismissAria: (title) => `Dismiss notification for ${title}`,
     languageSelect: 'Language',
+    languageLabel: 'Language',
     myPage: 'My Page',
     myTrips: 'My Trips',
     logout: 'Log out',
@@ -93,29 +89,28 @@ const T = {
     closeMenu: 'Close menu',
     loginCta: 'Log in to get started',
     checkingLogin: 'Checking your login status',
+    toLightMode: 'Switch to light mode',
+    toDarkMode: 'Switch to dark mode',
+    followingSystem: 'Following system setting',
+    screenMode: 'Display mode',
+    modeLight: 'Light',
+    modeDark: 'Dark',
+    modeSystem: 'System',
   },
 }
 
-const POPOVER_BASE = 'nav-pop z-50 rounded-2xl border border-slate-100 bg-white shadow-popup ring-1 ring-black/5'
+// THEME_MODES(src/theme)의 label은 한국어 고정이라 언어별로 다시 골라 보여준다
+function themeModeLabel(key, copy) {
+  if (key === 'light') return copy.modeLight
+  if (key === 'dark') return copy.modeDark
+  return copy.modeSystem
+}
+
+const POPOVER_BASE = 'nav-pop z-50 rounded-2xl border border-slate-100 bg-surface shadow-popup ring-1 ring-black/5'
 const POPOVER = `${POPOVER_BASE} absolute right-0 mt-2`
 
-function initialOf(user) {
-  const source = user?.name || user?.email || ''
-  return source.trim().charAt(0).toUpperCase() || '·'
-}
-
-// 아바타 — 이름 첫 글자를 브랜드 그라디언트 원 안에 (마이페이지 등에서도 재사용)
-export function Avatar({ user, size = 28 }) {
-  return (
-    <span
-      className="flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-mid font-extrabold text-white ring-2 ring-white"
-      style={{ width: size, height: size, fontSize: size * 0.42 }}
-      aria-hidden="true"
-    >
-      {initialOf(user)}
-    </span>
-  )
-}
+// 아바타는 ui/Avatar로 옮겼다 — 기존 import 경로(Navbar의 Avatar) 호환용 재수출
+export { Avatar }
 
 // 가운데 메뉴 — 마우스가 머무는 항목 아래로 알약이 미끄러지고, 손을 떼면 현재 페이지로 돌아간다
 function DesktopNav({ pathname, nav }) {
@@ -196,12 +191,12 @@ function DesktopNav({ pathname, nav }) {
   return (
     <div
       ref={trackRef}
-      className="absolute left-1/2 hidden -translate-x-1/2 md:flex items-center rounded-full bg-slate-900/[0.035] p-1"
+      className="absolute left-1/2 hidden -translate-x-1/2 md:flex items-center rounded-full bg-black/[0.035] p-1"
       onMouseLeave={() => setHover(null)}
     >
       <span
         aria-hidden="true"
-        className={`nav-pill pointer-events-none absolute top-1 h-[calc(100%-8px)] rounded-full bg-white shadow-card ${
+        className={`nav-pill pointer-events-none absolute top-1 h-[calc(100%-8px)] rounded-full bg-surface shadow-card ${
           pill.visible ? 'opacity-100' : 'opacity-0'
         }`}
         style={{ transform: `translateX(${pill.left}px)`, width: pill.width, left: 0 }}
@@ -254,7 +249,7 @@ function DesktopNav({ pathname, nav }) {
                   style={{ transformOrigin: 'top center' }}
                 >
                   {/* 패딩은 여기(바깥 래퍼)에 — 안쪽 ul은 패딩 0이라 top:0이 li가 시작하는 위치와 정확히 같다 */}
-                  <div className="w-36 rounded-2xl bg-white/90 p-1.5 backdrop-blur-sm">
+                  <div className="w-36 rounded-2xl bg-surface/90 p-1.5 backdrop-blur-sm">
                     <ul role="menu" className="relative flex flex-col gap-1">
                       <span
                         aria-hidden="true"
@@ -316,53 +311,26 @@ function DesktopNav({ pathname, nav }) {
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [sheetLangOpen, setSheetLangOpen] = useState(false) // 모바일 시트 안 "언어" 줄을 눌러 펼친 상태
+  const [sheetThemeOpen, setSheetThemeOpen] = useState(false) // 모바일 시트 안 "화면 모드" 줄을 눌러 펼친 상태
   const [profileOpen, setProfileOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
   const [notiOpen, setNotiOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const [received, setReceived] = useState({ items: [], loading: false, error: false })
   const { user, loading: authLoading, logout, setUser } = useAuth()
   const { language, setLanguage } = useLanguage()
   const copy = T[language] ?? T.en
   const nav = getNav(language)
+  const { mode: themeMode, resolved: theme, setMode: setThemeMode, toggle: toggleTheme } = useTheme()
   const profileRef = useRef(null)
   const location = useLocation()
   const navigate = useNavigate()
   const langRef = useRef(null)
   const notiRef = useRef(null)
 
-  // 내 계획에 달린 참견(미읽음 수) — 로그인 시 한 번, 알림을 열 때마다 새로 고침
-  const loadReceived = useCallback(() => {
-    setReceived((r) => ({ ...r, loading: true, error: false }))
-    getReceivedFeedback()
-      .then((items) => setReceived({ items: Array.isArray(items) ? items : [], loading: false, error: false }))
-      .catch(() => setReceived({ items: [], loading: false, error: true }))
-  }, [])
+  // 알림(참견·스크랩) — 배지 수와 목록은 NotificationContext가 관리한다. 목록은 종을 열 때 처음 받는다
+  const { unreadCount, loaded: notiLoaded, load: loadNotifications } = useNotifications()
 
-  useEffect(() => {
-    if (user) loadReceived()
-    else setReceived({ items: [], loading: false, error: false })
-  }, [user, loadReceived])
-
-  // 지우기 — 백엔드에 dismissReceivedFeedback 전용 엔드포인트를 요청해둔 상태. 아직 없을 수 있어
-  // 실패는 조용히 무시하고, 화면에서는 로컬로 즉시 제거해 지운 것처럼 보이게 한다. 엔드포인트가
-  // 붙으면 "다음 새 참견 전까지 안 돌아옴"까지 그대로 맞아떨어진다.
-  const dismissReceived = useCallback((e, tripId) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setReceived((r) => ({ ...r, items: r.items.filter((t) => t.tripId !== tripId) }))
-    dismissReceivedFeedback(tripId).catch(() => {})
-  }, [])
-
-  // 전체 지우기 — 현재 목록에 있는 트립을 한 번에 지운다(개별 지우기와 동일한 API를 트립마다 호출)
-  const dismissAllReceived = useCallback(() => {
-    const ids = received.items.map((t) => t.tripId)
-    if (ids.length === 0) return
-    setReceived((r) => ({ ...r, items: [] }))
-    ids.forEach((tripId) => dismissReceivedFeedback(tripId).catch(() => {}))
-  }, [received.items])
-
-  const unreadTotal = received.items.reduce((sum, t) => sum + (t.unreadCount || 0), 0)
   const currentLang = LANGUAGES.find((l) => l.code === language) ?? LANGUAGES[0]
 
   // 스크롤이 시작되면 바가 살짝 떠오른다 (더 하얗게 + 그림자)
@@ -400,6 +368,14 @@ export default function Navbar() {
     setMenuOpen(false)
   }, [location.pathname])
 
+  // 메뉴를 닫으면 안에서 펼쳐뒀던 화면 모드·언어 줄도 접어 둔다 — 다음에 열었을 때 항상 접힌 채로 시작
+  useEffect(() => {
+    if (!menuOpen) {
+      setSheetThemeOpen(false)
+      setSheetLangOpen(false)
+    }
+  }, [menuOpen])
+
   async function handleLogout() {
     try {
       await logout()
@@ -424,17 +400,28 @@ export default function Navbar() {
   const iconButton =
     'flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-900/5 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand'
   const pillButton =
-    'flex h-9 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-[12.5px] font-bold text-slate-700 transition-all hover:border-slate-300 hover:shadow-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand'
+    'flex h-9 items-center gap-1.5 rounded-full border border-slate-200 bg-surface px-3 text-[12.5px] font-bold text-slate-700 transition-all hover:border-slate-300 hover:shadow-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand'
 
   return (
     <nav
-      className={`sticky top-0 z-40 border-b backdrop-blur-md transition-[background-color,box-shadow,border-color] duration-300 ${
-        scrolled ? 'border-slate-200/80 bg-white/90 shadow-[0_8px_24px_rgba(15,23,42,0.06)]' : 'border-transparent bg-[#F4F7FA]/85'
-      }`}
+      className={`sticky top-0 border-b backdrop-blur-md transition-[background-color,box-shadow,border-color] duration-300 ${
+        menuOpen ? 'z-[60]' : 'z-40'
+      } ${scrolled ? 'border-slate-200/80 bg-surface/90 shadow-[0_8px_24px_rgba(15,23,42,0.06)]' : 'border-transparent bg-slate-50/85'}`}
     >
+      {/* 모바일 메뉴가 열려 있는 동안 그 아래(시트~화면 끝)만 딤 처리 — top-16(탑바 높이)부터 시작해야
+          한다. inset-0으로 탑바까지 덮으면, 탑바 안쪽 빈 공간(로고·아이콘 사이 여백)엔 배경색이 없어서
+          그 밑에 깔린 이 딤이 비쳐 보여 탑바 전체가 살짝 어두운 회색으로 보이는 문제가 있었다. */}
+      {menuOpen && (
+        <div
+          className="fixed inset-x-0 top-16 bottom-0 bg-black/40 md:hidden"
+          onClick={() => setMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       <div className="relative mx-auto flex h-16 max-w-[1200px] items-center gap-5 px-4 sm:px-6">
         <Link to="/" className="flex shrink-0 items-center transition-transform hover:scale-[1.02]" aria-label={copy.homeAria}>
-          <img src={logoHorizontal} alt={copy.logoAlt} className="h-8 w-auto sm:h-9" />
+          <img src={theme === 'dark' ? logoHorizontalDark : logoHorizontal} alt={copy.logoAlt} className="h-8 w-auto sm:h-9" />
         </Link>
 
         <DesktopNav pathname={location.pathname} nav={nav} />
@@ -451,105 +438,63 @@ export default function Navbar() {
           ) : (
             <>
               {user && (
-                <div className="relative hidden sm:block" ref={notiRef}>
+                <div className="relative" ref={notiRef}>
                   <button
                     type="button"
                     onClick={() => {
                       setProfileOpen(false)
                       setLangOpen(false)
                       setNotiOpen((v) => {
-                        if (!v) loadReceived()
+                        if (!v && !notiLoaded) loadNotifications()
                         return !v
                       })
                     }}
                     className={`${iconButton} ${notiOpen ? 'bg-slate-900/5 text-slate-900' : ''}`}
-                    aria-label={unreadTotal > 0 ? copy.notificationsUnread(unreadTotal) : copy.notifications}
+                    aria-label={unreadCount > 0 ? copy.notificationsUnread(unreadCount) : copy.notifications}
                     aria-expanded={notiOpen}
                     aria-haspopup="dialog"
                   >
-                    <Icon icon={unreadTotal > 0 ? 'solar:bell-bing-bold' : 'solar:bell-linear'} width={20} />
-                    {unreadTotal > 0 && (
-                      <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9.5px] font-bold text-white ring-2 ring-white">
-                        {unreadTotal > 99 ? '99+' : unreadTotal}
+                    {/* 미읽음 수가 바뀌면 종이 한 번 흔들린다 (key로 애니메이션 재생) */}
+                    <span key={unreadCount} className={`flex ${unreadCount > 0 ? 'bell-ring' : ''}`}>
+                      <Icon icon={unreadCount > 0 ? 'solar:bell-bing-bold' : 'solar:bell-linear'} width={20} />
+                    </span>
+                    {unreadCount > 0 && (
+                      <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9.5px] font-bold text-white ring-2 ring-surface">
+                        {unreadCount > 99 ? '99+' : unreadCount}
                       </span>
                     )}
                   </button>
 
+                  {/* 모바일에선 종이 오른쪽 끝에 붙어 있어 right-0 팝오버가 왼쪽 화면 밖으로 나간다 — 화면에 고정해 좌우 여백을 맞춘다 */}
                   {notiOpen && (
-                    <div role="dialog" aria-label={copy.receivedFeedbackTitle} className={`${POPOVER} w-72 py-2`}>
-                      <div className="flex items-center justify-between border-b border-slate-100 px-3.5 pb-2">
-                        <span className="text-[12.5px] font-bold text-slate-800">{copy.receivedFeedbackTitle}</span>
-                        <div className="flex items-center gap-2.5">
-                          {unreadTotal > 0 && <span className="text-[11px] font-bold text-rose-500">{copy.newFeedback(unreadTotal)}</span>}
-                          {received.items.length > 0 && (
-                            <button
-                              type="button"
-                              onClick={dismissAllReceived}
-                              className="text-[11px] font-semibold text-slate-400 transition-colors hover:text-slate-600"
-                            >
-                              {copy.clearAll}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      {received.loading && received.items.length === 0 ? (
-                        <ul className="flex flex-col gap-2.5 px-3.5 py-3" role="status" aria-label={copy.notifications}>
-                          {[0, 1].map((i) => (
-                            <li key={i} className="flex items-start gap-2.5">
-                              <Skeleton className="mt-1.5 h-2 w-2 rounded-full" />
-                              <div className="flex-1">
-                                <Skeleton className="h-3 w-3/4" />
-                                <Skeleton className="mt-1.5 h-2.5 w-1/2" />
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : received.error ? (
-                        <p className="px-3.5 py-4 text-[12px] text-rose-500">{copy.loadError}</p>
-                      ) : received.items.length === 0 ? (
-                        <p className="px-3.5 py-4 text-[12px] leading-relaxed text-slate-400">
-                          {copy.empty}
-                        </p>
-                      ) : (
-                        <ul className="max-h-[320px] overflow-y-auto py-1">
-                          {received.items.map((t) => (
-                            <li key={t.tripId} className="group relative">
-                              {/* 마이페이지로 이동해 그 계획의 참견 탭을 바로 연다 — ?feedback=<tripId>를 MyPageSettings가 읽어 드로어를 띄운다 */}
-                              <Link
-                                to={`/mypage?feedback=${t.tripId}`}
-                                onClick={() => setNotiOpen(false)}
-                                className="flex items-start gap-2.5 px-3.5 py-2 pr-9 transition-colors hover:bg-slate-50"
-                              >
-                                <span
-                                  className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${t.unreadCount > 0 ? 'bg-rose-500' : 'bg-slate-200'}`}
-                                  aria-hidden="true"
-                                />
-                                <span className="min-w-0 flex-1">
-                                  <span className="block truncate text-[12.5px] font-bold text-slate-800">{t.tripTitle}</span>
-                                  <span className="block text-[11px] text-slate-400">
-                                    {copy.feedbackCount(t.totalFeedbackCount)}
-                                    {t.unreadCount > 0 && <span className="font-semibold text-rose-500">{copy.newFeedbackInline(t.unreadCount)}</span>}
-                                    {t.latestFeedbackAt && ` · ${formatDate(t.latestFeedbackAt, language)}`}
-                                  </span>
-                                </span>
-                              </Link>
-                              <button
-                                type="button"
-                                onClick={(e) => dismissReceived(e, t.tripId)}
-                                aria-label={copy.dismissAria(t.tripTitle)}
-                                className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-slate-300 opacity-0 transition-all hover:bg-slate-100 hover:text-slate-500 group-hover:opacity-100 focus-visible:opacity-100"
-                              >
-                                <Icon icon="solar:close-circle-linear" width={15} />
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                    <div
+                      role="dialog"
+                      aria-label={copy.notifications}
+                      className={`${POPOVER} overflow-hidden sm:w-[360px] max-sm:fixed max-sm:inset-x-3 max-sm:top-[68px] max-sm:mt-0`}
+                    >
+                      <NotificationPanel onNavigate={() => setNotiOpen(false)} />
                     </div>
                   )}
                 </div>
               )}
 
+              {/* 라이트/다크 전환 — 지금 보이는 모드의 반대편 아이콘(다크면 해, 라이트면 달). sm 미만
+                  (모바일)에서는 아래 시트 안에 언어와 같은 축약형 줄로 넣고, 상단바에서는 뺐다. */}
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className={`${iconButton} hidden sm:flex`}
+                aria-label={theme === 'dark' ? copy.toLightMode : copy.toDarkMode}
+                title={themeMode === 'system' ? copy.followingSystem : undefined}
+              >
+                <span key={theme} className="ai-pop flex">
+                  <Icon icon={theme === 'dark' ? 'solar:sun-2-linear' : 'solar:moon-linear'} width={19} />
+                </span>
+              </button>
+
+              {/* 언어 선택 — sm 미만(모바일)에서는 상단바에서 빼고 아래 모바일 시트 안에 축약형으로
+                  넣는다. 아이콘만 있는 버튼으로 상단바에 올려봤는데, 다크모드와 달리 언어는 매번
+                  누를 일이 적어 시트 안에 있는 게 더 자연스럽다는 피드백으로 되돌렸다 */}
               <div className="relative hidden sm:block" ref={langRef}>
                 <button
                   type="button"
@@ -623,7 +568,10 @@ export default function Navbar() {
                   </button>
 
                   {profileOpen && (
-                    <div role="menu" className={`${POPOVER} w-52 py-1.5`}>
+                    <div
+                      role="menu"
+                      className={`${POPOVER} w-52 py-1.5 max-sm:fixed max-sm:inset-x-3 max-sm:top-[68px] max-sm:w-auto max-sm:mt-0`}
+                    >
                       <div className="flex items-center gap-2.5 border-b border-slate-100 px-3.5 pb-2.5 pt-1.5">
                         <Avatar user={user} size={32} />
                         <div className="min-w-0">
@@ -691,9 +639,12 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* 모바일 시트 */}
+      {/* 모바일 시트 — 챗봇·장바구니 패널처럼 기존 콘텐츠 위에 한 겹 얹히는 오버레이다. 원래는 nav의
+          보통 흐름 안에 있어서 펼쳐지는 만큼 아래 콘텐츠를 밀어냈는데, fixed로 빼서 탑바(h-16) 바로
+          아래에 떠 있게 하고 페이지 자체는 그대로 둔다. 뒤 콘텐츠와 확실히 구분되도록 아래쪽에
+          그림자를 준다. */}
       {menuOpen && (
-        <div className="nav-sheet border-t border-slate-100 bg-white px-4 pb-4 pt-2 md:hidden">
+        <div className="nav-sheet fixed inset-x-0 top-16 z-10 max-h-[calc(100vh-4rem)] overflow-y-auto border-t border-slate-100 bg-surface px-4 pb-4 pt-2 shadow-popup md:hidden">
           <div className="flex flex-col">
             {nav.flatMap((n) => (n.children ? n.children : [n])).map((n) => {
               const active = location.pathname === n.to
@@ -707,7 +658,7 @@ export default function Navbar() {
                     active ? 'bg-brand-light text-brand' : 'text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${active ? 'bg-white text-brand' : 'bg-slate-100 text-slate-500'}`}>
+                  <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${active ? 'bg-surface text-brand' : 'bg-slate-100 text-slate-500'}`}>
                     <Icon icon={n.icon} width={16} />
                   </span>
                   {n.label}
@@ -717,63 +668,99 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* 데스크톱 선택기가 sm 미만에서 숨겨지므로 모바일에서는 여기서 언어를 바꾼다 */}
+          {/* 화면 모드 — 현재 모드만 한 줄로 보여주고, 누르면 라이트/다크/시스템 3버튼이 펼쳐진다. */}
           <div className="mt-3 border-t border-slate-100 pt-3">
-            <p className="flex items-center gap-1.5 px-3 text-[12px] font-bold text-slate-400">
-              <Icon icon="solar:global-linear" width={14} /> {copy.languageSelect}
-            </p>
-            <div className="mt-2 flex flex-wrap gap-1.5 px-3" role="listbox" aria-label={copy.languageSelect}>
-              {LANGUAGES.map((lang) => {
-                const active = lang.code === language
-                return (
-                  <button
-                    key={lang.code}
-                    role="option"
-                    aria-selected={active}
-                    onClick={() => {
-                      handleLanguageSelect(lang.code)
-                      setMenuOpen(false)
-                    }}
-                    className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-                      active ? 'border-brand bg-brand-light font-bold text-brand' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    {lang.label}
-                  </button>
-                )
-              })}
-            </div>
+            <button
+              type="button"
+              onClick={() => setSheetThemeOpen((v) => !v)}
+              aria-expanded={sheetThemeOpen}
+              className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-[13px] font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              <span className="flex items-center gap-2">
+                <Icon icon="solar:pallete-2-linear" width={16} className="text-slate-400" />
+                {copy.screenMode}
+              </span>
+              <span className="flex items-center gap-1 text-slate-400">
+                {themeModeLabel(THEME_MODES.find((m) => m.key === themeMode)?.key, copy)}
+                <Icon
+                  icon="solar:alt-arrow-down-linear"
+                  width={12}
+                  className={`transition-transform duration-300 ${sheetThemeOpen ? 'rotate-180' : ''}`}
+                />
+              </span>
+            </button>
+            {sheetThemeOpen && (
+              <div className="mt-2 flex gap-1.5 px-3" role="radiogroup" aria-label={copy.screenMode}>
+                {THEME_MODES.map((m) => {
+                  const active = themeMode === m.key
+                  return (
+                    <button
+                      key={m.key}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setThemeMode(m.key)}
+                      className={`flex flex-1 items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+                        active ? 'border-brand bg-brand-light font-bold text-brand' : 'border-slate-200 bg-surface text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Icon icon={m.icon} width={14} />
+                      {themeModeLabel(m.key, copy)}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
-          {!authLoading && (
-            <div className="mt-3 border-t border-slate-100 pt-3">
-              {user ? (
-                <div className="flex items-center gap-3 px-3">
-                  <Avatar user={user} size={36} />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[13.5px] font-bold text-slate-800">{user.name || copy.memberFallback}</div>
-                    {user.email && <div className="truncate text-[11.5px] text-slate-400">{user.email}</div>}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="rounded-full border border-slate-200 px-3 py-1.5 text-[12px] font-bold text-slate-600 transition-colors hover:bg-slate-50"
-                  >
-                    {copy.logout}
-                  </button>
-                </div>
-              ) : (
-                <Link
-                  to="/login"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-brand-mid to-brand text-[13.5px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28)] transition-colors hover:from-brand hover:to-brand-dark"
-                >
-                  <Icon icon="solar:user-rounded-bold" width={15} />
-                  {copy.loginCta}
-                </Link>
-              )}
-            </div>
-          )}
+          {/* 언어 선택 — 현재 언어만 한 줄로 보여주고, 누르면 그 아래에 목록이 펼쳐진다.
+              전체 언어를 칩으로 펼쳐서 항상 보여줬더니 목록이 길어져 화면을 다 가렸던 문제가
+              있어 접어 뒀다. 로그인한 회원 정보·로그아웃, 로그인 버튼은 탑바에 그대로 있어
+              (아바타 드롭다운 / 로그인 버튼) 여기서는 뺐다. */}
+          <div className="mt-3 border-t border-slate-100 pt-3">
+            <button
+              type="button"
+              onClick={() => setSheetLangOpen((v) => !v)}
+              aria-expanded={sheetLangOpen}
+              className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-[13px] font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              <span className="flex items-center gap-2">
+                <Icon icon="solar:global-linear" width={16} className="text-slate-400" />
+                {copy.languageLabel}
+              </span>
+              <span className="flex items-center gap-1 text-slate-400">
+                {currentLang.label}
+                <Icon
+                  icon="solar:alt-arrow-down-linear"
+                  width={12}
+                  className={`transition-transform duration-300 ${sheetLangOpen ? 'rotate-180' : ''}`}
+                />
+              </span>
+            </button>
+            {sheetLangOpen && (
+              <div className="mt-2 flex flex-wrap gap-1.5 px-3" role="listbox" aria-label={copy.languageSelect}>
+                {LANGUAGES.map((lang) => {
+                  const active = lang.code === language
+                  return (
+                    <button
+                      key={lang.code}
+                      role="option"
+                      aria-selected={active}
+                      onClick={() => {
+                        handleLanguageSelect(lang.code)
+                        setSheetLangOpen(false)
+                      }}
+                      className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+                        active ? 'border-brand bg-brand-light font-bold text-brand' : 'border-slate-200 bg-surface text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {lang.label}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </nav>

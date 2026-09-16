@@ -26,6 +26,17 @@ export function formatDay(iso, language = 'ko') {
   return (DAY_FMT[language] ?? DAY_FMT.en).format(d)
 }
 
+// 피드 카드용 작성/수정일 — 올해면 "09.16", 작년 이전이면 "2024.09.16"
+export function formatFeedDate(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  if (d.getFullYear() === new Date().getFullYear()) return `${mm}.${dd}`
+  return `${d.getFullYear()}.${mm}.${dd}`
+}
+
 const PROVINCE_SHORT = {
   경상남도: '경남',
   경상북도: '경북',
@@ -60,3 +71,28 @@ export function formatDuration(startDate, endDate, language = 'ko') {
   }
   return `${nights}박 ${nights + 1}일`
 }
+
+// "방금 전" · "5분 전" · "3시간 전" · "어제" · "4일 전" · 그보다 오래되면 날짜
+export function timeAgo(iso, language = 'ko') {
+  if (!iso) return ''
+  const diff = Date.now() - new Date(iso).getTime()
+  if (Number.isNaN(diff)) return ''
+  const min = Math.floor(diff / 60000)
+  const hr = Math.floor(min / 60)
+  const day = Math.floor(hr / 24)
+  if (language !== 'ko') {
+    if (min < 1) return 'Just now'
+    if (min < 60) return `${min}m ago`
+    if (hr < 24) return `${hr}h ago`
+    if (day === 1) return 'Yesterday'
+    if (day < 7) return `${day}d ago`
+    return formatDate(iso, language)
+  }
+  if (min < 1) return '방금 전'
+  if (min < 60) return `${min}분 전`
+  if (hr < 24) return `${hr}시간 전`
+  if (day === 1) return '어제'
+  if (day < 7) return `${day}일 전`
+  return formatDate(iso)
+}
+

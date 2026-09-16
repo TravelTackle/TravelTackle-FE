@@ -1,6 +1,6 @@
 const VARIANTS = {
   solid: 'bg-brand text-white hover:bg-brand-dark',
-  invert: 'bg-white text-brand-dark hover:bg-slate-50',
+  invert: 'bg-surface text-brand-dark hover:bg-slate-50',
   light: 'bg-brand-light text-brand-dark hover:bg-teal-100',
 }
 

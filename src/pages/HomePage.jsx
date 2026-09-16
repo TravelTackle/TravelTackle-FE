@@ -15,7 +15,7 @@ export default function HomePage() {
   const feed = useHomeFeed()
 
   return (
-    <div className="bg-white text-slate-900">
+    <div className="bg-surface text-slate-900">
       <Navbar />
       <HeroSlider />
       <AiSummaryFeed feed={feed} />

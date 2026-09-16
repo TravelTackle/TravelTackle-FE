@@ -154,8 +154,10 @@ export default function SavedTripsPage() {
     return items.find((i) => i.type === 'plan' && i.id === planId) ?? null
   }
 
-  // 여행자 피드 갤러리형과 같은 마스킹 방식(좌우 컬럼 독립 스택) — 3열로 확장
-  const columns = Array.from({ length: COLUMNS }, (_, c) => items.filter((_, i) => i % COLUMNS === c))
+  // 여행자 피드 갤러리형과 같은 마스킹 방식(좌우 컬럼 독립 스택) — 데스크톱은 3열로 확장.
+  // 모바일(<sm)에서는 3열이 각 칸을 너무 좁게 눌러서 카드가 찌부러지므로 1열로 보여준다.
+  const columnCount = window.matchMedia('(min-width: 640px)').matches ? COLUMNS : 1
+  const columns = Array.from({ length: columnCount }, (_, c) => items.filter((_, i) => i % columnCount === c))
 
   function renderCard(it) {
     const extra = <CopyToPlanButton item={it} onCopied={() => showToast('나의 계획으로 복사했어요')} />
@@ -167,7 +169,7 @@ export default function SavedTripsPage() {
   }
 
   return (
-    <div className="bg-white text-slate-900">
+    <div className="bg-surface text-slate-900">
       <Navbar />
 
       <FeedActionsProvider value={feedActions}>
@@ -217,7 +219,7 @@ export default function SavedTripsPage() {
       <FloatingCart />
 
       <div
-        className={`fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-slate-900/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
+        className={`fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-black/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
           toast ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
         }`}
       >

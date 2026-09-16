@@ -11,7 +11,7 @@ const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 }
 
 // Day 카드 위, 같은 폭 안에서 좌우 끝에 붙는 화살표 행 — 카드와 겹치지 않고 그 위에 따로 얹힌다.
 const NAV_BUTTON_CLASS =
-  'flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 shadow-icon-btn transition-colors hover:text-slate-700 hover:shadow-icon-btn-hover disabled:pointer-events-none disabled:opacity-30'
+  'flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-surface text-slate-400 shadow-icon-btn transition-colors hover:text-slate-700 hover:shadow-icon-btn-hover disabled:pointer-events-none disabled:opacity-30'
 
 // Map 컴포넌트 안에서만 useMap()을 쓸 수 있어서, bounds 맞추는 로직 + 그걸 다시 트리거하는 버튼을 같이 둔다.
 // 진입 시/Day 전환 시 자동 맞춤은 순간이동, 버튼을 직접 눌러서 다시 맞출 때만 panTo로 부드럽게 움직인다.
@@ -51,7 +51,7 @@ function FitBoundsControl({ coords }) {
       aria-label="전체 동선 다시 보기"
       title="전체 동선 다시 보기"
       onClick={() => fit(true)}
-      className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-icon-btn transition-colors hover:text-brand hover:shadow-icon-btn-hover"
+      className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-surface text-slate-500 shadow-icon-btn transition-colors hover:text-brand hover:shadow-icon-btn-hover"
     >
       <Icon icon="mdi:crop-free" width={16} />
     </button>
@@ -78,11 +78,11 @@ function RouteMarker({ item, coord, order }) {
           className={`relative flex h-7 w-7 items-center justify-center rounded-full text-white shadow-card ${tripItemColor(item.contentTypeId)}`}
         >
           <Icon icon={tripItemIcon(item.contentTypeId)} width={14} />
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border border-white bg-slate-900 text-[9px] font-bold text-white">
+          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border border-surface bg-black text-[9px] font-bold text-white">
             {order}
           </span>
         </span>
-        <span className="mt-1 whitespace-nowrap rounded-md bg-white/95 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700 shadow-card">
+        <span className="mt-1 whitespace-nowrap rounded-md bg-white/95 px-1.5 py-0.5 text-[11px] font-semibold text-ink shadow-card">
           {item.cachedTitle}
         </span>
       </div>
@@ -97,6 +97,7 @@ export default function TripMapView({
   selectedDayId,
   onSelectDay,
   onAddCartItem,
+  onOpenCart,
   onReorderItem,
   onMoveItem,
   onSaveTime,
@@ -179,7 +180,7 @@ export default function TripMapView({
         </Map>
       </div>
 
-      <div className="w-[260px] shrink-0">
+      <div className="w-full sm:w-[260px] sm:shrink-0">
         <div className="mb-1.5 flex items-center justify-between">
           <button type="button" aria-label="이전 Day" onClick={() => goDay(-1)} disabled={dayIndex <= 0} className={NAV_BUTTON_CLASS}>
             <Icon icon="solar:alt-arrow-left-linear" width={14} />
@@ -202,6 +203,7 @@ export default function TripMapView({
               selected
               onSelect={() => onSelectDay(activeDay.id)}
               onAddCartItem={onAddCartItem}
+              onOpenCart={onOpenCart}
               onReorderItem={onReorderItem}
               onMoveItem={onMoveItem}
               onSaveTime={onSaveTime}
