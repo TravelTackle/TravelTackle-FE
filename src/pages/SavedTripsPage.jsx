@@ -169,11 +169,11 @@ export default function SavedTripsPage() {
   }
 
   return (
-    <div className="bg-surface text-slate-900">
+    <div className="flex min-h-screen flex-col bg-surface text-slate-900">
       <Navbar />
 
       <FeedActionsProvider value={feedActions}>
-        <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-col gap-5 pb-16 pt-8">
+        <Section as="main" maxWidth="max-w-[1200px]" padding="px-4 sm:px-6" className="flex flex-1 flex-col gap-5 pb-5 pt-8">
           <div className="border-b border-slate-100 pb-5">
             <h1 className="text-[19px] font-bold text-slate-900">보관함</h1>
             <p className="mt-1 text-[13px] text-slate-400">
@@ -182,9 +182,9 @@ export default function SavedTripsPage() {
           </div>
 
           {loading ? (
-            <div className="py-20 text-center text-[13px] text-slate-400">불러오는 중…</div>
+            <div className="flex min-h-[400px] flex-1 items-center justify-center text-center text-[13px] text-slate-400">불러오는 중…</div>
           ) : items.length === 0 ? (
-            <div className="py-20 text-center text-[13px] text-slate-400">
+            <div className="flex min-h-[400px] flex-1 items-center justify-center text-center text-[13px] text-slate-400">
               아직 스크랩한 여행이 없어요. 여행자 피드에서 마음에 드는 계획을 찜해보세요.
             </div>
           ) : (
