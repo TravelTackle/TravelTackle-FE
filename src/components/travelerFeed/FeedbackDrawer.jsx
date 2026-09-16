@@ -363,8 +363,18 @@ export default function FeedbackDrawer({ target, onClose, onPosted, onDeleted })
                       style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }}
                     >
                       <div className="flex items-center gap-2">
-                        <Avatar user={{ name: f.author?.name || '여행자', profileImageUrl: f.author?.profileImageUrl }} size={28} />
-                        <span className="truncate text-[12.5px] font-bold text-slate-800">{f.author?.name || '여행자'}</span>
+                        {/* 작성자 id가 있을 때만 프로필로 연결 — 없으면(탈퇴 등) 그냥 텍스트로 둔다 */}
+                        {f.author?.id ? (
+                          <Link to={`/profile/${f.author.id}`} className="flex min-w-0 items-center gap-2 hover:opacity-80">
+                            <Avatar user={{ name: f.author?.name || '여행자', profileImageUrl: f.author?.profileImageUrl }} size={28} />
+                            <span className="truncate text-[12.5px] font-bold text-slate-800">{f.author?.name || '여행자'}</span>
+                          </Link>
+                        ) : (
+                          <>
+                            <Avatar user={{ name: f.author?.name || '여행자', profileImageUrl: f.author?.profileImageUrl }} size={28} />
+                            <span className="truncate text-[12.5px] font-bold text-slate-800">{f.author?.name || '여행자'}</span>
+                          </>
+                        )}
                         <span className={`shrink-0 text-[11px] text-slate-400 ${isAuthor && !editing ? '' : 'ml-auto'}`}>{formatDate(f.createdAt)}</span>
                         {/* 본인 글일 때만 수정 메뉴 — 지금은 삭제는 없이 수정만 */}
                         {isAuthor && !editing && (
