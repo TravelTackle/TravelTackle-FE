@@ -5,8 +5,16 @@ import Section from './ui/Section'
 import Button from './ui/Button'
 import logoHorizontal from '../assets/logo-horizontal.svg'
 import logoHorizontalDark from '../assets/logo-horizontal-dark.svg'
+import logoHorizontalEn from '../assets/logo-en-horizontal.svg'
+import logoHorizontalEnDark from '../assets/logo-en-horizontal-dark.svg'
 import { useTheme } from '../theme'
 import { useLanguage } from '../i18n'
+
+// 로고는 언어(ko/en 문구가 그려진 svg)와 다크 모드(글자 밝기) 두 축으로 4종류 중 하나를 고른다
+function logoFor(language, dark) {
+  if (language === 'ko') return dark ? logoHorizontalDark : logoHorizontal
+  return dark ? logoHorizontalEnDark : logoHorizontalEn
+}
 
 const SUPPORT_EMAIL = 'traveltackleteam@gmail.com'
 const GITHUB_URL = 'https://github.com/TravelTackle'
@@ -156,7 +164,7 @@ export default function Footer() {
         {/* 모바일에서는 로고를 맨 아래로 — order로 순서만 바꾸고, sm 이상에서는 order-none으로
             원래 순서(로고가 왼쪽)로 되돌린다 */}
         <div className="order-2 sm:order-none">
-          <img src={dark ? logoHorizontalDark : logoHorizontal} alt={copy.logoAlt} className="h-8 w-auto" />
+          <img src={logoFor(language, dark)} alt={copy.logoAlt} className="h-8 w-auto" />
           <p className="mt-2 text-[11.5px] text-slate-400">{copy.tagline}</p>
           <p className="mt-6 text-[10.5px] text-slate-400">© 2026 Travel Tackle. All rights reserved.</p>
         </div>

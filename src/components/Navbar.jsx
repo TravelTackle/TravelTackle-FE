@@ -6,6 +6,8 @@ import { useLanguage, LANGUAGES } from '../i18n'
 import { useTheme, THEME_MODES } from '../theme'
 import logoHorizontal from '../assets/logo-horizontal.svg'
 import logoHorizontalDark from '../assets/logo-horizontal-dark.svg' // '트레블' 글자만 밝은 색 — 다크 모드에서 검정 글자가 묻히지 않게
+import logoHorizontalEn from '../assets/logo-en-horizontal.svg'
+import logoHorizontalEnDark from '../assets/logo-en-horizontal-dark.svg'
 import { useNotifications } from '../notifications/NotificationContext'
 import NotificationPanel from './NotificationPanel'
 import { updateProfile } from '../api/auth'
@@ -104,6 +106,12 @@ function themeModeLabel(key, copy) {
   if (key === 'light') return copy.modeLight
   if (key === 'dark') return copy.modeDark
   return copy.modeSystem
+}
+
+// 로고는 언어(ko/en 문구가 그려진 svg)와 다크 모드(글자 밝기) 두 축으로 4종류 중 하나를 고른다
+function logoFor(language, dark) {
+  if (language === 'ko') return dark ? logoHorizontalDark : logoHorizontal
+  return dark ? logoHorizontalEnDark : logoHorizontalEn
 }
 
 const POPOVER_BASE = 'nav-pop z-50 rounded-2xl border border-slate-100 bg-surface shadow-popup ring-1 ring-black/5'
@@ -421,7 +429,7 @@ export default function Navbar() {
 
       <div className="relative mx-auto flex h-16 max-w-[1200px] items-center gap-5 px-4 sm:px-6">
         <Link to="/" className="flex shrink-0 items-center transition-transform hover:scale-[1.02]" aria-label={copy.homeAria}>
-          <img src={theme === 'dark' ? logoHorizontalDark : logoHorizontal} alt={copy.logoAlt} className="h-8 w-auto sm:h-9" />
+          <img src={logoFor(language, theme === 'dark')} alt={copy.logoAlt} className="h-8 w-auto sm:h-9" />
         </Link>
 
         <DesktopNav pathname={location.pathname} nav={nav} />
