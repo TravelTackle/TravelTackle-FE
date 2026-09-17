@@ -32,7 +32,7 @@ function adaptDays(days) {
   }))
 }
 
-function adaptPlan({ tripId, ownerName, ownerId, ownerProfileImageUrl, region, title, startDate, endDate, days, feedbackCount, saveCount, createdAt, savedTripId, thumbnailUrl }) {
+function adaptPlan({ tripId, ownerName, ownerId, ownerProfileImageUrl, region, title, comment, startDate, endDate, days, feedbackCount, saveCount, createdAt, savedTripId, thumbnailUrl }) {
   const adaptedDays = adaptDays(days)
   return {
     id: tripId,
@@ -40,6 +40,8 @@ function adaptPlan({ tripId, ownerName, ownerId, ownerProfileImageUrl, region, t
     user: { nickname: ownerName, id: ownerId ?? null, profileImageUrl: ownerProfileImageUrl ?? null },
     region,
     title,
+    // 게시할 때 남긴 한 줄 코멘트 — 여행기록 카드의 comment와 같은 자리에 같은 방식으로 보여준다
+    comment: comment ?? null,
     startDate,
     endDate,
     feedbackCount: feedbackCount ?? 0,
@@ -76,7 +78,8 @@ function adaptRecord(entry) {
 }
 
 export function adaptFeedItem(entry) {
-  return entry.type === 'PLAN' ? adaptPlan(entry) : adaptRecord(entry)
+  // PLAN의 게시 코멘트도 RECORD와 동일하게 백엔드 content 필드로 내려온다 — comment로 옮겨 맞춘다
+  return entry.type === 'PLAN' ? adaptPlan({ ...entry, comment: entry.content }) : adaptRecord(entry)
 }
 
 export function adaptPlanDetail(detail) {
@@ -87,6 +90,7 @@ export function adaptPlanDetail(detail) {
     ownerProfileImageUrl: detail.ownerProfileImageUrl,
     region: detail.region,
     title: detail.title,
+    comment: detail.comment,
     startDate: detail.startDate,
     endDate: detail.endDate,
     days: detail.days,
@@ -129,6 +133,7 @@ export function adaptSavedTrip(entry) {
       ownerProfileImageUrl: entry.ownerProfileImageUrl,
       region: entry.region,
       title: entry.title,
+      comment: entry.content,
       startDate: entry.startDate,
       endDate: entry.endDate,
       days: entry.days,

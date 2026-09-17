@@ -21,6 +21,7 @@ import { useAuth } from '../context/AuthContext'
 import { getSavedTrips, saveTrip, unsaveTrip } from '../api/trip'
 import { getFeed, getFeedDetail } from '../api/feed'
 import { adaptFeedItem, adaptPlanDetail, adaptRecordDetail } from '../data/feedAdapter'
+import { interleaveByKey } from '../lib/shuffle'
 
 const SORT_OPTIONS = [
   { value: 'relevance', label: '관련도순' },
@@ -316,7 +317,13 @@ export default function TravelerFeedPage() {
   }, [realItems, pinnedItem])
   const allItemsRef = useRef(allItems)
   allItemsRef.current = allItems
-  const items = allItems.filter(matchesFilters)
+  // "전체"에서는 최신순은 유지하되, 계획이 기록보다 훨씬 많아 기록이 뒤로 밀리지 않도록 두 타입을
+  // 비율대로 섞는다 — filter가 plan/record 단일 타입이면 섞을 대상이 하나뿐이라 그대로 최신순.
+  const items = useMemo(() => {
+    const filtered = allItems.filter(matchesFilters)
+    return filter === 'all' ? interleaveByKey(filtered, (i) => i.type) : filtered
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allItems, filter, region])
   // 인기 지역 순위는 이번 달 피드를 따로 받아 세고, 필터 칩은 지금 보이는 목록의 지역으로 만든다
   const monthlyRegions = useMonthlyRegions()
   const regionChips = useRegionChips(allItems)

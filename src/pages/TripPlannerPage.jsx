@@ -34,6 +34,7 @@ import {
   replaceItemId,
   reorderWithinDay,
   togglePublished,
+  publishWithComment,
   updateItemMemo,
   updateItemTime,
   updateTripTitle,
@@ -310,11 +311,26 @@ export default function TripPlannerPage() {
     const tripId = activeTrip.id
     setActiveTrip((t) => togglePublished(t))
     setTripSummaries((prev) => prev.map((t) => (t.id === tripId ? { ...t, published: willPublish } : t)))
+    // 코멘트는 게시 시점에 묻지 않는다 — 게시한 뒤 제목처럼 더블클릭해서 남기면 된다.
     showToast(willPublish ? '게시했어요! 여행자 피드에서 확인할 수 있어요.' : '비공개로 전환했어요.')
     runSync(() => (willPublish ? publishTrip(tripId) : unpublishTrip(tripId)), {
       onError: () => {
         setActiveTrip(snapshot)
         setTripSummaries((prev) => prev.map((t) => (t.id === tripId ? { ...t, published: !willPublish } : t)))
+      },
+    })
+  }
+
+  // 이미 공개 중인 계획의 코멘트를 제목처럼 그 자리에서(더블클릭) 바로 수정할 때 — publish는 멱등이라 같은 API를 재사용한다.
+  function handleUpdateComment(comment) {
+    const snapshot = activeTrip
+    const tripId = activeTrip.id
+    setActiveTrip((t) => publishWithComment(t, comment))
+    setTripSummaries((prev) => prev.map((t) => (t.id === tripId ? { ...t, comment } : t)))
+    runSync(() => publishTrip(tripId, comment), {
+      onError: () => {
+        setActiveTrip(snapshot)
+        setTripSummaries((prev) => prev.map((t) => (t.id === tripId ? { ...t, comment: snapshot.comment } : t)))
       },
     })
   }
@@ -529,6 +545,7 @@ export default function TripPlannerPage() {
               onUpdateTitle={handleUpdateTitle}
               onUpdateDates={handleUpdateDates}
               onTogglePublish={handlePublishToggle}
+              onUpdateComment={handleUpdateComment}
               publishBlockedDays={emptyDays}
               onDeleteTrip={handleDeleteTrip}
             />

@@ -22,6 +22,7 @@ export default function TripHeader({
   onUpdateTitle,
   onUpdateDates,
   onTogglePublish,
+  onUpdateComment,
   onDeleteTrip,
   publishBlockedDays = [], // 일정이 없는 일차 번호 — 하나라도 있으면 전체공개 불가(백엔드 TRIP_022)
 }) {
@@ -30,6 +31,8 @@ export default function TripHeader({
   const [menuOpen, setMenuOpen] = useState(false)
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState(trip.title)
+  const [editingComment, setEditingComment] = useState(false)
+  const [commentDraft, setCommentDraft] = useState(trip.comment || '')
   const [titleHover, setTitleHover] = useState(false)
   const [titleOverflow, setTitleOverflow] = useState(0)
   const [marqueeDuration, setMarqueeDuration] = useState(4)
@@ -122,6 +125,12 @@ export default function TripHeader({
     else setTitleDraft(trip.title)
   }
 
+  function commitComment() {
+    setEditingComment(false)
+    const next = commentDraft.trim()
+    if (next !== (trip.comment || '')) onUpdateComment(next)
+  }
+
   function handleDateChange(nextStart, nextEnd) {
     if (trip.published) return // 공개 중엔 날짜 변경 불가(TRIP_024) — DatePill도 잠겨 있지만 이중으로 막는다
     const hasItems = trip.days.some((d) => d.items.length > 0)
@@ -133,7 +142,8 @@ export default function TripHeader({
   const orderedTrips = [trip, ...trips.filter((t) => t.id !== trip.id)]
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2">
+    <div className="flex flex-col gap-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2">
       <div className="flex min-w-0 items-center gap-2.5">
         <div className="relative" ref={menuRef}>
           <button
@@ -353,6 +363,42 @@ export default function TripHeader({
           })}
         </div>
       </div>
+      </div>
+
+      {/* 공개 중일 때만 — 게시 코멘트. 제목 줄과 분리된 자기 줄이라 코멘트가 길어져도 제목·배지·게시
+          토글 레이아웃을 밀어내지 않는다. 제목과 같은 방식(더블클릭)으로 그 자리에서 바로 수정한다. */}
+      {trip.published && (
+        editingComment ? (
+          <input
+            autoFocus
+            value={commentDraft}
+            onChange={(e) => setCommentDraft(e.target.value.slice(0, 100))}
+            onBlur={commitComment}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') e.currentTarget.blur()
+              if (e.key === 'Escape') {
+                setCommentDraft(trip.comment || '')
+                setEditingComment(false)
+              }
+            }}
+            placeholder="한 줄 코멘트를 남겨보세요"
+            className="w-full rounded-lg border border-brand/40 px-2 py-1 text-[12px] text-slate-700 outline-none"
+          />
+        ) : (
+          <button
+            type="button"
+            onDoubleClick={() => {
+              setCommentDraft(trip.comment || '')
+              setEditingComment(true)
+            }}
+            className="flex w-full items-start gap-1.5 rounded-lg px-1 py-1 text-left text-[12px] font-semibold text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600"
+            title="더블클릭해서 코멘트 수정"
+          >
+            <Icon icon="solar:pen-2-linear" width={12} className="mt-0.5 shrink-0" />
+            <span className="line-clamp-2">{trip.comment || '더블클릭해서 코멘트를 남겨보세요'}</span>
+          </button>
+        )
+      )}
     </div>
   )
 }
