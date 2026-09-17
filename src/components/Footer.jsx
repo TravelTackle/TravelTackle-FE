@@ -1,95 +1,179 @@
+import { useEffect, useRef, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { Icon } from '@iconify/react'
+import Section from './ui/Section'
+import Button from './ui/Button'
+import logoHorizontal from '../assets/logo-horizontal.svg'
+import logoHorizontalDark from '../assets/logo-horizontal-dark.svg'
+import { useTheme } from '../theme'
+
+const SUPPORT_EMAIL = 'traveltackleteam@gmail.com'
+const GITHUB_URL = 'https://github.com/TravelTackle'
+
+// 서비스 그룹만 2열 그리드 — Navbar 메뉴(여행지 탐색/여행자 피드/나의 계획·보관함)와 마이페이지를 그대로 대응
+const SERVICE_LINKS = [
+  { label: '홈', to: '/' },
+  { label: '여행지 탐색', to: '/explore' },
+  { label: '여행자 피드', to: '/feed' },
+  { label: '나의 계획', to: '/trips' },
+  { label: '보관함', to: '/trips/saved' },
+  { label: '마이페이지', to: '/mypage' },
+]
+
+// 고객지원 페이지의 세 탭으로 바로 이동 — SupportPage.jsx의 tab 쿼리 파라미터와 짝을 맞춘다
+const SUPPORT_LINKS = [
+  { label: '자주 묻는 질문', to: '/support?tab=faq' },
+  { label: '이용약관', to: '/support?tab=terms' },
+  { label: '개인정보처리방침', to: '/support?tab=privacy' },
+]
+
+// 이미 그 페이지에 있을 때 링크를 눌러도 라우터는 아무 것도 하지 않으므로(같은 경로 이동),
+// 그 경우엔 맨 위로 부드럽게 스크롤해준다 — 모든 푸터 링크에 동일하게 적용.
+function FooterLink({ to, className, children }) {
+  const location = useLocation()
+  const [path, search = ''] = to.split('?')
+  const isCurrentPage = location.pathname === path && location.search === (search ? `?${search}` : '')
+
+  function handleClick(e) {
+    if (!isCurrentPage) return
+    e.preventDefault()
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  return (
+    <Link to={to} onClick={handleClick} className={className}>
+      {children}
+    </Link>
+  )
+}
+
+// 데스크톱은 FloatingCart 패널과 같은 "아래에서 뿅 하고 뜨는" 전환 — 클릭한 Email 버튼 바로 위에 앵커된
+// 작은 팝오버. 모바일은 앵커할 자리가 좁아 대신 TripCreateModal과 같은 화면 중앙 팝업(딤 배경 포함)으로 연다.
+function EmailPopover({ open, onClose }) {
+  return (
+    <>
+      <div
+        className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 sm:hidden ${
+          open ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div
+        className={`fixed inset-x-4 top-1/2 z-50 -translate-y-1/2 rounded-2xl border border-slate-100 bg-surface p-4 shadow-popup transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] sm:absolute sm:inset-x-auto sm:bottom-full sm:right-0 sm:top-auto sm:z-50 sm:mb-2 sm:w-[240px] sm:origin-bottom-right ${
+          open
+            ? 'pointer-events-auto scale-100 opacity-100 sm:translate-y-0'
+            : 'pointer-events-none scale-90 opacity-0 sm:translate-y-2'
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-[11.5px] font-bold text-slate-700">이메일 문의</span>
+          <button type="button" onClick={onClose} className="text-slate-300 hover:text-slate-500" aria-label="닫기">
+            <Icon icon="solar:close-circle-linear" width={16} />
+          </button>
+        </div>
+
+        <p className="mt-1.5 text-[12.5px] font-bold text-slate-700">{SUPPORT_EMAIL}</p>
+
+        <Button
+          as="a"
+          href={`mailto:${SUPPORT_EMAIL}`}
+          className="mt-3 flex h-9 items-center justify-center rounded-lg text-[12px] font-bold"
+        >
+          메일 쓰기
+        </Button>
+      </div>
+    </>
+  )
+}
 
 export default function Footer() {
+  const dark = useTheme().resolved === 'dark'
+  const [emailOpen, setEmailOpen] = useState(false)
+  const emailRef = useRef(null)
+
+  useEffect(() => {
+    function onClickOutside(e) {
+      if (emailRef.current && !emailRef.current.contains(e.target)) setEmailOpen(false)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [])
+
   return (
-    <footer className="bg-slate-50 border-t border-slate-100 pt-14 pb-8">
-      <div className="max-w-[1180px] mx-auto px-6 grid md:grid-cols-5 gap-8">
+    <footer className="border-t border-slate-100 bg-slate-50">
+      <Section as="div" className="flex flex-col gap-9 py-9 sm:flex-row sm:items-start sm:justify-between">
+        {/* 모바일에서는 로고를 맨 아래로 — order로 순서만 바꾸고, sm 이상에서는 order-none으로
+            원래 순서(로고가 왼쪽)로 되돌린다 */}
+        <div className="order-2 sm:order-none">
+          <img src={dark ? logoHorizontalDark : logoHorizontal} alt="트레블 참견" className="h-8 w-auto" />
+          <p className="mt-2 text-[11.5px] text-slate-400">함께 만드는 더 좋은 여행</p>
+          <p className="mt-6 text-[10.5px] text-slate-400">© 2026 Travel Tackle. All rights reserved.</p>
+        </div>
 
-        <div className="md:col-span-1">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-brand">
-              <Icon icon="solar:chat-round-dots-bold" width={16} color="white" />
-            </div>
-            <span className="font-extrabold text-[15px] tracking-tight">
-              트레블 <span className="text-brand">참견</span>
-            </span>
+        {/* 서비스/고객지원/Contact를 한 줄(감싸지 않음)로 묶어 이 묶음 전체를 컨테이너 오른쪽 끝(카드 그리드 끝)에
+            맞춘다 — Contact는 그대로 두고 서비스·고객지원이 그 옆으로 같이 옮겨오도록, 개별 그리드 트랙 대신
+            하나의 flex 행으로 배치한다. 각 칸은 내용 너비만큼만 차지해 텍스트 정렬은 모두 기본(좌측) 그대로다. */}
+        <div className="order-1 flex flex-col gap-8 sm:order-none sm:flex-row sm:gap-[5.25rem] lg:gap-[13.5rem]">
+          <div>
+            <h2 className="text-[11.5px] font-bold text-slate-700">서비스</h2>
+            <ul className="mt-3 grid grid-cols-2 gap-x-8 gap-y-2">
+              {SERVICE_LINKS.map((link) => (
+                <li key={link.label}>
+                  <FooterLink to={link.to} className="text-[10.5px] text-slate-400 transition-colors hover:text-slate-700">
+                    {link.label}
+                  </FooterLink>
+                </li>
+              ))}
+            </ul>
           </div>
-          <p className="mt-3 text-[12px] text-slate-400 leading-relaxed">
-            함께 만드는 더 좋은 여행
-            <br />
-            여러분의 참견이 여행을 더 특별하게 만듭니다.
-          </p>
-          <div className="flex items-center gap-2 mt-4">
-            <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400">
-              <Icon icon="mdi:instagram" width={15} />
-            </div>
-            <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400">
-              <Icon icon="mdi:youtube" width={15} />
-            </div>
-            <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400">
-              <Icon icon="mdi:facebook" width={15} />
-            </div>
-            <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400">
-              <Icon icon="ion:logo-buffer" width={15} />
-            </div>
-          </div>
-        </div>
 
-        <div>
-          <div className="text-[12.5px] font-bold text-slate-800 mb-3">서비스</div>
-          <ul className="space-y-2 text-[12px] text-slate-400">
-            <li><a href="#" className="hover:text-slate-700">탐색</a></li>
-            <li><a href="#" className="hover:text-slate-700">계획</a></li>
-            <li><a href="#" className="hover:text-slate-700">피드</a></li>
-            <li><a href="#" className="hover:text-slate-700">기록</a></li>
-          </ul>
-        </div>
+          {/* 모바일에서는 고객지원·Contact가 한 줄에 나란히 — 서비스 링크 그리드(grid-cols-2 gap-x-8)와
+              같은 폭·간격의 2열 그리드로 둬서 고객지원은 왼쪽 칸, Contact는 오른쪽 칸이 서비스의
+              두 칸과 세로로 정확히 맞는다. sm 이상에서는 contents로 이 감싸는 div 자체가 레이아웃에서
+              사라지고 두 칸이 그대로 부모 flex 행의 항목이 된다(기존과 동일). */}
+          <div className="grid grid-cols-2 gap-x-8 sm:contents">
+            <div>
+              <h2 className="text-[11.5px] font-bold text-slate-700">고객지원</h2>
+              <ul className="mt-3 space-y-2">
+                {SUPPORT_LINKS.map((link) => (
+                  <li key={link.label}>
+                    <FooterLink to={link.to} className="text-[10.5px] text-slate-400 transition-colors hover:text-slate-700">
+                      {link.label}
+                    </FooterLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-        <div>
-          <div className="text-[12.5px] font-bold text-slate-800 mb-3">고객지원</div>
-          <ul className="space-y-2 text-[12px] text-slate-400">
-            <li><a href="#" className="hover:text-slate-700">도움말</a></li>
-            <li><a href="#" className="hover:text-slate-700">문의하기</a></li>
-            <li><a href="#" className="hover:text-slate-700">이용약관</a></li>
-            <li><a href="#" className="hover:text-slate-700">개인정보처리방침</a></li>
-          </ul>
-        </div>
-
-        <div>
-          <div className="text-[12.5px] font-bold text-slate-800 mb-3">회사</div>
-          <ul className="space-y-2 text-[12px] text-slate-400">
-            <li><a href="#" className="hover:text-slate-700">회사소개</a></li>
-            <li><a href="#" className="hover:text-slate-700">블로그</a></li>
-            <li><a href="#" className="hover:text-slate-700">제휴문의</a></li>
-          </ul>
-        </div>
-
-        <div>
-          <div className="text-[12.5px] font-bold text-slate-800 mb-3">뉴스레터 구독</div>
-          <p className="text-[12px] text-slate-400 mb-3">여행 팁과 새로운 기능 소식을 받아보세요</p>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="이메일 주소 입력"
-              className="flex-1 min-w-0 bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12px] outline-none focus:border-brand/40"
-            />
-            <button className="shrink-0 px-3.5 py-2 bg-brand text-white rounded-lg text-[12px] font-semibold hover:bg-brand-dark transition-all">
-              구독하기
-            </button>
+            <div>
+              <h2 className="text-[11.5px] font-bold text-slate-700">Contact</h2>
+              <ul className="mt-3 space-y-2">
+                <li className="relative inline-block" ref={emailRef}>
+                  <button
+                    type="button"
+                    onClick={() => setEmailOpen((v) => !v)}
+                    className="text-[10.5px] text-slate-400 transition-colors hover:text-slate-700"
+                  >
+                    Email
+                  </button>
+                  <EmailPopover open={emailOpen} onClose={() => setEmailOpen(false)} />
+                </li>
+                <li>
+                  <a
+                    href={GITHUB_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10.5px] text-slate-400 transition-colors hover:text-slate-700"
+                  >
+                    GitHub
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
-
-      </div>
-
-      <div className="max-w-[1180px] mx-auto px-6 mt-10 pt-6 border-t border-slate-200 flex items-center justify-between">
-        <span className="text-[11.5px] text-slate-400">&copy; 2026 Travel Tackle. All rights reserved.</span>
-        <button
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-all"
-        >
-          <Icon icon="solar:arrow-up-linear" width={14} />
-        </button>
-      </div>
+      </Section>
     </footer>
   )
 }

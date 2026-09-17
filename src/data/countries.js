@@ -1,0 +1,16 @@
+export const COUNTRIES = [
+  { code: 'KR', label: '대한민국' },
+  { code: 'US', label: '미국' },
+  { code: 'JP', label: '일본' },
+  { code: 'CN', label: '중국' },
+  { code: 'TW', label: '대만' },
+  { code: 'HK', label: '홍콩' },
+  { code: 'SG', label: '싱가포르' },
+  { code: 'TH', label: '태국' },
+  { code: 'VN', label: '베트남' },
+  { code: 'GB', label: '영국' },
+  { code: 'FR', label: '프랑스' },
+  { code: 'DE', label: '독일' },
+  { code: 'AU', label: '호주' },
+  { code: 'CA', label: '캐나다' },
+]

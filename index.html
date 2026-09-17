@@ -3,13 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link
-      rel="stylesheet"
-      crossorigin
-      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
-    />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>트레블 참견</title>
+    <script>
+      // 첫 페인트 전에 다크 모드를 결정한다 (src/theme/index.jsx와 같은 규칙: 저장값 없으면 OS 설정)
+      (function () {
+        try {
+          var m = localStorage.getItem('tt-theme');
+          var dark = m === 'dark' || (m !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
