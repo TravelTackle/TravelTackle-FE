@@ -61,8 +61,8 @@ export default function TripPlannerPage() {
   const [cartMounted, setCartMounted] = useState(() => window.matchMedia('(min-width: 640px)').matches)
   const cartCloseTimer = useRef(null)
   const [createModalOpen, setCreateModalOpen] = useState(false)
-  // 'publish'(전체공개로 바꾸며 코멘트 입력) | 'edit'(이미 공개 중인 계획의 코멘트만 다시 입력)
-  const [publishModal, setPublishModal] = useState(null)
+  // 전체공개로 바꿀 때 코멘트를 입력하는 모달 — 이미 공개 중인 계획의 코멘트는 제목처럼 그 자리에서(더블클릭) 바로 수정한다.
+  const [publishModalOpen, setPublishModalOpen] = useState(false)
   const [view, setView] = useState('list')
   const [toast, setToast] = useState('')
   const toastTimer = useRef(null)
@@ -312,7 +312,7 @@ export default function TripPlannerPage() {
     }
     if (willPublish) {
       // 게시 전에 한 줄 코멘트를 받는다(선택) — 실제 게시는 모달에서 handlePublishWithComment로 이어진다
-      setPublishModal('publish')
+      setPublishModalOpen(true)
       return
     }
     const snapshot = activeTrip
@@ -328,19 +328,14 @@ export default function TripPlannerPage() {
     })
   }
 
-  // 이미 공개 중인 계획의 코멘트만 다시 입력할 때
-  function handleEditPublishComment() {
-    setPublishModal('edit')
-  }
-
-  // PublishCommentModal 제출 — 새로 게시하거나(publish), 공개 중인 코멘트만 갱신한다(edit). publish는 idempotent라 같은 API를 재사용한다.
+  // PublishCommentModal 제출 — 전체공개로 전환하며 코멘트를 함께 저장한다.
   function handlePublishWithComment(comment) {
     const snapshot = activeTrip
     const tripId = activeTrip.id
     setActiveTrip((t) => publishWithComment(t, comment))
     setTripSummaries((prev) => prev.map((t) => (t.id === tripId ? { ...t, published: true, comment } : t)))
-    showToast(publishModal === 'edit' ? '코멘트를 수정했어요.' : '게시했어요! 여행자 피드에서 확인할 수 있어요.')
-    setPublishModal(null)
+    showToast('게시했어요! 여행자 피드에서 확인할 수 있어요.')
+    setPublishModalOpen(false)
     runSync(() => publishTrip(tripId, comment), {
       onError: () => {
         setActiveTrip(snapshot)
@@ -350,6 +345,20 @@ export default function TripPlannerPage() {
       },
     })
     return Promise.resolve()
+  }
+
+  // 이미 공개 중인 계획의 코멘트를 제목처럼 그 자리에서(더블클릭) 바로 수정할 때 — publish는 멱등이라 같은 API를 재사용한다.
+  function handleUpdateComment(comment) {
+    const snapshot = activeTrip
+    const tripId = activeTrip.id
+    setActiveTrip((t) => publishWithComment(t, comment))
+    setTripSummaries((prev) => prev.map((t) => (t.id === tripId ? { ...t, comment } : t)))
+    runSync(() => publishTrip(tripId, comment), {
+      onError: () => {
+        setActiveTrip(snapshot)
+        setTripSummaries((prev) => prev.map((t) => (t.id === tripId ? { ...t, comment: snapshot.comment } : t)))
+      },
+    })
   }
 
   function handleUpdateTitle(title) {
@@ -562,7 +571,7 @@ export default function TripPlannerPage() {
               onUpdateTitle={handleUpdateTitle}
               onUpdateDates={handleUpdateDates}
               onTogglePublish={handlePublishToggle}
-              onEditComment={handleEditPublishComment}
+              onUpdateComment={handleUpdateComment}
               publishBlockedDays={emptyDays}
               onDeleteTrip={handleDeleteTrip}
             />
@@ -707,11 +716,10 @@ export default function TripPlannerPage() {
         />
       )}
 
-      {publishModal && activeTrip && (
+      {publishModalOpen && activeTrip && (
         <PublishCommentModal
           initialComment={activeTrip.comment || ''}
-          editing={publishModal === 'edit'}
-          onClose={() => setPublishModal(null)}
+          onClose={() => setPublishModalOpen(false)}
           onSubmit={handlePublishWithComment}
         />
       )}
