@@ -520,9 +520,10 @@ export default function FloatingCart() {
       </button>
     </div>
 
-    {/* 여행지 탐색 등 다른 페이지들과 같은 화면 하단 중앙 팝업 — 담기/빼기 결과를 여기서도 알린다 */}
+    {/* 여행지 탐색 등 다른 페이지들과 같은 화면 하단 중앙 팝업 — 담기/빼기 결과를 여기서도 알린다.
+        모바일 전체화면 장바구니 패널(z-[70]) 자신보다도 위에 떠야 열어둔 채로도 결과가 가려지지 않는다 */}
     <div
-      className={`fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-black/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
+      className={`fixed bottom-24 left-1/2 z-[80] -translate-x-1/2 rounded-full bg-black/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
         toast ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
       }`}
     >
