@@ -490,3 +490,14 @@ body {
   animation: bell-ring 0.7s ease-in-out 1;
 }
 
+/* 좋아요 알림에서 들어온 참견 — 장미색 링이 두 번 번졌다가 옅게 남는다 */
+@keyframes feedback-focus {
+  0%, 60% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.35); }
+  30%, 90% { box-shadow: 0 0 0 6px rgba(244, 63, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+}
+.feedback-focus {
+  animation: feedback-focus 1.6s ease-out 0.3s both;
+  background-color: color-mix(in oklab, var(--color-rose-50) 70%, var(--color-surface));
+}
+
