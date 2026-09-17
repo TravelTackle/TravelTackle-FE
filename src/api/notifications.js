@@ -23,6 +23,11 @@ export function markAllNotificationsRead() {
   return client.patch('/notifications/read-all')
 }
 
+// 알림 전체 삭제 — 백엔드에 요청한 엔드포인트(DELETE /api/notifications). 아직 없으면 404/405가 온다(호출부에서 안내).
+export function deleteAllNotifications() {
+  return client.delete('/notifications')
+}
+
 // 실시간 푸시(SSE). 서버 이벤트: connected · notification({ notification, unreadCount }) · unread-count({ unreadCount }) · heartbeat(25초).
 // EventSource는 헤더를 못 붙이지만 같은 출처(/api 프록시)라 인증 쿠키가 자동으로 실린다.
 // HTTP 오류(토큰 만료 등)로 끊기면 EventSource가 스스로 재접속하지 않으므로, onError에서 닫고 뒤로 물러나며 다시 연다.

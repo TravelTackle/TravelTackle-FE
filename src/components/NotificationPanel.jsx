@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { Link } from 'react-router-dom'
 import Skeleton from './ui/Skeleton'
@@ -21,8 +22,25 @@ function RowSkeleton({ i }) {
 
 // 종 아이콘 팝오버 안쪽 — 헤더(미읽음 수 · 모두 읽음) / 목록 / 더 보기. 데이터는 NotificationContext에서
 export default function NotificationPanel({ onNavigate }) {
-  const { items, unreadCount, loading, loadingMore, error, hasMore, load, loadMore, markRead, markAllRead } = useNotifications()
+  const { items, unreadCount, loading, loadingMore, error, hasMore, load, loadMore, markRead, markAllRead, clearAll } = useNotifications()
   const showSkeleton = loading && items.length === 0
+  const [confirmClear, setConfirmClear] = useState(false) // "모두 지우기" 2단계 확인
+  const [clearing, setClearing] = useState(false)
+  const [clearError, setClearError] = useState('')
+
+  useEffect(() => {
+    if (!clearError) return undefined
+    const t = setTimeout(() => setClearError(''), 2500)
+    return () => clearTimeout(t)
+  }, [clearError])
+
+  async function handleClearAll() {
+    setConfirmClear(false)
+    setClearing(true)
+    const result = await clearAll()
+    setClearing(false)
+    if (!result.ok) setClearError(result.message)
+  }
 
   return (
     <div className="flex flex-col">
@@ -33,15 +51,44 @@ export default function NotificationPanel({ onNavigate }) {
             <span key={unreadCount} className="ai-pop rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">새 {unreadCount > 99 ? '99+' : unreadCount}</span>
           )}
         </div>
-        <button
-          type="button"
-          onClick={markAllRead}
-          disabled={unreadCount === 0}
-          className="text-[11.5px] font-semibold text-slate-400 transition-colors hover:text-brand disabled:cursor-default disabled:opacity-50 disabled:hover:text-slate-400"
-        >
-          모두 읽음
-        </button>
+        {confirmClear ? (
+          // 확인 단계 — 헤더 오른쪽이 그 자리에서 질문으로 바뀐다
+          <span className="flex items-center gap-2 text-[11.5px]">
+            <span className="text-slate-500">알림 {items.length}개를 지울까요?</span>
+            <button type="button" onClick={handleClearAll} className="font-bold text-rose-500 hover:text-rose-600">
+              지우기
+            </button>
+            <button type="button" onClick={() => setConfirmClear(false)} className="font-semibold text-slate-400 hover:text-slate-600">
+              취소
+            </button>
+          </span>
+        ) : (
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={markAllRead}
+              disabled={unreadCount === 0 || clearing}
+              className="text-[11.5px] font-semibold text-slate-400 transition-colors hover:text-brand disabled:cursor-default disabled:opacity-50 disabled:hover:text-slate-400"
+            >
+              모두 읽음
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmClear(true)}
+              disabled={items.length === 0 || clearing}
+              className="flex items-center gap-1 text-[11.5px] font-semibold text-slate-400 transition-colors hover:text-rose-500 disabled:cursor-default disabled:opacity-50 disabled:hover:text-slate-400"
+            >
+              {clearing && <Icon icon="solar:refresh-linear" width={12} className="ai-spin" />}
+              모두 지우기
+            </button>
+          </div>
+        )}
       </div>
+      {clearError && (
+        <p role="alert" className="border-b border-rose-100 bg-rose-50 px-3.5 py-2 text-[11.5px] font-semibold text-rose-500">
+          {clearError}
+        </p>
+      )}
 
       {showSkeleton ? (
         <ul className="py-1" role="status" aria-label="알림을 불러오는 중">
