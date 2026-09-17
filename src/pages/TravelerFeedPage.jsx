@@ -148,6 +148,9 @@ export default function TravelerFeedPage() {
   // 홈 모아보기 등에서 ?open=<id>&filter=plan|record 로 들어오면 해당 글 상세를 바로 연다
   const [searchParams, setSearchParams] = useSearchParams()
   const openId = searchParams.get('open')
+  // 좋아요 알림에서 오면 ?feedback=<feedbackId>(또는 'open')가 붙는다 — 상세와 함께 참견 드로어를 열고 그 참견을 강조한다
+  const feedbackParam = searchParams.get('feedback')
+  const [pendingFeedback, setPendingFeedback] = useState(null) // { item, focusId }
   const initialFilter = ['plan', 'record'].includes(searchParams.get('filter')) ? searchParams.get('filter') : 'all'
 
   const [view, setView] = useState('list')
@@ -164,13 +167,16 @@ export default function TravelerFeedPage() {
     const clearOpenParam = () => setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
       next.delete('open')
+      next.delete('feedback')
       return next
     }, { replace: true })
+    const focus = feedbackParam ? { focusId: feedbackParam === 'open' ? null : feedbackParam } : null
 
     const target = realItems.find((i) => i.id === openId)
     if (target) {
       setDrawerItem(target)
       setPinnedItem(target)
+      if (focus) setPendingFeedback({ item: target, ...focus })
       clearOpenParam()
       return
     }
@@ -189,11 +195,12 @@ export default function TravelerFeedPage() {
         }
         setDrawerItem(resolved)
         setPinnedItem(resolved)
+        if (focus) setPendingFeedback({ item: resolved, ...focus })
       })
       .catch(() => { if (!ignore) showToast('게시글을 찾을 수 없어요') })
       .finally(() => { if (!ignore) clearOpenParam() })
     return () => { ignore = true }
-  }, [openId, realItems, feedLoading, setSearchParams])
+  }, [openId, feedbackParam, realItems, feedLoading, setSearchParams])
   const [uploadOpen, setUploadOpen] = useState(false)
   const [toast, setToast] = useState('')
   const toastTimer = useRef(null)
@@ -286,6 +293,14 @@ export default function TravelerFeedPage() {
     setFeedbackTarget({ tripId, title: plan?.title ?? item.title, ownerName: (plan ?? item).user?.nickname, ownerId: (plan ?? item).user?.id ?? null })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // 좋아요 알림 딥링크 — 상세가 열린 다음 그 위에 참견 드로어를 띄우고 해당 참견으로 스크롤·강조
+  useEffect(() => {
+    if (!pendingFeedback) return
+    openFeedback(pendingFeedback.item)
+    setFeedbackTarget((t) => (t ? { ...t, focusId: pendingFeedback.focusId } : t))
+    setPendingFeedback(null)
+  }, [pendingFeedback, openFeedback])
 
   const feedActions = useMemo(
     () => ({ user, savedIds, pendingIds, saveDelta, feedbackDelta, toggleSave, openFeedback }),
