@@ -6,6 +6,7 @@ import ChatbotWidget from '../components/ChatbotWidget'
 import Section from '../components/ui/Section'
 import TripHeader from '../components/tripPlanner/TripHeader'
 import TripCreateModal from '../components/tripPlanner/TripCreateModal'
+import PublishCommentModal from '../components/tripPlanner/PublishCommentModal'
 import DayColumn from '../components/tripPlanner/DayColumn'
 import TripCartPanel from '../components/tripPlanner/TripCartPanel'
 import TripCartFloatingButton from '../components/tripPlanner/TripCartFloatingButton'
@@ -34,6 +35,7 @@ import {
   replaceItemId,
   reorderWithinDay,
   togglePublished,
+  publishWithComment,
   updateItemMemo,
   updateItemTime,
   updateTripTitle,
@@ -59,6 +61,8 @@ export default function TripPlannerPage() {
   const [cartMounted, setCartMounted] = useState(() => window.matchMedia('(min-width: 640px)').matches)
   const cartCloseTimer = useRef(null)
   const [createModalOpen, setCreateModalOpen] = useState(false)
+  // 'publish'(전체공개로 바꾸며 코멘트 입력) | 'edit'(이미 공개 중인 계획의 코멘트만 다시 입력)
+  const [publishModal, setPublishModal] = useState(null)
   const [view, setView] = useState('list')
   const [toast, setToast] = useState('')
   const toastTimer = useRef(null)
@@ -306,17 +310,46 @@ export default function TripPlannerPage() {
       showToast(`모든 일차에 일정이 1개 이상 있어야 전체공개할 수 있어요. 비어 있는 일차: ${emptyDays.map((n) => `Day ${n}`).join(', ')}`)
       return
     }
+    if (willPublish) {
+      // 게시 전에 한 줄 코멘트를 받는다(선택) — 실제 게시는 모달에서 handlePublishWithComment로 이어진다
+      setPublishModal('publish')
+      return
+    }
     const snapshot = activeTrip
     const tripId = activeTrip.id
     setActiveTrip((t) => togglePublished(t))
-    setTripSummaries((prev) => prev.map((t) => (t.id === tripId ? { ...t, published: willPublish } : t)))
-    showToast(willPublish ? '게시했어요! 여행자 피드에서 확인할 수 있어요.' : '비공개로 전환했어요.')
-    runSync(() => (willPublish ? publishTrip(tripId) : unpublishTrip(tripId)), {
+    setTripSummaries((prev) => prev.map((t) => (t.id === tripId ? { ...t, published: false } : t)))
+    showToast('비공개로 전환했어요.')
+    runSync(() => unpublishTrip(tripId), {
       onError: () => {
         setActiveTrip(snapshot)
-        setTripSummaries((prev) => prev.map((t) => (t.id === tripId ? { ...t, published: !willPublish } : t)))
+        setTripSummaries((prev) => prev.map((t) => (t.id === tripId ? { ...t, published: true } : t)))
       },
     })
+  }
+
+  // 이미 공개 중인 계획의 코멘트만 다시 입력할 때
+  function handleEditPublishComment() {
+    setPublishModal('edit')
+  }
+
+  // PublishCommentModal 제출 — 새로 게시하거나(publish), 공개 중인 코멘트만 갱신한다(edit). publish는 idempotent라 같은 API를 재사용한다.
+  function handlePublishWithComment(comment) {
+    const snapshot = activeTrip
+    const tripId = activeTrip.id
+    setActiveTrip((t) => publishWithComment(t, comment))
+    setTripSummaries((prev) => prev.map((t) => (t.id === tripId ? { ...t, published: true, comment } : t)))
+    showToast(publishModal === 'edit' ? '코멘트를 수정했어요.' : '게시했어요! 여행자 피드에서 확인할 수 있어요.')
+    setPublishModal(null)
+    runSync(() => publishTrip(tripId, comment), {
+      onError: () => {
+        setActiveTrip(snapshot)
+        setTripSummaries((prev) =>
+          prev.map((t) => (t.id === tripId ? { ...t, published: snapshot.published, comment: snapshot.comment } : t)),
+        )
+      },
+    })
+    return Promise.resolve()
   }
 
   function handleUpdateTitle(title) {
@@ -529,6 +562,7 @@ export default function TripPlannerPage() {
               onUpdateTitle={handleUpdateTitle}
               onUpdateDates={handleUpdateDates}
               onTogglePublish={handlePublishToggle}
+              onEditComment={handleEditPublishComment}
               publishBlockedDays={emptyDays}
               onDeleteTrip={handleDeleteTrip}
             />
@@ -670,6 +704,15 @@ export default function TripPlannerPage() {
         <TripCreateModal
           onClose={() => setCreateModalOpen(false)}
           onCreate={handleCreate}
+        />
+      )}
+
+      {publishModal && activeTrip && (
+        <PublishCommentModal
+          initialComment={activeTrip.comment || ''}
+          editing={publishModal === 'edit'}
+          onClose={() => setPublishModal(null)}
+          onSubmit={handlePublishWithComment}
         />
       )}
 

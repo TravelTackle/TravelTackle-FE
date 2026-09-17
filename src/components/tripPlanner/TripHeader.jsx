@@ -22,6 +22,7 @@ export default function TripHeader({
   onUpdateTitle,
   onUpdateDates,
   onTogglePublish,
+  onEditComment,
   onDeleteTrip,
   publishBlockedDays = [], // 일정이 없는 일차 번호 — 하나라도 있으면 전체공개 불가(백엔드 TRIP_022)
 }) {
@@ -302,6 +303,19 @@ export default function TripHeader({
             </div>
           )}
         </div>
+
+        {/* 공개 중일 때만 — 게시 코멘트를 나중에 다시 바꿀 수 있는 자리. 비어 있으면 추가를 유도. */}
+        {trip.published && (
+          <button
+            type="button"
+            onClick={onEditComment}
+            className="flex min-w-0 shrink items-center gap-1 rounded-full px-2 py-1 text-[11.5px] font-semibold text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600"
+            title="게시 코멘트 수정"
+          >
+            <Icon icon="solar:pen-2-linear" width={11} className="shrink-0" />
+            <span className="truncate">{trip.comment || '코멘트 추가'}</span>
+          </button>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

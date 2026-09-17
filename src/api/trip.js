@@ -70,8 +70,11 @@ export function moveTripItem(tripId, itemId, newDayId, newOrderIndex) {
     .then((res) => normalizeItem(res.data))
 }
 
-export function publishTrip(tripId) {
-  return client.patch(`/trips/${tripId}/publish`).then((res) => res.data)
+// comment: 게시할 때 남기는 한 줄 코멘트(선택) — 생략하면 기존 코멘트를 그대로 둔다.
+export function publishTrip(tripId, comment) {
+  return client
+    .patch(`/trips/${tripId}/publish`, comment !== undefined ? { comment } : undefined)
+    .then((res) => res.data)
 }
 
 export function unpublishTrip(tripId) {

@@ -139,6 +139,9 @@ export function PlanCardBody({ item, headerRight }) {
       </div>
 
       <div className="mt-3 text-[14px] font-bold text-slate-900">{item.title}</div>
+      {item.comment && (
+        <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-slate-500">{item.comment}</p>
+      )}
       <div className="mt-1 text-[12px] text-slate-400">{item.duration} · {item.placeCount}개의 장소</div>
 
       <FeedActionBar item={item} />

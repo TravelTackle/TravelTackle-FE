@@ -47,6 +47,16 @@ export function deleteFeedback(tripId, feedbackId) {
   return client.delete(`/trips/${tripId}/feedback/${feedbackId}`)
 }
 
+// 참견 좋아요 — 로그인 필요. 이미 누른 참견에 다시 누르면 409(TRIP_025).
+export function likeFeedback(tripId, feedbackId) {
+  return client.post(`/trips/${tripId}/feedback/${feedbackId}/like`).then((res) => res.data)
+}
+
+// 참견 좋아요 취소 — 누른 적 없으면 404(TRIP_026).
+export function unlikeFeedback(tripId, feedbackId) {
+  return client.delete(`/trips/${tripId}/feedback/${feedbackId}/like`).then((res) => res.data)
+}
+
 // 참견에 붙은 추천 장소를 내 장바구니에 담기 — 계획 소유자만
 export function addRecommendationToCart(tripId, recommendationId) {
   return client
