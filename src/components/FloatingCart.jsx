@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { CART_CHANGED_EVENT, SPOT_DRAG_TYPE, addCartItem, getCartItems, removeCartItem } from '../api/cart'
 import { CART_TABS, areaName, cartTheme, themeKey } from '../lib/cartThemes'
+import { useMediaQuery } from '../lib/useMediaQuery'
+import { FLOATING_PANEL_EVENT, announceFloatingPanelOpen } from '../lib/floatingPanel'
 import Skeleton from './ui/Skeleton'
 
 const MIN_SKELETON_MS = 450
@@ -17,6 +19,8 @@ function isSpotDrag(e) {
 export default function FloatingCart() {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
+  const isMobile = useMediaQuery('(max-width: 639px)')
+  const [chatOpen, setChatOpen] = useState(false) // 챗봇(ChatbotWidget)이 열려 있는지 — 모바일에서 동시에 못 열게 막는 데 씀
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
@@ -69,6 +73,22 @@ export default function FloatingCart() {
   useEffect(() => {
     if (open && user) refresh(true)
   }, [open, user, refresh])
+
+  // 다른 페이지들에도 각자 떠 있는 챗봇(ChatbotWidget)에 이 장바구니의 열림 상태를 알린다
+  useEffect(() => {
+    announceFloatingPanelOpen('cart', open)
+  }, [open])
+
+  // 챗봇이 열리면(모바일만) 화면이 좁아 둘 다 열 수 없으므로 이쪽을 닫는다
+  useEffect(() => {
+    const onSignal = (e) => {
+      if (e.detail.id === 'cart') return
+      setChatOpen(e.detail.isOpen)
+      if (isMobile && e.detail.isOpen) setOpen(false)
+    }
+    window.addEventListener(FLOATING_PANEL_EVENT, onSignal)
+    return () => window.removeEventListener(FLOATING_PANEL_EVENT, onSignal)
+  }, [isMobile])
 
   // 페이지 어디서든 탐색 카드 드래그가 시작/종료되면 드롭 존 상태를 켜고 끈다
   useEffect(() => {
@@ -239,10 +259,11 @@ export default function FloatingCart() {
         </div>
       </div>
 
-      {/* 모바일(<sm)에서는 화면 전체(네비바 포함)를 채우고, sm 이상에서는 기존처럼 버튼 위에 뜨는
-          작은 패널 — 챗봇과 동일한 패턴, 모서리 라운드도 그대로 유지한다 */}
+      {/* 모바일(<sm)에서는 화면 우측 하단에 고정된 채 화면의 3/4 크기(챗봇과 동일)로, sm 이상에서는 기존처럼
+          버튼 위에 뜨는 작은 패널 — 모서리 라운드도 그대로 유지한다.
+          열려 있을 때는 챗봇 버튼이 숨겨지므로 그 자리(bottom-6)로 내려와 자리를 대신한다 */}
       <div
-        className={`fixed inset-0 z-[70] origin-bottom-right transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] sm:static sm:z-auto sm:mb-3 sm:inset-auto ${
+        className={`fixed ${open ? 'bottom-6 max-h-[calc(100dvh-3rem)]' : 'bottom-24 max-h-[calc(100dvh-7.5rem)]'} right-6 z-[70] origin-bottom-right transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] w-[75vw] h-[75dvh] max-w-[calc(100vw-3rem)] sm:static sm:z-auto sm:mb-3 sm:w-auto sm:h-auto sm:max-w-none sm:max-h-none ${
           open
             ? 'translate-y-0 opacity-100 pointer-events-auto sm:scale-100'
             : 'translate-y-full opacity-0 pointer-events-none sm:translate-y-3 sm:scale-90'
@@ -468,12 +489,14 @@ export default function FloatingCart() {
       )}
 
       {/* 열려 있을 때 모바일에서는 패널 자체 헤더에 닫기 버튼이 있으므로 원형 버튼은 숨긴다
-          (sm 이상에서는 기존처럼 작은 패널 옆에 계속 보여준다) */}
+          (sm 이상에서는 기존처럼 작은 패널 옆에 계속 보여준다).
+          모바일에서 챗봇이 열려 있을 때도 화면이 좁아 동시에 못 열게 숨기고 비활성화한다 */}
       <button
         {...dropZoneProps}
         onClick={() => setOpen((v) => !v)}
-        className={`pointer-events-auto relative h-14 w-14 items-center justify-center rounded-full border-[3px] border-surface bg-brand text-white shadow-float transition-all hover:scale-105 hover:bg-brand-dark hover:shadow-float-hover ${
-          open ? 'hidden sm:flex' : 'flex'
+        disabled={isMobile && chatOpen}
+        className={`pointer-events-auto relative h-14 w-14 items-center justify-center rounded-full border-[3px] border-surface bg-brand text-white shadow-float transition-all hover:scale-105 hover:bg-brand-dark hover:shadow-float-hover disabled:pointer-events-none ${
+          open || (isMobile && chatOpen) ? 'hidden sm:flex' : 'flex'
         } ${
           dragActive
             ? dragOver

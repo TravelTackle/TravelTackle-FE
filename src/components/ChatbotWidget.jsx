@@ -4,6 +4,8 @@ import IconBadge from './ui/IconBadge'
 import Button from './ui/Button'
 import { sendChatMessage } from '../api/chat'
 import { useLanguage } from '../i18n'
+import { useMediaQuery } from '../lib/useMediaQuery'
+import { FLOATING_PANEL_EVENT, announceFloatingPanelOpen } from '../lib/floatingPanel'
 
 const GREETING = { id: 'greeting', from: 'bot', text: '안녕하세요! 트레블봇이에요 😊 여행 계획 짜는 거 도와드릴까요?' }
 const GREETING_DELAY_MS = 900 // 처음 열면 이만큼 "입력 중"을 보여준 뒤 인사말을 써 내려간다
@@ -84,6 +86,8 @@ export default function ChatbotWidget() {
   // UI 문구는 한국어 고정 — 선택 언어는 챗봇 답변 언어(API language 파라미터)에만 쓴다
   const { language } = useLanguage()
   const [open, setOpen] = useState(false)
+  const isMobile = useMediaQuery('(max-width: 639px)')
+  const [cartOpen, setCartOpen] = useState(false) // 장바구니(FloatingCart)가 열려 있는지 — 모바일에서 동시에 못 열게 막는 데 씀
   const [openCount, setOpenCount] = useState(0) // 열 때마다 대화가 다시 스르륵 쌓이도록 목록을 새로 마운트
   const [messages, setMessages] = useState([GREETING])
   const [greeted, setGreeted] = useState(false) // 인사말이 "도착"했는지 — 그 전엔 입력 중 말풍선만 보인다
@@ -95,6 +99,7 @@ export default function ChatbotWidget() {
   const abortRef = useRef(null)
   const scrollRef = useRef(null)
   const inputRef = useRef(null)
+  const panelRef = useRef(null)
   const reduceMotion = useRef(prefersReducedMotion())
 
   const scrollToBottom = (smooth) => {
@@ -105,6 +110,55 @@ export default function ChatbotWidget() {
   useEffect(() => {
     scrollToBottom(true)
   }, [messages, sending, open, greeted])
+
+  // 다른 페이지들에도 각자 떠 있는 장바구니(FloatingCart)에 이 챗봇의 열림 상태를 알린다
+  useEffect(() => {
+    announceFloatingPanelOpen('chatbot', open)
+  }, [open])
+
+  // 장바구니가 열리면(모바일만) 화면이 좁아 둘 다 열 수 없으므로 이쪽을 닫는다
+  useEffect(() => {
+    const onSignal = (e) => {
+      if (e.detail.id === 'chatbot') return
+      setCartOpen(e.detail.isOpen)
+      if (isMobile && e.detail.isOpen) setOpen(false)
+    }
+    window.addEventListener(FLOATING_PANEL_EVENT, onSignal)
+    return () => window.removeEventListener(FLOATING_PANEL_EVENT, onSignal)
+  }, [isMobile])
+
+  // 모바일에서 키보드가 올라오면 브라우저가 포커스된 입력창을 보이게 하려고 화면(visual viewport)을 스크롤한다 —
+  // 패널은 fixed(레이아웃 뷰포트 기준)라서 그대로면 헤더가 화면 밖으로 밀려 하단만 보이게 된다.
+  // visualViewport를 따라 위치/높이를 다시 맞춰서 항상 패널 전체(헤더 포함)가 보이게 한다.
+  useEffect(() => {
+    const vv = window.visualViewport
+    const panel = panelRef.current
+    if (!open || !vv || !panel) return undefined
+
+    const MARGIN = 24 // bottom-6 / right-6 과 동일
+
+    const update = () => {
+      if (window.matchMedia('(min-width: 640px)').matches) {
+        panel.style.top = ''
+        panel.style.height = ''
+        return
+      }
+      const maxHeight = vv.height - MARGIN * 2
+      const height = Math.max(0, Math.min(maxHeight, vv.height * 0.75))
+      panel.style.height = `${height}px`
+      panel.style.top = `${vv.offsetTop + vv.height - MARGIN - height}px`
+    }
+
+    update()
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    return () => {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+      panel.style.top = ''
+      panel.style.height = ''
+    }
+  }, [open])
 
   // 처음 열렸을 때: 잠깐 입력 중을 보여주고 나서 인사말이 타이핑되며 도착한다
   useEffect(() => {
@@ -193,10 +247,11 @@ export default function ChatbotWidget() {
   return (
     // 루트는 pointer-events-none — 닫힌 패널의 투명 영역이 아래 요소(장바구니 버튼) 클릭을 가로채지 않게
     <div className="pointer-events-none fixed bottom-6 right-6 z-50 flex flex-col items-end">
-      {/* Popup — 모바일(<sm)에서는 화면 전체(네비바 포함)를 채우고, sm 이상에서는 기존처럼 우측 하단에
-          뜨는 작은 팝업. 모서리 라운드(28px)는 두 경우 모두 동일하게 유지한다 */}
+      {/* Popup — 모바일(<sm)에서는 화면 우측 하단에 고정된 채 화면의 3/4 크기로, sm 이상에서는 기존처럼
+          우측 하단에 뜨는 작은 팝업. 모서리 라운드(28px)는 두 경우 모두 동일하게 유지한다 */}
       <div
-        className={`fixed inset-0 z-[70] origin-bottom-right transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] sm:static sm:z-auto sm:mb-4 sm:inset-auto ${
+        ref={panelRef}
+        className={`fixed bottom-6 right-6 z-[70] origin-bottom-right transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] w-[75vw] h-[75dvh] max-w-[calc(100vw-3rem)] max-h-[calc(100dvh-3rem)] sm:static sm:z-auto sm:mb-4 sm:w-auto sm:h-auto sm:max-w-none sm:max-h-none ${
           open
             ? 'translate-y-0 opacity-100 pointer-events-auto sm:scale-100'
             : 'translate-y-full opacity-0 pointer-events-none sm:translate-y-3 sm:scale-90'
@@ -286,7 +341,8 @@ export default function ChatbotWidget() {
                 onKeyDown={handleKeyDown}
                 placeholder={sending ? '답변을 기다리는 중…' : '메시지를 입력하세요...'}
                 disabled={sending || !greeted}
-                className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-full px-3.5 py-2 text-[12.5px] outline-none transition-all focus:border-brand/50 focus:bg-surface focus:ring-4 focus:ring-brand/10 disabled:opacity-60"
+                // 16px(text-base) 미만이면 iOS/Android가 포커스 시 자동 확대(zoom-in)한다 — 모바일에서만 16px로 올려 방지
+                className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-full px-3.5 py-2 text-base sm:text-[12.5px] outline-none transition-all focus:border-brand/50 focus:bg-surface focus:ring-4 focus:ring-brand/10 disabled:opacity-60"
               />
               <Button
                 onClick={handleSend}
@@ -304,11 +360,13 @@ export default function ChatbotWidget() {
       </div>
 
       {/* Floating action button — 열려 있을 때 모바일에서는 전체화면 패널 자체 헤더에 닫기 버튼이
-          있으므로 원형 버튼은 숨긴다(sm 이상에서는 기존처럼 작은 팝업 옆에 계속 보여준다) */}
+          있으므로 원형 버튼은 숨긴다(sm 이상에서는 기존처럼 작은 팝업 옆에 계속 보여준다).
+          모바일에서 장바구니가 열려 있을 때도 화면이 좁아 동시에 못 열게 숨기고 비활성화한다 */}
       <Button
         onClick={toggleOpen}
-        className={`pointer-events-auto h-14 w-14 items-center justify-center rounded-full border-[3px] border-surface shadow-float hover:scale-105 hover:shadow-float-hover ${
-          open ? 'hidden sm:flex' : 'flex animate-float'
+        disabled={isMobile && cartOpen}
+        className={`pointer-events-auto h-14 w-14 items-center justify-center rounded-full border-[3px] border-surface shadow-float hover:scale-105 hover:shadow-float-hover disabled:pointer-events-none ${
+          open || (isMobile && cartOpen) ? 'hidden sm:flex' : 'flex animate-float'
         }`}
         aria-label={open ? '챗봇 닫기' : '챗봇 열기'}
         aria-expanded={open}

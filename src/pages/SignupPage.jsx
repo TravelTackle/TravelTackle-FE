@@ -52,6 +52,9 @@ export default function SignupPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [nationality, setNationality] = useState('KR')
+  const [nationalityOpen, setNationalityOpen] = useState(false)
+  const nationalityRef = useRef(null)
+  const selectedCountry = COUNTRIES.find((c) => c.code === nationality) ?? COUNTRIES[0]
   // 알림 수신 동의 — 기본값은 전부 켜둠(선택 사항). 이메일 동의를 끄면 하위 항목도 같이 꺼진다.
   // 세부 항목 패널은 체크 여부와 별개로, 왼쪽 꺽쇠를 눌러야만 펼쳐진다(기본은 접힘).
   const [notifyEmail, setNotifyEmail] = useState(true)
@@ -98,6 +101,22 @@ export default function SignupPage() {
     expireRef.current = setInterval(() => setExpiresIn((s) => s - 1), 1000)
     return () => clearInterval(expireRef.current)
   }, [expiresIn])
+
+  // 국적 드롭다운 — Navbar 언어 선택과 같은 패턴(바깥 클릭/Esc로 닫힘)
+  useEffect(() => {
+    function onClickOutside(e) {
+      if (nationalityRef.current && !nationalityRef.current.contains(e.target)) setNationalityOpen(false)
+    }
+    function onEscape(e) {
+      if (e.key === 'Escape') setNationalityOpen(false)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    document.addEventListener('keydown', onEscape)
+    return () => {
+      document.removeEventListener('mousedown', onClickOutside)
+      document.removeEventListener('keydown', onEscape)
+    }
+  }, [])
 
   const expired = codeSent && !codeVerified && expiresIn <= 0
   const mmss = `${String(Math.floor(expiresIn / 60)).padStart(2, '0')}:${String(expiresIn % 60).padStart(2, '0')}`
@@ -310,20 +329,56 @@ export default function SignupPage() {
               required
             />
 
-            <label className="block">
+            <div className="relative" ref={nationalityRef}>
               <span className="block text-[13px] font-semibold text-slate-600 mb-1.5">국적</span>
-              <select
-                value={nationality}
-                onChange={(e) => setNationality(e.target.value)}
-                className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-surface text-[14px] text-slate-900 outline-none focus:border-brand transition-all"
+              <button
+                type="button"
+                onClick={() => setNationalityOpen((v) => !v)}
+                aria-haspopup="listbox"
+                aria-expanded={nationalityOpen}
+                className={`flex w-full h-12 items-center justify-between px-4 rounded-xl border bg-surface text-[14px] text-slate-900 outline-none transition-all ${
+                  nationalityOpen ? 'border-brand' : 'border-slate-200 hover:border-slate-300'
+                }`}
               >
-                {COUNTRIES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+                <span>{selectedCountry.label}</span>
+                <Icon
+                  icon="solar:alt-arrow-down-linear"
+                  width={15}
+                  className={`text-slate-400 transition-transform duration-300 ${nationalityOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {nationalityOpen && (
+                <ul
+                  role="listbox"
+                  aria-label="국적 선택"
+                  className="nav-pop absolute z-20 mt-2 max-h-64 w-full overflow-y-auto rounded-2xl border border-slate-100 bg-surface py-1.5 shadow-popup ring-1 ring-black/5"
+                >
+                  {COUNTRIES.map((c) => {
+                    const active = c.code === nationality
+                    return (
+                      <li key={c.code}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={active}
+                          onClick={() => {
+                            setNationality(c.code)
+                            setNationalityOpen(false)
+                          }}
+                          className={`flex w-full items-center justify-between gap-2 px-4 py-2.5 text-[13.5px] transition-colors ${
+                            active ? 'bg-brand-light/60 font-bold text-brand' : 'text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span>{c.label}</span>
+                          {active && <Icon icon="solar:check-bold" width={14} />}
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
 
             <div>
               <div className="flex items-center gap-1">
