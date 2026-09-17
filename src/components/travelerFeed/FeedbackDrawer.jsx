@@ -4,7 +4,7 @@ import Avatar from '../ui/Avatar'
 import { Link } from 'react-router-dom'
 import Skeleton from '../ui/Skeleton'
 import { useAuth } from '../../context/AuthContext'
-import { addRecommendationToCart, createFeedback, deleteFeedback, getTripFeedback, updateFeedback } from '../../api/feed'
+import { addRecommendationToCart, createFeedback, deleteFeedback, getTripFeedback, likeFeedback, unlikeFeedback, updateFeedback } from '../../api/feed'
 import { getTourContents } from '../../api/tour'
 import { getCartItems } from '../../api/cart'
 import { formatDate, shortRegion } from '../../lib/homeFormat'
@@ -166,6 +166,38 @@ export default function FeedbackDrawer({ target, onClose, onPosted, onDeleted })
       setEditError(err?.response?.data?.message || '수정하지 못했어요. 잠시 후 다시 시도해주세요.')
     } finally {
       setEditSubmitting(false)
+    }
+  }
+
+  // 참견 좋아요 — 낙관적으로 즉시 토글하고, 실패하면 되돌린다. likePending은 같은 참견에 연타로 중복 요청이 안 나가게 막는다.
+  const [likePending, setLikePending] = useState(() => new Set())
+
+  async function toggleLike(f) {
+    if (!user || likePending.has(f.id)) return
+    setLikePending((s) => new Set(s).add(f.id))
+    const wasLiked = f.likedByMe
+    setState((s) => ({
+      ...s,
+      items: s.items.map((it) =>
+        it.id === f.id ? { ...it, likedByMe: !wasLiked, likeCount: it.likeCount + (wasLiked ? -1 : 1) } : it,
+      ),
+    }))
+    try {
+      const updated = wasLiked ? await unlikeFeedback(tripId, f.id) : await likeFeedback(tripId, f.id)
+      setState((s) => ({ ...s, items: s.items.map((it) => (it.id === f.id ? updated : it)) }))
+    } catch {
+      setState((s) => ({
+        ...s,
+        items: s.items.map((it) =>
+          it.id === f.id ? { ...it, likedByMe: wasLiked, likeCount: it.likeCount + (wasLiked ? 1 : -1) } : it,
+        ),
+      }))
+    } finally {
+      setLikePending((s) => {
+        const next = new Set(s)
+        next.delete(f.id)
+        return next
+      })
     }
   }
 
@@ -432,7 +464,23 @@ export default function FeedbackDrawer({ target, onClose, onPosted, onDeleted })
                           </div>
                         </div>
                       ) : (
-                        <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-slate-700">{f.content}</p>
+                        <div className="mt-2 flex items-start justify-between gap-2">
+                          <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-slate-700">{f.content}</p>
+                          <button
+                            type="button"
+                            onClick={() => toggleLike(f)}
+                            disabled={!user}
+                            title={user ? undefined : '로그인하면 좋아요를 남길 수 있어요'}
+                            aria-pressed={f.likedByMe}
+                            aria-label={f.likedByMe ? '좋아요 취소' : '좋아요'}
+                            className={`flex shrink-0 items-center gap-1 rounded-full px-1 py-0.5 text-[12px] font-bold transition-colors ${
+                              f.likedByMe ? 'text-rose-500' : 'text-slate-400 hover:text-rose-400'
+                            } disabled:cursor-not-allowed disabled:hover:text-slate-400`}
+                          >
+                            <Icon icon={f.likedByMe ? 'mdi:heart' : 'mdi:heart-outline'} width={15} />
+                            {f.likeCount > 0 && f.likeCount}
+                          </button>
+                        </div>
                       )}
                       {editing ? (
                         // 수정 중엔 추천 장소 카드 자체가 편집 대상 — 담기 버튼 대신 삭제(X) 버튼을 보여준다

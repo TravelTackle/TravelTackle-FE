@@ -36,6 +36,11 @@ export function togglePublished(trip) {
   return { ...cloneTrip(trip), published: !trip.published }
 }
 
+// 전체공개로 바꾸면서(또는 이미 공개 중인 계획의 코멘트만 다시 바꿀 때) 한 줄 코멘트를 함께 반영한다.
+export function publishWithComment(trip, comment) {
+  return { ...cloneTrip(trip), published: true, comment }
+}
+
 // id는 호출부가 미리 만들어 넘긴다 — addTripItem API 응답(진짜 id)으로 나중에 이 항목을 찾아 교체해야 해서다.
 // 반환값에 새로 만든 item도 함께 담아, 호출부가 그 시각(startTime/endTime)을 그대로 API 요청에 실어 보낼 수 있게 한다.
 export function insertCartItemIntoDay(trip, dayId, cartItem, index, id) {
