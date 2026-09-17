@@ -329,6 +329,14 @@ export default function FeedbackDrawer({ target, onClose, onPosted, onDeleted })
   }
 
   const count = state.items.length
+  const focusId = target?.focusId ?? null
+
+  // 좋아요 알림으로 들어오면 목록이 뜬 뒤 강조할 참견까지 스크롤한다(첫 페이지에 있을 때)
+  useEffect(() => {
+    if (!open || !focusId || state.loading) return
+    const el = listRef.current?.querySelector(`[data-feedback-id="${focusId}"]`)
+    el?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, [open, focusId, state.loading])
   // 백엔드는 본인 계획에 참견을 막는다(TRIP_019). 작성자 id가 내려올 때만 미리 안내하고, 없으면 서버 응답(message)에 맡긴다.
   const isMine = !!(user && target?.ownerId && target.ownerId === user.userId)
 
@@ -388,10 +396,14 @@ export default function FeedbackDrawer({ target, onClose, onPosted, onDeleted })
                   {state.items.map((f, i) => {
                     const isAuthor = !!(user && f.author?.id && f.author.id === user.userId)
                     const editing = editingId === f.id
+                    const focused = focusId && f.id === focusId
                     return (
                     <li
                       key={f.id ?? i}
-                      className="animate-slide-in rounded-2xl border border-slate-100 bg-surface p-3.5 shadow-card"
+                      data-feedback-id={f.id}
+                      className={`animate-slide-in rounded-2xl border bg-surface p-3.5 shadow-card transition-colors duration-700 ${
+                        focused ? 'feedback-focus border-rose-200' : 'border-slate-100'
+                      }`}
                       style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }}
                     >
                       <div className="flex items-center gap-2">
@@ -477,8 +489,11 @@ export default function FeedbackDrawer({ target, onClose, onPosted, onDeleted })
                               f.likedByMe ? 'text-rose-500' : 'text-slate-400 hover:text-rose-400'
                             } disabled:cursor-not-allowed disabled:hover:text-slate-400`}
                           >
-                            <Icon icon={f.likedByMe ? 'mdi:heart' : 'mdi:heart-outline'} width={15} />
-                            {f.likeCount > 0 && f.likeCount}
+                            {/* 누를 때마다 하트가 톡 튀도록 key로 애니메이션을 다시 건다. 요청 중엔 살짝 흐리게 */}
+                            <span key={`${f.id}-${f.likedByMe}`} className={`flex ${f.likedByMe ? 'ai-pop' : ''} ${likePending.has(f.id) ? 'opacity-60' : ''}`}>
+                              <Icon icon={f.likedByMe ? 'mdi:heart' : 'mdi:heart-outline'} width={15} />
+                            </span>
+                            {f.likeCount > 0 && <span className="tabular-nums">{f.likeCount}</span>}
                           </button>
                         </div>
                       )}
