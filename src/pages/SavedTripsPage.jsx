@@ -218,8 +218,9 @@ export default function SavedTripsPage() {
       <ChatbotWidget />
       <FloatingCart />
 
+      {/* 모바일에서 장바구니/챗봇 패널이 열려 있어도(z-[70]) 가려지지 않게 그 위(z-[80])에 띄운다 */}
       <div
-        className={`fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-black/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
+        className={`fixed bottom-24 left-1/2 z-[80] -translate-x-1/2 rounded-full bg-black/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
           toast ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
         }`}
       >
