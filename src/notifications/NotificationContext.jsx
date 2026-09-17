@@ -3,7 +3,7 @@ import { Icon } from '@iconify/react'
 import Avatar from '../components/ui/Avatar'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { getNotifications, getUnreadCount, markAllNotificationsRead, markNotificationRead, openNotificationStream } from '../api/notifications'
+import { deleteAllNotifications, getNotifications, getUnreadCount, markAllNotificationsRead, markNotificationRead, openNotificationStream } from '../api/notifications'
 import { describeNotification, notificationKind, notificationTarget } from './describe'
 
 /**
@@ -78,6 +78,25 @@ export function NotificationProvider({ children }) {
     markAllNotificationsRead().catch(() => {})
   }, [])
 
+  // 전체 삭제 — 먼저 비우고 서버에 보낸다. 실패하면 되돌리고 { ok:false, message }를 돌려줘 패널이 안내한다.
+  const clearAll = useCallback(async () => {
+    let previous = null
+    setState((s) => {
+      previous = s
+      return { ...s, items: [], unreadCount: 0, page: 0, totalPages: 0 }
+    })
+    try {
+      await deleteAllNotifications()
+      return { ok: true }
+    } catch (err) {
+      if (previous) setState((s) => ({ ...s, items: previous.items, unreadCount: previous.unreadCount, page: previous.page, totalPages: previous.totalPages }))
+      const status = err?.response?.status
+      const message =
+        status === 404 || status === 405 ? '알림 삭제는 아직 준비 중이에요.' : err?.response?.data?.message || '알림을 지우지 못했어요. 잠시 후 다시 시도해주세요.'
+      return { ok: false, message }
+    }
+  }, [])
+
   const dismissToast = useCallback((id) => setToasts((t) => t.filter((x) => x.id !== id)), [])
 
   // 로그인 상태에 따라 미읽음 수 + SSE 연결 관리
@@ -103,8 +122,8 @@ export function NotificationProvider({ children }) {
   }, [userId, refreshUnread])
 
   const value = useMemo(
-    () => ({ ...state, hasMore: state.page + 1 < state.totalPages, load, loadMore, refreshUnread, markRead, markAllRead }),
-    [state, load, loadMore, refreshUnread, markRead, markAllRead],
+    () => ({ ...state, hasMore: state.page + 1 < state.totalPages, load, loadMore, refreshUnread, markRead, markAllRead, clearAll }),
+    [state, load, loadMore, refreshUnread, markRead, markAllRead, clearAll],
   )
 
   return (
