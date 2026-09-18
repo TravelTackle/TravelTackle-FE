@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
 import Card from '../ui/Card'
 import Skeleton from '../ui/Skeleton'
@@ -13,49 +13,117 @@ const RANK_STYLE = [
   'bg-gradient-to-br from-orange-200 to-orange-300 text-orange-900',
 ]
 
-// 이번 달 인기 지역 TOP 3 — GET /feed/regions?from=&to= 로 백엔드가 이번 달에 공개된 계획에 담긴 지역을
-// 세어 준다. 한 계획에 여러 지역이 섞여 있으면 각 지역에 1씩, 같은 지역 일정이 여러 개여도 그 계획에서는 1번만
-// (계획 수 내림차순, 동점은 지역명순). 프론트는 받은 순서를 그대로 쓰고, 이번 달 계획이 없어도 다른 기간으로
-// 대체하지 않는다. 같은 세션에서는 한 번만 조회한다.
-let monthlyCache = null
+// 인기 지역 — GET /feed/regions 가 공개 계획에 담긴 지역을 세어 준다(계획 수 내림차순, 동점은 지역명순).
+// 한 계획에 여러 지역이 섞이면 각 지역에 1씩, 같은 지역 일정이 여러 개여도 그 계획에서는 1번만 센다.
+// 기간은 두 가지 — '이번 달'(파라미터 없이 호출, 백엔드 기본값)과 '전체'(기간을 넓게 지정).
+// 시상대는 상위 3개, 필터 칩은 받은 목록 전체를 쓴다. 같은 세션에서는 기간별로 한 번만 조회한다.
+const PERIODS = [
+  { value: 'month', label: '이번 달', icon: 'solar:calendar-minimalistic-linear' },
+  { value: 'all', label: '전체', icon: 'solar:infinity-linear' },
+]
+const REGION_LIMIT = 10
+const ALL_RANGE = { from: '2000-01-01', to: '2030-12-31' }
+const cache = { month: null, all: null }
 
-// 파라미터 없이 부르면 백엔드가 이번 달(한국 시간, 계획 생성일 기준) 상위 10개 지역을 개수 많은 순으로 준다.
-// 시상대는 그중 3개, 필터 칩은 받은 목록 전체를 쓴다 — 칩과 순위가 같은 집계라 기준이 어긋나지 않는다.
-async function fetchMonthlyRegions() {
-  const rows = await getFeedRegionCounts()
+async function fetchRegions(period) {
+  const rows = await getFeedRegionCounts(period === 'all' ? { ...ALL_RANGE, size: REGION_LIMIT } : { size: REGION_LIMIT })
   const chips = (Array.isArray(rows) ? rows : []).map((r) => ({ region: r.region, count: r.tripCount }))
-  return { chips, top: chips.slice(0, TOP_N), month: new Date().getMonth() + 1 }
+  return { chips, top: chips.slice(0, TOP_N) }
 }
 
-export function useMonthlyRegions() {
-  const [state, setState] = useState(() =>
-    monthlyCache ? { ...monthlyCache, loading: false } : { top: [], chips: [], month: new Date().getMonth() + 1, loading: true },
-  )
+export function useRegionRanking() {
+  const [period, setPeriod] = useState('month')
+  const [data, setData] = useState(() => cache.month ?? { top: [], chips: [] })
+  const [loading, setLoading] = useState(!cache.month)
+
   useEffect(() => {
-    if (monthlyCache) return
+    const cached = cache[period]
+    if (cached) {
+      setData(cached)
+      setLoading(false)
+      return undefined
+    }
     let ignore = false
-    fetchMonthlyRegions()
+    setLoading(true)
+    fetchRegions(period)
       .then((r) => {
-        monthlyCache = r
-        if (!ignore) setState({ ...r, loading: false })
+        cache[period] = r
+        if (!ignore) setData(r)
       })
-      .catch(() => { if (!ignore) setState((s) => ({ ...s, loading: false })) })
+      .catch(() => { if (!ignore) setData({ top: [], chips: [] }) })
+      .finally(() => { if (!ignore) setLoading(false) })
     return () => { ignore = true }
-  }, [])
-  return state
+  }, [period])
+
+  return { ...data, period, setPeriod, loading, month: new Date().getMonth() + 1 }
 }
 
-export default function RegionRankPanel({ monthly, chips, loading, active, onSelect, layout = 'sidebar' }) {
-  const { top, month, loading: monthlyLoading } = monthly
-  const all = chips
-  const title = `${month}월 인기 지역`
+// 기간 전환 — 피드의 전체/계획/기록 세그먼트와 같은 방식(흰 썸이 선택 쪽으로 미끄러진다)
+function PeriodSwitch({ period, onChange, compact = false }) {
+  const trackRef = useRef(null)
+  const [thumb, setThumb] = useState(null)
+
+  useLayoutEffect(() => {
+    function measure() {
+      const el = trackRef.current?.querySelector(`[data-period="${period}"]`)
+      if (!el) return
+      setThumb({ x: el.offsetLeft, w: el.offsetWidth })
+    }
+    measure()
+    const t = setTimeout(measure, 300) // 웹폰트가 늦게 오면 라벨 폭이 바뀐다
+    window.addEventListener('resize', measure)
+    return () => {
+      clearTimeout(t)
+      window.removeEventListener('resize', measure)
+    }
+  }, [period, compact])
+
+  return (
+    <div
+      ref={trackRef}
+      role="group"
+      aria-label="인기 지역 기간"
+      className={`relative flex shrink-0 items-center gap-0.5 rounded-full bg-slate-100 ${compact ? 'p-0.5' : 'p-1'}`}
+    >
+      <span
+        aria-hidden="true"
+        className="mode-thumb pointer-events-none absolute inset-y-1 left-0 rounded-full bg-surface shadow-card"
+        style={{ width: thumb ? thumb.w : 0, transform: `translateX(${thumb ? thumb.x : 0}px)`, opacity: thumb ? 1 : 0, top: compact ? 2 : undefined, bottom: compact ? 2 : undefined }}
+      />
+      {PERIODS.map((p) => {
+        const active = period === p.value
+        return (
+          <button
+            key={p.value}
+            type="button"
+            data-period={p.value}
+            onClick={() => onChange(p.value)}
+            aria-pressed={active}
+            className={`relative z-10 flex shrink-0 items-center gap-1 rounded-full whitespace-nowrap font-bold transition-colors duration-300 ${
+              compact ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1 text-[11.5px]'
+            } ${active ? 'text-brand-dark' : 'text-slate-500 hover:text-slate-800'}`}
+          >
+            <Icon icon={p.icon} width={12} className={`transition-colors duration-300 ${active ? 'text-brand' : 'text-slate-400'}`} />
+            {p.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+export default function RegionRankPanel({ ranking, active, onSelect, layout = 'sidebar' }) {
+  const { top, chips: all, month, period, setPeriod, loading } = ranking
+  const isMonth = period === 'month'
+  const title = isMonth ? `${month}월 인기 지역` : '전체 인기 지역'
 
   if (layout === 'row') {
     // 갤러리 보기 상단 — 순위 3개를 앞에 두고 나머지 지역 칩을 이어 붙인 한 줄
     return (
       <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <span className="shrink-0 text-[13px] font-bold text-slate-900">{title}</span>
-        {loading || monthlyLoading ? (
+        <PeriodSwitch period={period} onChange={setPeriod} compact />
+        {loading ? (
           [72, 64, 68, 60, 60].map((w, i) => <Skeleton key={i} className="h-8 shrink-0 rounded-full" style={{ width: w, animationDelay: `${i * 60}ms` }} />)
         ) : (
           <>
@@ -75,12 +143,13 @@ export default function RegionRankPanel({ monthly, chips, loading, active, onSel
 
   return (
     <Card className="p-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="text-[13px] font-bold text-slate-900">{title}</div>
-        <span className="text-[10.5px] text-slate-400">이번 달 공개된 계획 기준</span>
+        <PeriodSwitch period={period} onChange={setPeriod} />
       </div>
+      <p className="mt-1 text-[10.5px] text-slate-400">{isMonth ? '이번 달' : '전체 기간'} 공개된 계획 기준</p>
 
-      {monthlyLoading ? (
+      {loading ? (
         <div className="mt-3 flex items-end justify-center gap-2 px-2" role="status" aria-label="인기 지역을 집계하는 중">
           {[52, 76, 44].map((h, i) => (
             <div key={i} className="flex w-full flex-col items-center gap-1.5">
@@ -90,7 +159,9 @@ export default function RegionRankPanel({ monthly, chips, loading, active, onSel
           ))}
         </div>
       ) : top.length === 0 ? (
-        <p className="mt-3 rounded-xl bg-slate-50 px-3 py-3 text-center text-[12px] text-slate-400">{month}월에 공개된 계획이 아직 없어요.</p>
+        <p className="mt-3 rounded-xl bg-slate-50 px-3 py-3 text-center text-[12px] text-slate-400">
+          {isMonth ? `${month}월에 공개된 계획이 아직 없어요.` : '아직 공개된 계획이 없어요.'}
+        </p>
       ) : (
         <Podium top={top} active={active} onSelect={onSelect} />
       )}
