@@ -79,12 +79,12 @@ export default function RegionRankPanel({ monthly, chips, loading, active, onSel
         ) : (
           <>
             {top.map((r, i) => (
-              <RegionChip key={r.region} region={r.region} count={r.count} rank={i + 1} active={active === r.region} onSelect={onSelect} />
+              <RegionChip key={r.region} region={r.region} rank={i + 1} active={active === r.region} onSelect={onSelect} />
             ))}
             {all
               .filter((r) => !top.some((t) => t.region === r.region))
               .map((r) => (
-                <RegionChip key={r.region} region={r.region} count={r.count} active={active === r.region} onSelect={onSelect} />
+                <RegionChip key={r.region} region={r.region} active={active === r.region} onSelect={onSelect} />
               ))}
           </>
         )}
@@ -135,7 +135,7 @@ export default function RegionRankPanel({ monthly, chips, loading, active, onSel
               전체
             </button>
             {all.map((r) => (
-              <RegionChip key={r.region} region={r.region} count={r.count} active={active === r.region} onSelect={onSelect} small />
+              <RegionChip key={r.region} region={r.region} active={active === r.region} onSelect={onSelect} small />
             ))}
           </div>
         )}
@@ -187,7 +187,8 @@ function Podium({ top, active, onSelect }) {
   )
 }
 
-function RegionChip({ region, count, rank, active, onSelect, small = false }) {
+// 지역 칩 — 개수는 보여주지 않는다(집계 기준이 계획 단위라 목록 건수와 달라 혼란스러워서). 순위 배지만 남긴다
+function RegionChip({ region, rank, active, onSelect, small = false }) {
   return (
     <button
       type="button"
@@ -201,7 +202,6 @@ function RegionChip({ region, count, rank, active, onSelect, small = false }) {
         <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[9.5px] font-extrabold ${RANK_STYLE[rank - 1]}`}>{rank}</span>
       )}
       {region}
-      <span className={`text-[10px] font-semibold tabular-nums ${active ? 'text-white/80' : 'text-slate-400'}`}>{count}</span>
     </button>
   )
 }
