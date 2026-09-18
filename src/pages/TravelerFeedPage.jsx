@@ -8,7 +8,7 @@ import FloatingCart from '../components/FloatingCart'
 import Section from '../components/ui/Section'
 import Button from '../components/ui/Button'
 import FeedFilterBar from '../components/travelerFeed/FeedFilterBar'
-import RegionRankPanel, { useMonthlyRegions, useRegionChips } from '../components/travelerFeed/RegionRankPanel'
+import RegionRankPanel, { useRegionRanking } from '../components/travelerFeed/RegionRankPanel'
 import Skeleton from '../components/ui/Skeleton'
 import PopularPlansTop5 from '../components/travelerFeed/PopularPlansTop5'
 import PlanFeedCard from '../components/travelerFeed/PlanFeedCard'
@@ -37,6 +37,17 @@ export default function TravelerFeedPage() {
   const [searchKeyword, setSearchKeyword] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
   const [sortOption, setSortOption] = useState('relevance')
+
+  // 목록 조회(아래 useEffect)가 참조하므로 검색·정렬과 같은 위치에서 먼저 선언한다.
+  // 종류·지역은 서버로 넘기는 필터라 값이 바뀌면 첫 페이지부터 다시 받는다 — '전체'면 파라미터를 뺀다.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const initialFilter = ['plan', 'record'].includes(searchParams.get('filter')) ? searchParams.get('filter') : 'all'
+  const [filter, setFilter] = useState(initialFilter)
+  const [region, setRegion] = useState(null)
+  const feedFilterParams = useMemo(
+    () => ({ type: filter === 'all' ? undefined : filter.toUpperCase(), region: region || undefined }),
+    [filter, region],
+  )
   const [sortMenuOpen, setSortMenuOpen] = useState(false)
   const sortMenuRef = useRef(null)
 
@@ -71,7 +82,7 @@ export default function TravelerFeedPage() {
     setEndReached(false)
     endCheckStarted.current = false
     clearTimeout(endCheckTimer.current)
-    getFeed({ page: 0, size: 50, keyword: searchKeyword || undefined, sort: sortOption })
+    getFeed({ page: 0, size: 50, keyword: searchKeyword || undefined, sort: sortOption, ...feedFilterParams })
       .then((res) => {
         if (ignore) return
         setRealItems(res.content.map(adaptFeedItem))
@@ -84,7 +95,8 @@ export default function TravelerFeedPage() {
       })
       .finally(() => { if (!ignore) setFeedLoading(false) })
     return () => { ignore = true }
-  }, [searchKeyword, sortOption, reloadKey])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchKeyword, sortOption, reloadKey, filter, region])
 
   useEffect(() => () => clearTimeout(endCheckTimer.current), [])
 
@@ -93,7 +105,7 @@ export default function TravelerFeedPage() {
     if (feedLoading || loadingMore || !hasMore) return
     const nextPage = page + 1
     setLoadingMore(true)
-    getFeed({ page: nextPage, size: 50, keyword: searchKeyword || undefined, sort: sortOption })
+    getFeed({ page: nextPage, size: 50, keyword: searchKeyword || undefined, sort: sortOption, ...feedFilterParams })
       .then((res) => {
         setRealItems((prev) => [...prev, ...res.content.map(adaptFeedItem)])
         setPage(nextPage)
@@ -101,7 +113,8 @@ export default function TravelerFeedPage() {
       })
       .catch(() => setHasMore(false))
       .finally(() => setLoadingMore(false))
-  }, [feedLoading, loadingMore, hasMore, page, searchKeyword, sortOption])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feedLoading, loadingMore, hasMore, page, searchKeyword, sortOption, filter, region])
 
   const sentinelRef = useRef(null)
   useEffect(() => {
@@ -146,16 +159,11 @@ export default function TravelerFeedPage() {
   }, [searchInput])
 
   // 홈 모아보기 등에서 ?open=<id>&filter=plan|record 로 들어오면 해당 글 상세를 바로 연다
-  const [searchParams, setSearchParams] = useSearchParams()
   const openId = searchParams.get('open')
   // 좋아요 알림에서 오면 ?feedback=<feedbackId>(또는 'open')가 붙는다 — 상세와 함께 참견 드로어를 열고 그 참견을 강조한다
   const feedbackParam = searchParams.get('feedback')
   const [pendingFeedback, setPendingFeedback] = useState(null) // { item, focusId }
-  const initialFilter = ['plan', 'record'].includes(searchParams.get('filter')) ? searchParams.get('filter') : 'all'
-
   const [view, setView] = useState('list')
-  const [filter, setFilter] = useState(initialFilter)
-  const [region, setRegion] = useState(null)
   const [drawerItem, setDrawerItem] = useState(null)
   // 홈 등에서 ?open=으로 들어온 아이템 — 목록 맨 위에 고정해서 보여준다
   const [pinnedItem, setPinnedItem] = useState(null)
@@ -319,10 +327,11 @@ export default function TravelerFeedPage() {
     return () => mq.removeEventListener('change', handleChange)
   }, [])
 
+  // 종류·지역은 서버가 걸러서 준다(GET /feed?type=&region=). 여기서는 딥링크로 맨 위에 꽂아 둔 글이
+  // 지금 고른 종류와 다를 때만 걸러낸다 — 지역은 서버 기준(계획에 담긴 장소 중 하나라도 일치)이라
+  // 카드에 보이는 대표 지역과 다를 수 있어 프론트에서 다시 거르지 않는다.
   function matchesFilters(item) {
-    if (filter !== 'all' && item.type !== filter) return false
-    if (region && item.region !== region) return false
-    return true
+    return filter === 'all' || item.type === filter
   }
 
   // 실 데이터는 이미 서버가 keyword로 걸러서 준 결과라 그대로 믿는다. pinnedItem(홈 등에서 열고 들어온 글)이 있으면 맨 위로 꽂는다.
@@ -338,10 +347,9 @@ export default function TravelerFeedPage() {
     const filtered = allItems.filter(matchesFilters)
     return filter === 'all' ? interleaveByKey(filtered, (i) => i.type) : filtered
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allItems, filter, region])
-  // 인기 지역 순위는 이번 달 피드를 따로 받아 세고, 필터 칩은 지금 보이는 목록의 지역으로 만든다
-  const monthlyRegions = useMonthlyRegions()
-  const regionChips = useRegionChips(allItems)
+  }, [allItems, filter])
+  // 인기 지역 순위와 지역 칩 모두 백엔드 집계(GET /feed/regions)를 그대로 쓴다 — 패널의 기간 스위치로 이번 달/전체를 고른다
+  const regionRanking = useRegionRanking()
   // 갤러리는 grid 행 높이가 좌우 중 큰 쪽에 맞춰져 짧은 카드 아래 빈 공간이 생기므로,
   // 좌/우 컬럼을 독립된 세로 스택 두 개로 나눠 각자 빈틈없이 붙게 렌더링한다.
   const galleryLeft = items.filter((_, i) => i % 2 === 0)
@@ -401,7 +409,7 @@ export default function TravelerFeedPage() {
 
         {/* 인기 지역은 필터탭과 달리 스크롤하면 같이 흘러가도록 sticky 래퍼 밖에 둠 */}
         {view === 'gallery' && (
-          <RegionRankPanel monthly={monthlyRegions} chips={regionChips} loading={feedLoading} active={region} onSelect={setRegion} layout="row" />
+          <RegionRankPanel ranking={regionRanking} active={region} onSelect={setRegion} layout="row" />
         )}
 
         {view === 'list' ? (
@@ -489,7 +497,7 @@ export default function TravelerFeedPage() {
                 )}
               </div>
 
-              <RegionRankPanel monthly={monthlyRegions} chips={regionChips} loading={feedLoading} active={region} onSelect={setRegion} />
+              <RegionRankPanel ranking={regionRanking} active={region} onSelect={setRegion} />
               <PopularPlansTop5 onOpen={setDrawerItem} />
             </aside>
           </div>
