@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Icon } from '@iconify/react'
 import Card from '../ui/Card'
 import Skeleton from '../ui/Skeleton'
@@ -13,38 +13,24 @@ const RANK_STYLE = [
   'bg-gradient-to-br from-orange-200 to-orange-300 text-orange-900',
 ]
 
-// 피드 항목의 region을 세어 [{ region, count }]를 많은 순으로 — 지역이 비어 있는 항목은 뺀다
-function countRegions(items) {
-  const counts = new Map()
-  items.forEach((i) => {
-    if (!i.region) return
-    counts.set(i.region, (counts.get(i.region) ?? 0) + 1)
-  })
-  return [...counts.entries()].map(([region, count]) => ({ region, count })).sort((a, b) => b.count - a.count)
-}
-
 // 이번 달 인기 지역 TOP 3 — GET /feed/regions?from=&to= 로 백엔드가 이번 달에 공개된 계획에 담긴 지역을
 // 세어 준다. 한 계획에 여러 지역이 섞여 있으면 각 지역에 1씩, 같은 지역 일정이 여러 개여도 그 계획에서는 1번만
 // (계획 수 내림차순, 동점은 지역명순). 프론트는 받은 순서를 그대로 쓰고, 이번 달 계획이 없어도 다른 기간으로
 // 대체하지 않는다. 같은 세션에서는 한 번만 조회한다.
 let monthlyCache = null
 
-// 로컬 날짜를 YYYY-MM-DD로 — toISOString은 UTC라 KST 자정 전후에 날짜가 하루 어긋난다
-function toDateParam(d) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
+// 파라미터 없이 부르면 백엔드가 이번 달(한국 시간, 계획 생성일 기준) 상위 10개 지역을 개수 많은 순으로 준다.
+// 시상대는 그중 3개, 필터 칩은 받은 목록 전체를 쓴다 — 칩과 순위가 같은 집계라 기준이 어긋나지 않는다.
 async function fetchMonthlyRegions() {
-  const now = new Date()
-  const from = new Date(now.getFullYear(), now.getMonth(), 1)
-  const to = new Date(now.getFullYear(), now.getMonth() + 1, 0) // 이번 달 마지막 날(양끝 포함)
-  const rows = await getFeedRegionCounts({ from: toDateParam(from), to: toDateParam(to), size: TOP_N })
-  const top = (Array.isArray(rows) ? rows : []).map((r) => ({ region: r.region, count: r.tripCount }))
-  return { top, month: now.getMonth() + 1 }
+  const rows = await getFeedRegionCounts()
+  const chips = (Array.isArray(rows) ? rows : []).map((r) => ({ region: r.region, count: r.tripCount }))
+  return { chips, top: chips.slice(0, TOP_N), month: new Date().getMonth() + 1 }
 }
 
 export function useMonthlyRegions() {
-  const [state, setState] = useState(() => (monthlyCache ? { ...monthlyCache, loading: false } : { top: [], month: new Date().getMonth() + 1, loading: true }))
+  const [state, setState] = useState(() =>
+    monthlyCache ? { ...monthlyCache, loading: false } : { top: [], chips: [], month: new Date().getMonth() + 1, loading: true },
+  )
   useEffect(() => {
     if (monthlyCache) return
     let ignore = false
@@ -57,11 +43,6 @@ export function useMonthlyRegions() {
     return () => { ignore = true }
   }, [])
   return state
-}
-
-// 지역 필터 칩 — 지금 화면에 보이는 목록(검색·정렬 결과)의 지역별 개수. 눌렀을 때 결과가 항상 있도록 목록과 같은 데이터를 쓴다
-export function useRegionChips(items) {
-  return useMemo(() => countRegions(items), [items])
 }
 
 export default function RegionRankPanel({ monthly, chips, loading, active, onSelect, layout = 'sidebar' }) {
