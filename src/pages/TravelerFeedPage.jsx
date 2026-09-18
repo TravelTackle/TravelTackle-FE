@@ -37,6 +37,17 @@ export default function TravelerFeedPage() {
   const [searchKeyword, setSearchKeyword] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
   const [sortOption, setSortOption] = useState('relevance')
+
+  // 목록 조회(아래 useEffect)가 참조하므로 검색·정렬과 같은 위치에서 먼저 선언한다.
+  // 종류·지역은 서버로 넘기는 필터라 값이 바뀌면 첫 페이지부터 다시 받는다 — '전체'면 파라미터를 뺀다.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const initialFilter = ['plan', 'record'].includes(searchParams.get('filter')) ? searchParams.get('filter') : 'all'
+  const [filter, setFilter] = useState(initialFilter)
+  const [region, setRegion] = useState(null)
+  const feedFilterParams = useMemo(
+    () => ({ type: filter === 'all' ? undefined : filter.toUpperCase(), region: region || undefined }),
+    [filter, region],
+  )
   const [sortMenuOpen, setSortMenuOpen] = useState(false)
   const sortMenuRef = useRef(null)
 
@@ -148,21 +159,11 @@ export default function TravelerFeedPage() {
   }, [searchInput])
 
   // 홈 모아보기 등에서 ?open=<id>&filter=plan|record 로 들어오면 해당 글 상세를 바로 연다
-  const [searchParams, setSearchParams] = useSearchParams()
   const openId = searchParams.get('open')
   // 좋아요 알림에서 오면 ?feedback=<feedbackId>(또는 'open')가 붙는다 — 상세와 함께 참견 드로어를 열고 그 참견을 강조한다
   const feedbackParam = searchParams.get('feedback')
   const [pendingFeedback, setPendingFeedback] = useState(null) // { item, focusId }
-  const initialFilter = ['plan', 'record'].includes(searchParams.get('filter')) ? searchParams.get('filter') : 'all'
-
-  // 서버로 넘기는 필터 — 종류(PLAN/RECORD)와 지역. '전체'면 파라미터 자체를 빼서 지금처럼 둘 다 받는다
   const [view, setView] = useState('list')
-  const [filter, setFilter] = useState(initialFilter)
-  const [region, setRegion] = useState(null)
-  const feedFilterParams = useMemo(
-    () => ({ type: filter === 'all' ? undefined : filter.toUpperCase(), region: region || undefined }),
-    [filter, region],
-  )
   const [drawerItem, setDrawerItem] = useState(null)
   // 홈 등에서 ?open=으로 들어온 아이템 — 목록 맨 위에 고정해서 보여준다
   const [pinnedItem, setPinnedItem] = useState(null)
