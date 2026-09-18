@@ -17,9 +17,10 @@ export default function PopularPlansTop5({ onOpen }) {
   useEffect(() => {
     if (cache) return
     let ignore = false
-    getFeed({ size: 20, sort: 'popular' })
+    // 서버가 인기순 계획만 5개 준다(type=PLAN) — 프론트에서 기록을 걸러내거나 자를 필요가 없다
+    getFeed({ size: TOP_N, sort: 'popular', type: 'PLAN' })
       .then((page) => {
-        const plans = (page?.content ?? []).map(adaptFeedItem).filter((i) => i.type === 'plan').slice(0, TOP_N)
+        const plans = (page?.content ?? []).map(adaptFeedItem)
         cache = plans
         if (!ignore) setState({ items: plans, loading: false, error: false })
       })
