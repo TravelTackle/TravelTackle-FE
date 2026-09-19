@@ -48,6 +48,11 @@ export default function TravelerFeedPage() {
     () => ({ type: filter === 'all' ? undefined : filter.toUpperCase(), region: region || undefined }),
     [filter, region],
   )
+  // 지역 칩을 누르면 이전 스크롤 위치가 남지 않도록 맨 위로 올린다.
+  const selectRegion = useCallback((next) => {
+    setRegion(next)
+    window.scrollTo({ top: 0 })
+  }, [])
   const [sortMenuOpen, setSortMenuOpen] = useState(false)
   const sortMenuRef = useRef(null)
 
@@ -409,7 +414,7 @@ export default function TravelerFeedPage() {
 
         {/* 인기 지역은 필터탭과 달리 스크롤하면 같이 흘러가도록 sticky 래퍼 밖에 둠 */}
         {view === 'gallery' && (
-          <RegionRankPanel ranking={regionRanking} active={region} onSelect={setRegion} layout="row" />
+          <RegionRankPanel ranking={regionRanking} active={region} onSelect={selectRegion} layout="row" />
         )}
 
         {view === 'list' ? (
@@ -497,7 +502,7 @@ export default function TravelerFeedPage() {
                 )}
               </div>
 
-              <RegionRankPanel ranking={regionRanking} active={region} onSelect={setRegion} />
+              <RegionRankPanel ranking={regionRanking} active={region} onSelect={selectRegion} />
               <PopularPlansTop5 onOpen={setDrawerItem} />
             </aside>
           </div>

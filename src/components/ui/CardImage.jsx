@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useRef, useEffect, useState } from 'react'
+import Skeleton from './Skeleton'
 import { Icon } from '@iconify/react'
 
 // 이미지가 없거나 불러오지 못했을 때 카드 사진 자리에 보여주는 안내. 부모가 크기를 정한다(absolute inset-0 또는 h-full)
@@ -15,27 +16,50 @@ export function ImagePlaceholder({ className = '', label = '이미지 준비 중
   )
 }
 
-// 카드용 이미지 — src가 없거나 로드에 실패하면 ImagePlaceholder로 바뀐다.
-// className은 <img>와 자리 표시 둘 다에 적용되는 크기/위치 클래스(예: "absolute inset-0 h-full w-full"), imgClassName은 <img>에만(예: hover 확대)
-export default function CardImage({ src, alt = '', className = '', imgClassName = '', compact = false, ...props }) {
-  const [failed, setFailed] = useState(false)
-  useEffect(() => setFailed(false), [src]) // src가 바뀌면 다시 시도
+// src별로 로딩 상태를 분리해 사진이 바뀌면 스켈레톤부터 다시 표시한다.
+export default function CardImage(props) {
+  return <LoadingCardImage key={props.src || 'empty'} {...props} />
+}
 
-  if (!src || failed) {
+function LoadingCardImage({ src, alt = '', className = '', imgClassName = '', compact = false, onLoad, onError, ...props }) {
+  const [status, setStatus] = useState('loading')
+  const imageRef = useRef(null)
+
+  useEffect(() => {
+    const image = imageRef.current
+    if (image?.complete) setStatus(image.naturalWidth > 0 ? 'loaded' : 'error')
+  }, [])
+
+  if (!src || status === 'error') {
     return (
       <div className={className}>
         <ImagePlaceholder compact={compact} />
       </div>
     )
   }
+
   return (
-    <img
-      src={src}
-      alt={alt}
-      loading="lazy"
-      onError={() => setFailed(true)}
-      className={`object-cover ${className} ${imgClassName}`}
-      {...props}
-    />
+    <span className={`block overflow-hidden ${className}`} aria-busy={status === 'loading'}>
+      <span className="relative block h-full w-full">
+        {status === 'loading' && <Skeleton className="absolute inset-0 h-full w-full rounded-none motion-reduce:animate-none" />}
+        <img
+          {...props}
+          ref={imageRef}
+          src={src}
+          alt={alt}
+          loading={props.loading ?? 'lazy'}
+          onLoad={(event) => {
+            setStatus('loaded')
+            onLoad?.(event)
+          }}
+          onError={(event) => {
+            setStatus('error')
+            onError?.(event)
+          }}
+          className={`h-full w-full object-cover ${imgClassName} ${status === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
+          style={{ ...props.style, transitionProperty: 'opacity, transform', transitionDuration: '400ms' }}
+        />
+      </span>
+    </span>
   )
 }

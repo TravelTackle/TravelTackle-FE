@@ -81,7 +81,7 @@ function PlanCard({ item }) {
         {photos.length ? (
           <div className="grid h-[150px] gap-0.5" style={{ gridTemplateColumns: `repeat(${photos.length}, minmax(0, 1fr))` }}>
             {photos.map((p, i) => (
-              <img key={i} src={p.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover bg-slate-100 transition-transform duration-500 ease-out group-hover:scale-105" />
+              <CardImage key={p.imageUrl + i} src={p.imageUrl} alt="" compact className="h-full w-full min-w-0 bg-slate-100" imgClassName="group-hover:scale-105" />
             ))}
           </div>
         ) : (
