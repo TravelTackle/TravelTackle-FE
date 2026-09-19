@@ -1,3 +1,4 @@
+import CardImage from './ui/CardImage'
 import { useEffect, useMemo, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { Link } from 'react-router-dom'
@@ -123,7 +124,7 @@ function RankRow({ card, rank, index, personal }) {
         {rank}
       </span>
       {card.imageUrl ? (
-        <img src={card.imageUrl} alt="" loading="lazy" className="h-14 w-14 shrink-0 rounded-xl bg-slate-100 object-cover" />
+        <CardImage src={card.imageUrl} alt="" compact className="h-14 w-14 shrink-0 rounded-xl bg-slate-100" />
       ) : (
         <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-300">
           <Icon icon={card.kind === 'plan' ? 'solar:map-linear' : 'solar:camera-linear'} width={20} />

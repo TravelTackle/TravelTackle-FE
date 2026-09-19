@@ -501,3 +501,57 @@ body {
   background-color: color-mix(in oklab, var(--color-rose-50) 70%, var(--color-surface));
 }
 
+/* 서비스 소개 카드: 스크린샷은 은은한 배경으로, 왼쪽 본문 대비는 유지한다. */
+.hero-main-card {
+  background: linear-gradient(115deg, #f2f5f9, #e8eef5);
+}
+.hero-preview-card {
+  background-color: #e8eef5;
+}
+.hero-preview-shade { background: linear-gradient(to top, #e8eef5 0%, rgba(232, 238, 245, 0.92) 24%, rgba(232, 238, 245, 0.08) 68%); }
+.hero-preview-label { color: #53657d; }
+.hero-preview-title { color: #20334f; }
+.dark .hero-preview-shade { background: linear-gradient(to top, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.1)); }
+.dark .hero-preview-label { color: rgba(255, 255, 255, 0.8); }
+.dark .hero-preview-title { color: #fff; }
+.dark .hero-main-card,
+.dark .hero-preview-card {
+  background: var(--color-slate-50);
+}
+.dark .hero-preview-card {
+  border: 1px solid var(--color-slate-200);
+}
+.hero-service-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.42;
+  mask-image: linear-gradient(to right, transparent 12%, rgba(0, 0, 0, 0.12) 42%, #000 82%);
+}
+.dark .hero-service-backdrop { opacity: 0.6; }
+.hero-preview-image {
+  opacity: 0.8;
+  filter: blur(1px);
+  transform: scale(1.015);
+}
+.dark .hero-preview-image { opacity: 0.8; }
+.hero-service-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: blur(1px);
+  opacity: 0;
+  transform: scale(1.045);
+  transition: opacity 700ms ease-out, transform 900ms ease-out;
+}
+.hero-service-image.is-loaded { opacity: 1; transform: scale(1.015); }
+@media (max-width: 639px) {
+  .hero-service-backdrop { opacity: 0.26; }
+  .dark .hero-service-backdrop { opacity: 0.38; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-service-image { transition: none; transform: none; }
+  .hero-service-image.is-loaded { transform: none; }
+  .hero-service-backdrop .skeleton { animation: none; }
+}
