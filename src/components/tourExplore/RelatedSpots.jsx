@@ -36,11 +36,10 @@ export default function RelatedSpots({ detail, onSelect }) {
 
     const load = async () => {
       if (!NO_RELATED_TYPES.includes(contentTypeId)) {
-        // 연관 관광지 API가 아직 없는 서버(404)나 일시적 오류여도 주변 관광지로는 채운다 — 섹션이 통째로 사라지지 않게
-        const related = await getRelatedTourContents(contentId, MAX_COUNT).catch(() => [])
+        const related = await getRelatedTourContents(contentId, MAX_COUNT)
         if (related.length > 0) return { items: related, kind: 'related' }
       }
-      return { items: await loadNearby().catch(() => []), kind: 'nearby' }
+      return { items: await loadNearby(), kind: 'nearby' }
     }
 
     load()
