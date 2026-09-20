@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
 import Card from '../ui/Card'
+import PhotoCarousel from './PhotoCarousel'
 import Skeleton from '../ui/Skeleton'
 import { FeedUserHeader, FeedActionBar } from './FeedCardChrome'
 import { PlanCardBody } from './PlanFeedCard'
@@ -99,15 +100,11 @@ export default function RecordFeedCard({ item, onOpen, findPlan, extra }) {
           </div>
 
           {/* 가로 사진은 4:3, 세로 사진은 계획 카드 썸네일과 같은 4:5로 맞춰 폭에 비례해 스케일 */}
-          <div
-            className={`relative mt-3 w-full overflow-hidden rounded-2xl bg-slate-200 ${
-              item.orientation === 'portrait' ? 'aspect-[4/5]' : 'aspect-[4/3]'
-            }`}
-          >
-            {item.imageUrl && (
-              <img src={item.imageUrl} alt={item.title} className="absolute inset-0 h-full w-full object-cover" />
-            )}
-          </div>
+          <PhotoCarousel
+            photos={item.photos ?? (item.imageUrl ? [item.imageUrl] : [])}
+            alt={item.title}
+            className={`mt-3 w-full rounded-2xl ${item.orientation === 'portrait' ? 'aspect-[4/5]' : 'aspect-[4/3]'}`}
+          />
 
           <div className="mt-3 text-[14px] font-bold text-slate-900">{item.title}</div>
           <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-slate-500">{item.comment}</p>

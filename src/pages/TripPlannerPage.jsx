@@ -312,7 +312,7 @@ export default function TripPlannerPage() {
     setActiveTrip((t) => togglePublished(t))
     setTripSummaries((prev) => prev.map((t) => (t.id === tripId ? { ...t, published: willPublish } : t)))
     // 코멘트는 게시 시점에 묻지 않는다 — 게시한 뒤 제목처럼 더블클릭해서 남기면 된다.
-    showToast(willPublish ? '게시했어요! 여행자 피드에서 확인할 수 있어요.' : '비공개로 전환했어요.')
+    showToast(willPublish ? '게시했어요! 여행자 피드에서 확인할 수 있어요.' : '비공개로 전환했어요. 이 여행의 기록도 함께 비공개돼요.')
     runSync(() => (willPublish ? publishTrip(tripId) : unpublishTrip(tripId)), {
       onError: () => {
         setActiveTrip(snapshot)
