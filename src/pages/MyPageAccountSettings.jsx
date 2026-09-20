@@ -11,7 +11,7 @@ import Skeleton from '../components/ui/Skeleton'
 import OptionCard from '../components/onboarding/OptionCard'
 import ProfilePhotoRow from '../components/mypage/ProfilePhotoRow'
 import { useAuth } from '../context/AuthContext'
-import { COUNTRIES } from '../data/countries'
+import { useLanguage, LANGUAGES } from '../i18n'
 import { getPreferences, createPreferences, updatePreferences } from '../api/preferences'
 import { updateProfile, changePassword, updateNotificationSettings, deleteAccount } from '../api/auth'
 import { getMyTrips } from '../api/trip'
@@ -104,11 +104,12 @@ function SettingRow({ label, icon, children }) {
 }
 
 // TravelerFeedPage 정렬 드롭다운과 동일한 텍스트형 트리거 — 기본 select 대신.
-// 선택하면 onChange(code)로 계정에 저장한다. 표시값은 계정의 국적(value)을 그대로 따른다.
-function NationalityDropdown({ value, onChange }) {
+// onPersist가 있으면 로컬(useLanguage, 챗봇 등에 즉시 반영)과 별개로 계정에도 저장한다.
+function LanguageDropdown({ onPersist }) {
+  const { language, setLanguage } = useLanguage()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
-  const current = COUNTRIES.find((c) => c.code === value)
+  const current = LANGUAGES.find((l) => l.code === language)
 
   useEffect(() => {
     function onClickOutside(e) {
@@ -123,30 +124,27 @@ function NationalityDropdown({ value, onChange }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-haspopup="listbox"
         className="flex items-center gap-1 text-[13px] font-semibold text-slate-700 hover:text-brand"
       >
-        {current?.label ?? value ?? '선택'}
+        {current?.label}
         <Icon icon="solar:alt-arrow-down-linear" width={11} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div role="listbox" aria-label="국적 선택" className="nav-pop absolute left-0 top-full z-30 mt-1.5 max-h-64 w-40 overflow-y-auto rounded-xl border border-slate-100 bg-surface py-1 shadow-popup">
-          {COUNTRIES.map((c) => (
+        <div className="nav-pop absolute left-0 top-full z-30 mt-1.5 max-h-64 w-36 overflow-y-auto rounded-xl border border-slate-100 bg-surface py-1 shadow-popup">
+          {LANGUAGES.map((l) => (
             <button
-              key={c.code}
+              key={l.code}
               type="button"
-              role="option"
-              aria-selected={value === c.code}
               onClick={() => {
+                setLanguage(l.code)
                 setOpen(false)
-                if (c.code !== value) onChange(c.code)
+                onPersist?.(l.code)
               }}
               className={`block w-full px-3 py-1.5 text-left text-[12.5px] transition-colors ${
-                value === c.code ? 'bg-brand-light font-bold text-brand' : 'text-slate-600 hover:bg-slate-50'
+                language === l.code ? 'bg-brand-light font-bold text-brand' : 'text-slate-600 hover:bg-slate-50'
               }`}
             >
-              {c.label}
+              {l.label}
             </button>
           ))}
         </div>
@@ -529,6 +527,7 @@ function notificationSettingsFromUser(user) {
 
 function ProfileTab({ user }) {
   const { setUser } = useAuth()
+  const { language, setLanguage } = useLanguage()
   const [nickname, setNickname] = useState(user?.name || '')
   const [editingNickname, setEditingNickname] = useState(false)
   const [nicknameError, setNicknameError] = useState('')
@@ -566,15 +565,22 @@ function ProfileTab({ user }) {
     }
   }
 
-  async function handleChangeNationality(code) {
+  async function handleChangeLanguage(code) {
     try {
-      const updated = await updateProfile({ nationality: code })
+      const updated = await updateProfile({ preferredLanguage: code })
       setUser(updated)
-      showToast('국적을 변경했어요')
     } catch (err) {
-      showToast(err.response?.data?.message || '국적 저장에 실패했어요')
+      showToast(err.response?.data?.message || '언어 저장에 실패했어요')
     }
   }
+
+  // 계정에 저장된 언어가 이 브라우저의 로컬 설정(localStorage)과 다르면 계정 쪽을 기준으로 맞춘다
+  useEffect(() => {
+    if (user?.preferredLanguage && user.preferredLanguage !== language) {
+      setLanguage(user.preferredLanguage)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.preferredLanguage])
 
   // GET /auth/me 및 PUT /auth/notifications의 응답을 화면 상태에 그대로 반영한다.
   useEffect(() => {
@@ -734,7 +740,7 @@ function ProfileTab({ user }) {
         </SettingRow>
 
         <SettingRow label="국적">
-          <NationalityDropdown value={user?.nationality} onChange={handleChangeNationality} />
+          <LanguageDropdown onPersist={handleChangeLanguage} />
         </SettingRow>
 
         <SettingRow label="알림 설정">

@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { useLanguage, LANGUAGES } from '../i18n'
+import { LANGUAGES } from '../i18n'
 import { useTheme, THEME_MODES } from '../theme'
 import logoHorizontal from '../assets/logo-horizontal.svg'
 import logoHorizontalDark from '../assets/logo-horizontal-dark.svg' // '트레블' 글자만 밝은 색 — 다크 모드에서 검정 글자가 묻히지 않게
@@ -237,7 +237,6 @@ export default function Navbar() {
   const [notiOpen, setNotiOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const { user, loading: authLoading, logout } = useAuth()
-  const { language } = useLanguage()
   const { mode: themeMode, resolved: theme, setMode: setThemeMode, toggle: toggleTheme } = useTheme()
   const profileRef = useRef(null)
   const location = useLocation()
@@ -247,7 +246,8 @@ export default function Navbar() {
   // 알림(참견·스크랩) — 배지 수와 목록은 NotificationContext가 관리한다. 목록은 종을 열 때 처음 받는다
   const { unreadCount, loaded: notiLoaded, load: loadNotifications } = useNotifications()
 
-  const currentLang = LANGUAGES.find((l) => l.code === language) ?? LANGUAGES[0]
+  // 상단바 언어 표기는 ko 고정 — 마이페이지 국적(언어 값)과 무관
+  const currentLang = LANGUAGES[0]
 
   // 스크롤이 시작되면 바가 살짝 떠오른다 (더 하얗게 + 그림자)
   useEffect(() => {
