@@ -16,13 +16,13 @@ export default function PetFriendlyBadge({ summary, size = 'sm', className = '' 
   const small = size === 'sm'
   return (
     <span
-      title={all ? '모든 장소가 반려동물 동반 가능해요' : `${total}곳 중 ${count}곳이 반려동물 동반 가능해요`}
+      title={all ? '모든 장소가 애견 동반 가능해요' : `${total}곳 중 ${count}곳이 애견 동반 가능해요`}
       className={`inline-flex shrink-0 items-center gap-1 rounded-full font-bold ${
         small ? 'px-2 py-0.5 text-[10.5px]' : 'px-2.5 py-1 text-[11.5px]'
       } ${all ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'} ${className}`}
     >
       <Icon icon={PET_ICON} width={small ? 11 : 12} />
-      {all ? '반려동물 동반' : `${count}/${total}곳 동반`}
+      {all ? '애견 동반' : `${count}/${total}곳 동반`}
     </span>
   )
 }
@@ -34,7 +34,7 @@ export function PetFriendlyMark({ value, className = '' }) {
     <Icon
       icon={PET_ICON}
       width={12}
-      aria-label="반려동물 동반 가능"
+      aria-label="애견 동반 가능"
       className={`shrink-0 text-emerald-500 ${className}`}
     />
   )

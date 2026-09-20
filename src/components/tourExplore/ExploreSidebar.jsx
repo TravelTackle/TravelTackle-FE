@@ -203,7 +203,7 @@ export default function ExploreSidebar({
             }`}
           >
             <Icon icon="mdi:paw" width={14} className={petOnly ? 'text-emerald-600' : 'text-slate-400'} />
-            반려동물 동반
+            애견 동반
             <span
               aria-hidden="true"
               className={`ml-auto flex h-4 w-7 items-center rounded-full p-0.5 transition-colors ${petOnly ? 'bg-emerald-500' : 'bg-slate-200'}`}

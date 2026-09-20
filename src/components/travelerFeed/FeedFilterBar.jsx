@@ -136,7 +136,7 @@ export default function FeedFilterBar({ filter, onFilterChange, petOnly, onPetOn
           style={{ animationDelay: '60ms' }}
         >
           <Icon icon="mdi:paw" width={14} className={petOnly ? 'text-emerald-600' : 'text-slate-400'} />
-          반려동물 동반
+          애견 동반
         </button>
       </div>
 

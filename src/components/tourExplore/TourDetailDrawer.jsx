@@ -28,7 +28,7 @@ function PetInfoBlock({ petInfo }) {
     <section className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3.5">
       <h3 className="flex items-center gap-1.5 text-[13px] font-extrabold text-emerald-700">
         <Icon icon="mdi:paw" width={15} />
-        반려동물 동반 안내
+        애견 동반 안내
       </h3>
       <dl className="mt-2.5 flex flex-col gap-2">
         {rows.map((r) => (

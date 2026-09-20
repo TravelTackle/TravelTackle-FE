@@ -184,7 +184,7 @@ function SpotCaption({ current, options, onSelectSection, user, region }) {
         }
       : { className: 'bg-slate-100 text-slate-600', body: <Icon icon="solar:map-point-bold" width={19} /> }
   const sub = pet
-    ? '반려동물과 함께 갈 수 있는 곳이에요'
+    ? '애견과 함께 갈 수 있는 곳이에요'
     : personal
     ? `${user?.name || '회원'}님 취향에 맞춰 골랐어요`
     : daily
@@ -235,7 +235,7 @@ function SpotCaption({ current, options, onSelectSection, user, region }) {
                 }`}
               >
                 <Icon icon={o.pet ? 'mdi:paw' : 'solar:magic-stick-3-bold'} width={12} />
-                {o.pet ? '반려동물' : '맞춤'}
+                {o.pet ? '애견' : '맞춤'}
               </button>
             )
           })}
