@@ -739,7 +739,7 @@ function ProfileTab({ user }) {
           })}
         </SettingRow>
 
-        <SettingRow label="국적">
+        <SettingRow label="언어">
           <LanguageDropdown onPersist={handleChangeLanguage} />
         </SettingRow>
 
