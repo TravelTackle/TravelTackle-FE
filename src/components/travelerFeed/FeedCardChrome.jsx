@@ -16,7 +16,7 @@ const TYPE_CHIP = {
 // TripHeader(나의 여행 - 나의 계획)에서 게시 전환 시 뜨는 토스트와 같은 문구·스타일
 const PUBLISH_TOAST = {
   on: '게시했어요! 여행자 피드에서 확인할 수 있어요.',
-  off: '비공개로 전환했어요.',
+  off: '비공개로 전환했어요. 이 여행의 기록도 함께 비공개돼요.',
 }
 
 // TripHeader(나의 여행 - 나의 계획)의 나만보기/전체공개 토글과 완전히 같은 디자인·동작 —
@@ -57,7 +57,7 @@ function PublishToggle({ item }) {
         type="button"
         onClick={handleToggle}
         disabled={saving}
-        title={published ? '눌러서 나만 보기로 전환' : '눌러서 전체공개로 전환'}
+        title={published ? '눌러서 나만 보기로 전환 (기록도 함께 비공개)' : '눌러서 전체공개로 전환'}
         style={{ display: 'grid' }}
         className={`shrink-0 overflow-hidden rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors duration-150 disabled:opacity-60 ${
           published ? 'bg-brand-light text-brand' : 'bg-rose-50 text-rose-600'
