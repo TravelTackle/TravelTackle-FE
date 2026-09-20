@@ -132,6 +132,7 @@ export function adaptSavedTrip(entry) {
         saveCount: entry.saveCount,
         createdAt: entry.savedAt,
         savedTripId: entry.savedTripId,
+        petFriendly: entry.petFriendly, // 원본 계획의 장소 기준 — 기록 카드도 같은 값을 받는다
       }),
       ...shared,
     }
@@ -147,7 +148,6 @@ export function adaptSavedTrip(entry) {
       startDate: entry.startDate,
       endDate: entry.endDate,
       days: entry.days,
-      // 보관함 응답(SavedTripResponse)에는 아직 요약이 없다 — 없으면 뱃지가 자동으로 숨겨진다
       petFriendly: entry.petFriendly,
       feedbackCount: entry.feedbackCount,
       saveCount: entry.saveCount,
