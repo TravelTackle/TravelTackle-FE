@@ -147,6 +147,7 @@ export function adaptSavedTrip(entry) {
       startDate: entry.startDate,
       endDate: entry.endDate,
       days: entry.days,
+      // 보관함 응답(SavedTripResponse)에는 아직 요약이 없다 — 없으면 뱃지가 자동으로 숨겨진다
       petFriendly: entry.petFriendly,
       feedbackCount: entry.feedbackCount,
       saveCount: entry.saveCount,
