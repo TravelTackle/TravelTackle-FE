@@ -7,6 +7,43 @@ import { getTourContentDetail } from '../../api/tour'
 
 const stripTags = (html) => (html ? html.replace(/<[^>]*>/g, '') : '')
 
+// 반려동물 동반 안내 — 백엔드 petInfo(한국관광공사 반려동물 동반여행 데이터)를 그대로 보여준다.
+// 등록되지 않은 장소는 petInfo 자체가 null이고, 값이 없는 항목도 null이라 있는 것만 줄지어 그린다.
+const PET_ROWS = [
+  { key: 'companionType', label: '동반 구역' },
+  { key: 'allowedAnimals', label: '동반 가능 동물' },
+  { key: 'requirements', label: '준비물·조건' },
+  { key: 'facilities', label: '시설' },
+  { key: 'providedItems', label: '제공 물품' },
+  { key: 'rentalItems', label: '대여 물품' },
+  { key: 'purchasableItems', label: '구매 가능' },
+  { key: 'safetyNotes', label: '안전 안내' },
+  { key: 'notes', label: '참고' },
+]
+
+function PetInfoBlock({ petInfo }) {
+  const rows = PET_ROWS.filter((r) => petInfo?.[r.key]?.trim())
+  if (rows.length === 0) return null
+  return (
+    <section className="mt-5 rounded-2xl border border-slate-200 bg-surface p-3.5 shadow-card">
+      <h3 className="flex items-center gap-1.5 text-[13px] font-extrabold text-slate-700">
+        <Icon icon="mdi:paw" width={15} />
+        애견 동반 안내
+      </h3>
+      <dl className="mt-2.5 flex flex-col gap-2">
+        {rows.map((r) => (
+          <div key={r.key} className="flex gap-2.5">
+            <dt className="w-[72px] shrink-0 text-[11.5px] font-bold text-slate-400">{r.label}</dt>
+            {/* 줄바꿈이 들어오는 항목(notes)이 있어 whitespace-pre-line으로 그대로 살린다 */}
+            <dd className="min-w-0 flex-1 whitespace-pre-line text-[12.5px] leading-relaxed text-slate-600">{petInfo[r.key].trim()}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-2.5 text-[10.5px] text-slate-400">한국관광공사 반려동물 동반여행 정보 · 방문 전 현장 확인을 권해요</p>
+    </section>
+  )
+}
+
 export default function TourDetailDrawer({ contentId, onClose, onToggleCart, carted, onSelectContent, onBack }) {
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -86,6 +123,8 @@ export default function TourDetailDrawer({ contentId, onClose, onToggleCart, car
                     <p className="mt-4 text-[13px] leading-relaxed text-slate-600">{stripTags(detail.overview)}</p>
                   )}
                   {detail.telephone && <p className="mt-3 text-[12px] text-slate-500">전화 {detail.telephone}</p>}
+
+                  <PetInfoBlock petInfo={detail.petInfo} />
 
                   {detail.images?.length > 0 && (
                     <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
