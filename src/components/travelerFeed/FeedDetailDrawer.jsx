@@ -9,6 +9,8 @@ import { getFeedDetail } from '../../api/feed'
 import { deleteTrip } from '../../api/trip'
 import { deleteTripRecord } from '../../api/record'
 import { targetTripId, useFeedActions } from './FeedActionsContext'
+import TourDetailDrawer from '../tourExplore/TourDetailDrawer'
+import { CART_CHANGED_EVENT, addCartItem, getCartItems, removeCartItem } from '../../api/cart'
 
 // 나의 여행 계획을 이어서 편집할 때 쓰는 값 — TripPlannerPage(LAST_TRIP_ID_KEY)와 같은 키를 써야
 // "지난번 보던 계획"으로 그 계획이 바로 뜬다.
@@ -97,13 +99,70 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan, fro
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  // 일정 카드를 눌러 연 관광지 상세 — 계획 상세 위에 겹쳐 뜨는 두 번째 패널
+  const [tourContentId, setTourContentId] = useState(null)
+  const [cartMap, setCartMap] = useState(() => new Map())
+  const [toast, setToast] = useState('')
   const open = !!item
   const navigate = useNavigate()
   const { savedIds, pendingIds, user } = useFeedActions()
 
   useEffect(() => {
     if (item) setStack([item])
+    setTourContentId(null)
   }, [item])
+
+  // 카트에 담긴 상태 동기화 — 관광지 상세를 열었을 때만 받아온다
+  useEffect(() => {
+    if (!tourContentId || !user) return
+    let ignore = false
+    function sync() {
+      getCartItems()
+        .then((items) => { if (!ignore) setCartMap(new Map(items.map((i) => [i.contentId, i.id]))) })
+        .catch(() => {})
+    }
+    sync()
+    window.addEventListener(CART_CHANGED_EVENT, sync)
+    return () => {
+      ignore = true
+      window.removeEventListener(CART_CHANGED_EVENT, sync)
+    }
+  }, [tourContentId, user])
+
+  function showToast(message) {
+    setToast(message)
+    setTimeout(() => setToast(''), 1600)
+  }
+
+  // 이미 담긴 관광지를 다시 누르면 담기 대신 빼기 — 관광지 탐색 화면과 같은 동작
+  async function handleToggleCart(contentId) {
+    if (!user) {
+      showToast('로그인이 필요해요')
+      return false
+    }
+    const cartItemId = cartMap.get(contentId)
+    try {
+      if (cartItemId) {
+        await removeCartItem(cartItemId)
+        setCartMap((m) => { const next = new Map(m); next.delete(contentId); return next })
+        showToast('장바구니에서 뺐어요')
+      } else {
+        const created = await addCartItem(contentId)
+        setCartMap((m) => new Map(m).set(contentId, created.id))
+        showToast('여행 장바구니에 담았어요')
+      }
+      return true
+    } catch (err) {
+      if (err.response?.status === 409) {
+        const items = await getCartItems().catch(() => [])
+        setCartMap(new Map(items.map((i) => [i.contentId, i.id])))
+        showToast('이미 장바구니에 있어요')
+        return true
+      }
+      showToast('장바구니 변경에 실패했어요')
+      return false
+    }
+  }
 
   const current = stack[stack.length - 1]
   // 내 글 편집·삭제 메뉴 노출용. 작성자 id가 내려오면 id로, 아직 없으면 이름으로 가려낸다(서버가 최종 검증하므로 오인해도 403).
@@ -149,7 +208,8 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan, fro
   }
 
   function handleBack() {
-    if (stack.length > 1) setStack((s) => s.slice(0, -1))
+    if (tourContentId) setTourContentId(null)
+    else if (stack.length > 1) setStack((s) => s.slice(0, -1))
     else onClose()
   }
 
@@ -162,7 +222,7 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan, fro
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, stack])
+  }, [open, stack, tourContentId])
 
   async function handleViewPlan() {
     const loaded = (items || []).find((i) => i.id === current.planId)
@@ -247,11 +307,24 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan, fro
             </div>
 
             <div className="pl-[22px] pr-4 pb-6">
-              {current.type === 'record' ? <RecordDetail item={current} /> : <PlanDetail item={current} />}
+              {current.type === 'record' ? <RecordDetail item={current} /> : <PlanDetail item={current} onSelectStop={setTourContentId} />}
             </div>
           </>
         )}
       </div>
+
+      <TourDetailDrawer
+        contentId={tourContentId}
+        onClose={() => setTourContentId(null)}
+        onSelectContent={setTourContentId}
+        onToggleCart={handleToggleCart}
+        carted={tourContentId ? cartMap.has(tourContentId) : false}
+      />
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 z-[70] -translate-x-1/2 rounded-full bg-black/80 px-4 py-2 text-[12px] font-semibold text-white">
+          {toast}
+        </div>
+      )}
 
       {deleteTarget && (
         <DeleteConfirmDialog
@@ -292,7 +365,7 @@ function RecordDetail({ item }) {
   )
 }
 
-function PlanDetail({ item }) {
+function PlanDetail({ item, onSelectStop }) {
   return (
     <>
       <FeedUserHeader item={item} showChip={false} />
@@ -308,8 +381,16 @@ function PlanDetail({ item }) {
             <div className="flex flex-col">
               {day.stops.map((stop, i) => {
                 const isLast = i === day.stops.length - 1
+                const clickable = !!stop.contentId
                 return (
-                  <div key={i} className="flex gap-3">
+                  <div
+                    key={i}
+                    role={clickable ? 'button' : undefined}
+                    tabIndex={clickable ? 0 : undefined}
+                    onClick={clickable ? () => onSelectStop(stop.contentId) : undefined}
+                    onKeyDown={clickable ? (e) => { if (e.key === 'Enter') onSelectStop(stop.contentId) } : undefined}
+                    className={`flex gap-3 ${clickable ? 'cursor-pointer' : ''}`}
+                  >
                     <div className="relative mb-4 h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-slate-200">
                       {stop.imageUrl && (
                         <img src={stop.imageUrl} alt={stop.title} className="absolute inset-0 h-full w-full object-cover" />

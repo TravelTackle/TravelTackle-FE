@@ -9,6 +9,7 @@ import { useTheme } from '../theme'
 
 const SUPPORT_EMAIL = 'traveltackleteam@gmail.com'
 const GITHUB_URL = 'https://github.com/TravelTackle'
+const INSTAGRAM_URL = 'https://instagram.com/traveltackle'
 
 // 서비스 그룹만 2열 그리드 — Navbar 메뉴(여행지 탐색/여행자 피드/나의 계획·보관함)와 마이페이지를 그대로 대응
 const SERVICE_LINKS = [
@@ -167,6 +168,16 @@ export default function Footer() {
                     className="text-[10.5px] text-slate-400 transition-colors hover:text-slate-700"
                   >
                     GitHub
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={INSTAGRAM_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10.5px] text-slate-400 transition-colors hover:text-slate-700"
+                  >
+                    Instagram
                   </a>
                 </li>
               </ul>

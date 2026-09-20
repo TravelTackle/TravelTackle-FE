@@ -16,6 +16,7 @@ function adaptDays(days) {
     day: day.dayNumber,
     date: day.date,
     stops: day.items.map((item) => ({
+      contentId: item.tourApiContentId ?? null,
       time: formatTime(item.startTime),
       title: item.cachedTitle,
       address: item.address,
