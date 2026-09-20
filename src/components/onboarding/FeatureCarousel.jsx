@@ -4,7 +4,7 @@ import { useTheme } from '../../theme'
 
 const SLIDES = [
   {
-    eyebrow: '01 · 트레블 참견',
+    eyebrow: '01 · 트래블 참견',
     title: '혼자 짠 계획에\n여행자의 경험을 더해요',
     description: '일정을 만들고 현지인의 생생한 조언을 받아 나만의 여행을 완성해보세요.',
     icon: 'solar:stars-bold',
@@ -37,7 +37,7 @@ const SLIDES = [
     background: 'linear-gradient(145deg,#EEF2FF,#E0E7FF)',
     backgroundDark: 'linear-gradient(145deg,#161a3a,#1f2457)',
     items: ['오후에는 해안도로가 더 예뻐요', '이 카페는 예약을 추천해요', '동선을 이렇게 바꿔보세요'],
-    labels: ['현지인', '여행자', '트레블봇'],
+    labels: ['현지인', '여행자', '트래블봇'],
   },
   {
     eyebrow: '04 · 맞춤 추천',
@@ -69,7 +69,7 @@ export default function FeatureCarousel() {
   return (
     <section
       className="relative h-full overflow-hidden"
-      aria-label="트레블 참견 기능 소개"
+      aria-label="트래블 참견 기능 소개"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
