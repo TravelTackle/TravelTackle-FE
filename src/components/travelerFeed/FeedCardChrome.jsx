@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom'
 import { Icon } from '@iconify/react'
 import Avatar from '../ui/Avatar'
 import Chip from '../ui/Chip'
-import PetFriendlyBadge from '../ui/PetFriendly'
 import { publishTrip, unpublishTrip } from '../../api/trip'
 import { targetTripId, useFeedActions } from './FeedActionsContext'
 import { formatFeedDate } from '../../lib/homeFormat'
@@ -126,8 +125,6 @@ export function FeedUserHeader({ item, showChip = true }) {
       {showChip && (
         <div className="flex shrink-0 items-center gap-1.5">
           {showPublishToggle && <PublishToggle item={item} />}
-          {/* 모든 장소가 반려동물 동반 가능하면 초록 뱃지, 일부면 "2/8곳 동반" — 값이 없으면 아무것도 안 뜬다 */}
-          <PetFriendlyBadge summary={item.petFriendly} />
           <Chip className={`px-2.5 py-1 text-[11px] font-bold ${chip.className}`}>{chip.label}</Chip>
         </div>
       )}
