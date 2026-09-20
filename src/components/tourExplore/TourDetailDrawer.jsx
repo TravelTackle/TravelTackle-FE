@@ -25,21 +25,21 @@ function PetInfoBlock({ petInfo }) {
   const rows = PET_ROWS.filter((r) => petInfo?.[r.key]?.trim())
   if (rows.length === 0) return null
   return (
-    <section className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3.5">
-      <h3 className="flex items-center gap-1.5 text-[13px] font-extrabold text-emerald-700">
+    <section className="mt-5 rounded-2xl border border-slate-200 bg-surface p-3.5 shadow-card">
+      <h3 className="flex items-center gap-1.5 text-[13px] font-extrabold text-slate-700">
         <Icon icon="mdi:paw" width={15} />
         애견 동반 안내
       </h3>
       <dl className="mt-2.5 flex flex-col gap-2">
         {rows.map((r) => (
           <div key={r.key} className="flex gap-2.5">
-            <dt className="w-[72px] shrink-0 text-[11.5px] font-bold text-emerald-700/80">{r.label}</dt>
+            <dt className="w-[72px] shrink-0 text-[11.5px] font-bold text-slate-400">{r.label}</dt>
             {/* 줄바꿈이 들어오는 항목(notes)이 있어 whitespace-pre-line으로 그대로 살린다 */}
             <dd className="min-w-0 flex-1 whitespace-pre-line text-[12.5px] leading-relaxed text-slate-600">{petInfo[r.key].trim()}</dd>
           </div>
         ))}
       </dl>
-      <p className="mt-2.5 text-[10.5px] text-emerald-700/60">한국관광공사 반려동물 동반여행 정보 · 방문 전 현장 확인을 권해요</p>
+      <p className="mt-2.5 text-[10.5px] text-slate-400">한국관광공사 반려동물 동반여행 정보 · 방문 전 현장 확인을 권해요</p>
     </section>
   )
 }
