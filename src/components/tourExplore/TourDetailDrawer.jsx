@@ -1,22 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
 import Button from '../ui/Button'
 import CardImage from '../ui/CardImage'
+import RelatedSpots from './RelatedSpots'
 import { getTourContentDetail } from '../../api/tour'
 
 const stripTags = (html) => (html ? html.replace(/<[^>]*>/g, '') : '')
 
-export default function TourDetailDrawer({ contentId, onClose, onToggleCart, carted }) {
+export default function TourDetailDrawer({ contentId, onClose, onToggleCart, carted, onSelectContent, onBack }) {
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(false)
   const [cartLoading, setCartLoading] = useState(false)
   const open = !!contentId
+  const panelRef = useRef(null)
 
   useEffect(() => {
     if (!contentId) return
     let ignore = false
     setDetail(null)
     setLoading(true)
+    panelRef.current?.scrollTo({ top: 0 }) // 연관 관광지로 넘어가면 맨 위부터 보여준다
     getTourContentDetail(contentId)
       .then((data) => { if (!ignore) setDetail(data) })
       .catch(() => {})
@@ -38,6 +41,7 @@ export default function TourDetailDrawer({ contentId, onClose, onToggleCart, car
       {open && <button aria-label="상세 패널 닫기" onClick={onClose} className="fixed inset-0 z-[55] cursor-default" />}
 
       <div
+        ref={panelRef}
         className={`fixed top-16 bottom-0 right-0 z-[56] w-full max-w-[420px] overflow-y-auto bg-surface shadow-popup transition-transform duration-300 ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
@@ -46,7 +50,7 @@ export default function TourDetailDrawer({ contentId, onClose, onToggleCart, car
           <>
             <div className="flex items-center justify-between p-4">
               <button
-                onClick={onClose}
+                onClick={onBack ?? onClose}
                 aria-label="뒤로가기"
                 className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-50 transition-colors"
               >
@@ -97,6 +101,8 @@ export default function TourDetailDrawer({ contentId, onClose, onToggleCart, car
                     </div>
                   )}
                 </div>
+
+                {onSelectContent && <RelatedSpots detail={detail} onSelect={onSelectContent} />}
               </>
             )}
           </>

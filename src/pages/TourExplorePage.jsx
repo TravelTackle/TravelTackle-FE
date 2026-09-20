@@ -36,6 +36,22 @@ export default function TourExplorePage() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [selectedContentId, setSelectedContentId] = useState(null)
+  // 드로어 안에서 연관 관광지로 넘어간 경로 — 뒤로가기는 이전 관광지로, 스택이 비면 닫는다
+  const [contentStack, setContentStack] = useState([])
+
+  const openContent = (contentId) => {
+    setContentStack([])
+    setSelectedContentId(contentId)
+  }
+  const openRelatedContent = (contentId) => {
+    setContentStack((stack) => (selectedContentId ? [...stack, selectedContentId] : stack))
+    setSelectedContentId(contentId)
+  }
+  const goBackContent = () => {
+    if (contentStack.length === 0) return setSelectedContentId(null)
+    setSelectedContentId(contentStack[contentStack.length - 1])
+    setContentStack(contentStack.slice(0, -1))
+  }
   // 홈 등에서 ?open=<contentId>로 들어온 여행지 — 그리드 맨 위에 고정해서 보여준다
   const [pinnedSpot, setPinnedSpot] = useState(null)
   const [toast, setToast] = useState('')
@@ -105,7 +121,7 @@ export default function TourExplorePage() {
   // 있으니(다른 지역/테마 결과라) 그 여행지 정보를 따로 받아 그리드 맨 위에도 꽂아 보여준다.
   useEffect(() => {
     if (!openContentId) return
-    setSelectedContentId(openContentId)
+    openContent(openContentId)
     let ignore = false
     getTourContentDetail(openContentId)
       .then((data) => {
@@ -245,7 +261,7 @@ export default function TourExplorePage() {
             loadingMore={loadingMore}
             hasMore={hasMore}
             onLoadMore={handleLoadMore}
-            onOpen={(spot) => setSelectedContentId(spot.contentId)}
+            onOpen={(spot) => openContent(spot.contentId)}
             onToggleCart={handleToggleCart}
             cartMap={cartMap}
             variant={isFestival ? 'festival' : 'spot'}
@@ -271,7 +287,9 @@ export default function TourExplorePage() {
 
       <TourDetailDrawer
         contentId={selectedContentId}
-        onClose={() => setSelectedContentId(null)}
+        onClose={() => openContent(null)}
+        onBack={goBackContent}
+        onSelectContent={openRelatedContent}
         onToggleCart={handleToggleCart}
         carted={selectedContentId ? cartMap.has(selectedContentId) : false}
       />
