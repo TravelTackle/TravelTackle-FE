@@ -26,8 +26,8 @@ export function getMe() {
 
 // 닉네임/언어 통합 수정 — 둘 중 바꾸지 않는 값은 null/undefined로 보내면 그대로 유지된다.
 // 응답은 CurrentUserResponse 전체(authProviders 포함)라 그대로 setUser에 넣으면 된다.
-export function updateProfile({ name, preferredLanguage } = {}) {
-  return client.patch('/auth/me', { name, preferredLanguage }).then((res) => res.data)
+export function updateProfile({ name, preferredLanguage, nationality } = {}) {
+  return client.patch('/auth/me', { name, preferredLanguage, nationality }).then((res) => res.data)
 }
 
 // 프로필 사진 교체 — multipart 필드 'image' (jpeg/png/webp, 10MB 이하). 응답은 CurrentUserResponse 전체(profileImageUrl 포함)

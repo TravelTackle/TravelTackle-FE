@@ -8,7 +8,6 @@ import logoHorizontal from '../assets/logo-horizontal.svg'
 import logoHorizontalDark from '../assets/logo-horizontal-dark.svg' // '트레블' 글자만 밝은 색 — 다크 모드에서 검정 글자가 묻히지 않게
 import { useNotifications } from '../notifications/NotificationContext'
 import NotificationPanel from './NotificationPanel'
-import { updateProfile } from '../api/auth'
 import Skeleton from './ui/Skeleton'
 import Avatar from './ui/Avatar'
 
@@ -231,19 +230,18 @@ function DesktopNav({ pathname }) {
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [sheetLangOpen, setSheetLangOpen] = useState(false) // 모바일 시트 안 "언어" 줄을 눌러 펼친 상태
   const [sheetThemeOpen, setSheetThemeOpen] = useState(false) // 모바일 시트 안 "화면 모드" 줄을 눌러 펼친 상태
   const [profileOpen, setProfileOpen] = useState(false)
-  const [langOpen, setLangOpen] = useState(false)
+  const [toast, setToast] = useState('')
+  const toastTimer = useRef(null)
   const [notiOpen, setNotiOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const { user, loading: authLoading, logout, setUser } = useAuth()
-  const { language, setLanguage } = useLanguage()
+  const { user, loading: authLoading, logout } = useAuth()
+  const { language } = useLanguage()
   const { mode: themeMode, resolved: theme, setMode: setThemeMode, toggle: toggleTheme } = useTheme()
   const profileRef = useRef(null)
   const location = useLocation()
   const navigate = useNavigate()
-  const langRef = useRef(null)
   const notiRef = useRef(null)
 
   // 알림(참견·스크랩) — 배지 수와 목록은 NotificationContext가 관리한다. 목록은 종을 열 때 처음 받는다
@@ -262,13 +260,11 @@ export default function Navbar() {
   useEffect(() => {
     function onClickOutside(e) {
       if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false)
-      if (langRef.current && !langRef.current.contains(e.target)) setLangOpen(false)
       if (notiRef.current && !notiRef.current.contains(e.target)) setNotiOpen(false)
     }
     function onEscape(e) {
       if (e.key === 'Escape') {
         setProfileOpen(false)
-        setLangOpen(false)
         setNotiOpen(false)
         setMenuOpen(false)
       }
@@ -286,11 +282,10 @@ export default function Navbar() {
     setMenuOpen(false)
   }, [location.pathname])
 
-  // 메뉴를 닫으면 안에서 펼쳐뒀던 화면 모드·언어 줄도 접어 둔다 — 다음에 열었을 때 항상 접힌 채로 시작
+  // 메뉴를 닫으면 안에서 펼쳐뒀던 화면 모드 줄도 접어 둔다 — 다음에 열었을 때 항상 접힌 채로 시작
   useEffect(() => {
     if (!menuOpen) {
       setSheetThemeOpen(false)
-      setSheetLangOpen(false)
     }
   }, [menuOpen])
 
@@ -304,15 +299,11 @@ export default function Navbar() {
     navigate('/')
   }
 
-  // 로컬(챗봇 등에 즉시 반영)은 그대로 두고, 로그인 상태면 계정에도 저장 — 마이페이지 언어 변경과 동일한 API
-  function handleLanguageSelect(code) {
-    setLanguage(code)
-    if (!user) return
-    updateProfile({ preferredLanguage: code })
-      .then(setUser)
-      .catch(() => {
-        /* 조용히 실패 — 로컬 언어는 이미 바뀐 상태라 마이페이지에서 다시 저장할 수 있다 */
-      })
+  // 언어 변경은 추후 지원 예정 — 드롭다운 없이 안내 토스트만 띄운다(UI 언어는 ko 고정)
+  function showLanguageNotice() {
+    setToast('언어 변경은 추후 지원 예정이에요')
+    clearTimeout(toastTimer.current)
+    toastTimer.current = setTimeout(() => setToast(''), 1800)
   }
 
   const iconButton =
@@ -321,6 +312,7 @@ export default function Navbar() {
     'flex h-9 items-center gap-1.5 rounded-full border border-slate-200 bg-surface px-3 text-[12.5px] font-bold text-slate-700 transition-all hover:border-slate-300 hover:shadow-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand'
 
   return (
+    <>
     <nav
       className={`sticky top-0 border-b backdrop-blur-md transition-[background-color,box-shadow,border-color] duration-300 ${
         menuOpen ? 'z-[60]' : 'z-40'
@@ -361,7 +353,6 @@ export default function Navbar() {
                     type="button"
                     onClick={() => {
                       setProfileOpen(false)
-                      setLangOpen(false)
                       setNotiOpen((v) => {
                         if (!v && !notiLoaded) loadNotifications()
                         return !v
@@ -413,53 +404,20 @@ export default function Navbar() {
               {/* 언어 선택 — sm 미만(모바일)에서는 상단바에서 빼고 아래 모바일 시트 안에 축약형으로
                   넣는다. 아이콘만 있는 버튼으로 상단바에 올려봤는데, 다크모드와 달리 언어는 매번
                   누를 일이 적어 시트 안에 있는 게 더 자연스럽다는 피드백으로 되돌렸다 */}
-              <div className="relative hidden sm:block" ref={langRef}>
+              <div className="hidden sm:block">
                 <button
                   type="button"
                   onClick={() => {
                     setProfileOpen(false)
                     setNotiOpen(false)
-                    setLangOpen((v) => !v)
+                    showLanguageNotice()
                   }}
-                  className={`${pillButton} ${langOpen ? 'border-slate-300 shadow-card' : ''}`}
-                  aria-label="언어 선택"
-                  aria-expanded={langOpen}
-                  aria-haspopup="listbox"
+                  className={pillButton}
+                  aria-label="언어 (추후 지원 예정)"
                 >
                   <Icon icon="solar:global-linear" width={15} className="text-slate-500" />
                   <span>{currentLang.short}</span>
-                  <Icon
-                    icon="solar:alt-arrow-down-linear"
-                    width={11}
-                    className={`text-slate-400 transition-transform duration-300 ${langOpen ? 'rotate-180' : ''}`}
-                  />
                 </button>
-
-                {langOpen && (
-                  <ul role="listbox" aria-label="언어 선택" className={`${POPOVER} max-h-[320px] w-44 overflow-y-auto py-1.5`}>
-                    {LANGUAGES.map((lang) => {
-                      const active = lang.code === language
-                      return (
-                        <li key={lang.code}>
-                          <button
-                            role="option"
-                            aria-selected={active}
-                            onClick={() => {
-                              handleLanguageSelect(lang.code)
-                              setLangOpen(false)
-                            }}
-                            className={`flex w-full items-center justify-between gap-2 px-3.5 py-2 text-[13px] transition-colors ${
-                              active ? 'bg-brand-light/60 font-bold text-brand' : 'text-slate-600 hover:bg-slate-50'
-                            }`}
-                          >
-                            <span>{lang.label}</span>
-                            {active && <Icon icon="solar:check-bold" width={14} />}
-                          </button>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
               </div>
 
               {user ? (
@@ -467,7 +425,6 @@ export default function Navbar() {
                   <button
                     type="button"
                     onClick={() => {
-                      setLangOpen(false)
                       setNotiOpen(false)
                       setProfileOpen((v) => !v)
                     }}
@@ -631,57 +588,32 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* 언어 선택 — 현재 언어만 한 줄로 보여주고, 누르면 그 아래에 목록이 펼쳐진다.
-              전체 언어를 칩으로 펼쳐서 항상 보여줬더니 목록이 길어져 화면을 다 가렸던 문제가
-              있어 접어 뒀다. 로그인한 회원 정보·로그아웃, 로그인 버튼은 탑바에 그대로 있어
-              (아바타 드롭다운 / 로그인 버튼) 여기서는 뺐다. */}
+          {/* 언어 — 추후 지원 예정이라 목록 없이 누르면 안내 토스트만 띄운다 */}
           <div className="mt-3 border-t border-slate-100 pt-3">
             <button
               type="button"
-              onClick={() => setSheetLangOpen((v) => !v)}
-              aria-expanded={sheetLangOpen}
+              onClick={showLanguageNotice}
               className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-[13px] font-semibold text-slate-700 transition-colors hover:bg-slate-50"
             >
               <span className="flex items-center gap-2">
                 <Icon icon="solar:global-linear" width={16} className="text-slate-400" />
                 언어
               </span>
-              <span className="flex items-center gap-1 text-slate-400">
-                {currentLang.label}
-                <Icon
-                  icon="solar:alt-arrow-down-linear"
-                  width={12}
-                  className={`transition-transform duration-300 ${sheetLangOpen ? 'rotate-180' : ''}`}
-                />
-              </span>
+              <span className="text-slate-400">{currentLang.label}</span>
             </button>
-            {sheetLangOpen && (
-              <div className="mt-2 flex flex-wrap gap-1.5 px-3" role="listbox" aria-label="언어 선택">
-                {LANGUAGES.map((lang) => {
-                  const active = lang.code === language
-                  return (
-                    <button
-                      key={lang.code}
-                      role="option"
-                      aria-selected={active}
-                      onClick={() => {
-                        handleLanguageSelect(lang.code)
-                        setSheetLangOpen(false)
-                      }}
-                      className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-                        active ? 'border-brand bg-brand-light font-bold text-brand' : 'border-slate-200 bg-surface text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      {lang.label}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
           </div>
 
         </div>
       )}
     </nav>
+    <div
+      role="status"
+      className={`fixed bottom-24 left-1/2 z-[80] -translate-x-1/2 rounded-full bg-black/90 px-4 py-2 text-[12.5px] font-semibold text-white shadow-popup transition-all duration-300 ${
+        toast ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
+      }`}
+    >
+      {toast}
+    </div>
+    </>
   )
 }

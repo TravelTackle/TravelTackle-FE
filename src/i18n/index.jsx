@@ -16,17 +16,13 @@ export const LANGUAGES = [
   { code: 'ru', label: 'Русский', short: 'RU' },
 ]
 
-const STORAGE_KEY = 'tt-language'
 const LanguageContext = createContext(null)
 
 export function LanguageProvider({ children }) {
-  const [language, setLanguage] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    return LANGUAGES.some((l) => l.code === saved) ? saved : 'ko'
-  })
+  // UI 언어는 ko 고정 — 국적 설정과 무관하고 언어 변경은 추후 지원 예정
+  const [language, setLanguage] = useState('ko')
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, language)
     document.documentElement.lang = language
   }, [language])
 
