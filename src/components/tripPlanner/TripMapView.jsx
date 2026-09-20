@@ -166,7 +166,8 @@ export default function TripMapView({
     <>
       {/* react-kakao-maps-sdk는 Map의 children(오버레이 제외한 일반 DOM)을 지도 div의 형제로 렌더링한다 —
           버튼이 지도 위에 정확히 겹쳐 보이려면 이 wrapper가 relative여야 한다. */}
-      <div className="relative min-h-[480px] min-w-0 flex-1 overflow-hidden rounded-2xl">
+      {/* 모바일(flex-col)에선 min-h만으로는 height:100%가 0으로 계산돼 지도가 안 보이므로, 명시적 height를 준다. */}
+      <div className="relative h-[480px] min-w-0 flex-none overflow-hidden rounded-2xl sm:h-auto sm:min-h-[480px] sm:flex-1">
         <Map center={routeCoords[0] ?? DEFAULT_CENTER} style={{ width: '100%', height: '100%' }}>
           <FitBoundsControl coords={routeCoords} />
           {routeCoords.length > 1 && (
