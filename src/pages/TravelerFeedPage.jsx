@@ -44,14 +44,12 @@ export default function TravelerFeedPage() {
   const initialFilter = ['plan', 'record'].includes(searchParams.get('filter')) ? searchParams.get('filter') : 'all'
   const [filter, setFilter] = useState(initialFilter)
   const [region, setRegion] = useState(null)
-  const [petOnly, setPetOnly] = useState(false) // 모든 장소가 반려동물 동반 가능한 계획만 보기
   const feedFilterParams = useMemo(
     () => ({
       type: filter === 'all' ? undefined : filter.toUpperCase(),
       region: region || undefined,
-      petFriendly: petOnly || undefined,
     }),
-    [filter, region, petOnly],
+    [filter, region],
   )
   // 지역 칩을 누르면 이전 스크롤 위치가 남지 않도록 맨 위로 올린다.
   const selectRegion = useCallback((next) => {
@@ -106,7 +104,7 @@ export default function TravelerFeedPage() {
       .finally(() => { if (!ignore) setFeedLoading(false) })
     return () => { ignore = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchKeyword, sortOption, reloadKey, filter, region, petOnly])
+  }, [searchKeyword, sortOption, reloadKey, filter, region])
 
   useEffect(() => () => clearTimeout(endCheckTimer.current), [])
 
@@ -124,7 +122,7 @@ export default function TravelerFeedPage() {
       .catch(() => setHasMore(false))
       .finally(() => setLoadingMore(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [feedLoading, loadingMore, hasMore, page, searchKeyword, sortOption, filter, region, petOnly])
+  }, [feedLoading, loadingMore, hasMore, page, searchKeyword, sortOption, filter, region])
 
   const sentinelRef = useRef(null)
   useEffect(() => {
@@ -401,8 +399,6 @@ export default function TravelerFeedPage() {
           <FeedFilterBar
             filter={filter}
             onFilterChange={setFilter}
-            petOnly={petOnly}
-            onPetOnlyChange={setPetOnly}
             view={view}
             onViewChange={setView}
             onUploadClick={() => setUploadOpen(true)}
