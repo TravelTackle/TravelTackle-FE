@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { LANGUAGES } from '../i18n'
 import { useTheme, THEME_MODES } from '../theme'
 import logoHorizontal from '../assets/logo-horizontal.svg'
-import logoHorizontalDark from '../assets/logo-horizontal-dark.svg' // '트레블' 글자만 밝은 색 — 다크 모드에서 검정 글자가 묻히지 않게
+import logoHorizontalDark from '../assets/logo-horizontal-dark.svg' // '트래블' 글자만 밝은 색 — 다크 모드에서 검정 글자가 묻히지 않게
 import { useNotifications } from '../notifications/NotificationContext'
 import NotificationPanel from './NotificationPanel'
 import Skeleton from './ui/Skeleton'
@@ -330,8 +330,8 @@ export default function Navbar() {
       )}
 
       <div className="relative mx-auto flex h-16 max-w-[1200px] items-center gap-5 px-4 sm:px-6">
-        <Link to="/" className="flex shrink-0 items-center transition-transform hover:scale-[1.02]" aria-label="트레블 참견 홈">
-          <img src={theme === 'dark' ? logoHorizontalDark : logoHorizontal} alt="트레블 참견" className="h-8 w-auto sm:h-9" />
+        <Link to="/" className="flex shrink-0 items-center transition-transform hover:scale-[1.02]" aria-label="트래블 참견 홈">
+          <img src={theme === 'dark' ? logoHorizontalDark : logoHorizontal} alt="트래블 참견" className="h-8 w-auto sm:h-9" />
         </Link>
 
         <DesktopNav pathname={location.pathname} />

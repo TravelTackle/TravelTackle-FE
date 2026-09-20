@@ -288,7 +288,7 @@ export default function HeroSlider() {
           <div
             className="relative w-full max-w-[760px] h-[320px] sm:h-[340px] rounded-[22px] border border-slate-100 shadow-card overflow-hidden"
             aria-roledescription="carousel"
-            aria-label="트레블 참견 이용 단계"
+            aria-label="트래블 참견 이용 단계"
           >
             {/* 슬라이드 세 장을 한 줄로 두고 트랙을 옆으로 밀어서 넘긴다 */}
             <div
