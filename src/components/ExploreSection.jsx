@@ -8,7 +8,6 @@ import Skeleton from './ui/Skeleton'
 import CardImage, { ImagePlaceholder } from './ui/CardImage'
 import { getRecommendedSpots, getTourContents } from '../api/tour'
 import { shortRegion } from '../lib/homeFormat'
-import { pickRecommended } from '../lib/homeRecommend'
 import { useAuth } from '../context/AuthContext'
 
 const PAGE_SIZE = 9 // 계획·기록 탭 카드 수
@@ -163,9 +162,9 @@ function SpotSkeletonGrid() {
 
 // 목록 위 캡션 — 왼쪽 타일이 목록의 기준을 말한다. 오늘의 추천은 달력 타일(월·일), 맞춤 추천은 마법봉,
 // 지역을 골랐을 땐 지도 핀. 제목 아래 한 줄로 무엇을 골랐는지 풀어 쓴다.
-function SpotCaption({ current, user, region }) {
+function SpotCaption({ spots, user, region }) {
   const today = new Date()
-  const personal = current.personal
+  const personal = spots.personal
   const daily = !personal && !region.areaCode
   const tile = personal
     ? { className: 'bg-brand-light text-brand', body: <Icon icon="solar:magic-stick-3-bold" width={19} /> }
@@ -187,7 +186,7 @@ function SpotCaption({ current, user, region }) {
       : `${region.label}에서 가볼 만한 곳`
   // 제목은 앞 어절만 브랜드색으로 — 섹션 제목("좋은 참견에서")과 같은 강조 방식
   const words = personal
-    ? [{ text: current.title, accent: true }]
+    ? [{ text: spots.title, accent: true }]
     : daily
       ? [{ text: '오늘의', accent: true }, { text: '추천 여행지' }]
       : [{ text: region.label, accent: true }, { text: '여행지' }]
@@ -266,11 +265,21 @@ function EmptyState({ icon, title, desc, to, cta }) {
 // 제목은 첫 로딩 뒤 어절이 차례로 떠오른다 (배너 문구와 같은 결)
 const HEADING = [{ text: '좋은 여행은' }, { text: '좋은 참견에서', accent: true }, { text: '시작됩니다.' }]
 
+// 로그인 사용자의 "전체" 탭은 선호도 기반 추천으로 채운다 — 맞춤 추천 섹션이 비면 default 섹션(무작위)으로.
+// default 섹션의 서버 제목은 쓰지 않고 DAILY_TITLE로 바꿔 단다.
+function pickRecommended(sections) {
+  const bySection = Object.fromEntries((sections || []).map((s) => [s.sectionId, s]))
+  const personal = bySection.personal?.items ?? []
+  if (personal.length) return { items: personal, title: bySection.personal.title, personal: true }
+  const fallback = bySection.default
+  return fallback?.items?.length ? { items: fallback.items, title: DAILY_TITLE, personal: false } : null
+}
+
 export default function ExploreSection({ feed }) {
   const { user, loading: authLoading } = useAuth()
   const [tab, setTab] = useState('spot')
   const [region, setRegion] = useState(REGIONS[0])
-  const [spots, setSpots] = useState({ options: [], loading: true, error: false })
+  const [spots, setSpots] = useState({ items: [], loading: true, error: false, title: null })
 
   const activeTab = TABS.find((t) => t.key === tab)
   const personalized = Boolean(user) && !region.areaCode
@@ -295,22 +304,16 @@ export default function ExploreSection({ feed }) {
         size: SPOT_COUNT,
         page: 1,
       }).then((data) => ({
-        options: [
-          {
-            key: 'list',
-            title: region.areaCode ? `${region.label} 여행지` : DAILY_TITLE,
-            items: Array.isArray(data?.items) ? data.items : [],
-          },
-        ],
+        items: Array.isArray(data?.items) ? data.items : [],
+        title: region.areaCode ? `${region.label} 여행지` : DAILY_TITLE,
+        personal: false,
       }))
 
     // 추천 응답이 비거나 실패하면 일반 목록으로 조용히 내려간다
     const request = personalized
       ? getRecommendedSpots()
           .then((data) => pickRecommended(Array.isArray(data?.sections) ? data.sections : []))
-          .then((picked) =>
-            picked ? { options: picked.options.map((o) => ({ ...o, items: o.items.slice(0, SPOT_COUNT) })) } : fetchList(),
-          )
+          .then((picked) => (picked ? { items: picked.items.slice(0, SPOT_COUNT), title: picked.title, personal: picked.personal } : fetchList()))
           .catch(fetchList)
       : fetchList()
 
@@ -321,7 +324,7 @@ export default function ExploreSection({ feed }) {
         setSpots({ ...result, loading: false, error: false })
       })
       .catch(() => {
-        if (!ignore) setSpots({ options: [], loading: false, error: true })
+        if (!ignore) setSpots({ items: [], loading: false, error: true, title: null })
       })
     return () => {
       ignore = true
@@ -335,8 +338,7 @@ export default function ExploreSection({ feed }) {
       .slice(0, PAGE_SIZE)
   }, [feed.items, tab, region])
 
-  const current = (spots.options ?? [])[0] ?? { key: 'none', title: null, items: [] }
-  const spotItems = current.items.slice(0, SPOT_COUNT)
+  const spotItems = spots.items.slice(0, SPOT_COUNT)
   const loading = tab === 'spot' ? spots.loading : feed.loading
 
   // 제목 스켈레톤은 섹션이 처음 열릴 때 한 번만 — 탭·지역을 바꿀 땐 카드만 다시 로딩된다
@@ -372,8 +374,8 @@ export default function ExploreSection({ feed }) {
         )
       }
       return (
-        <div key={current.personal ? current.key : regionKey(region)} className="animate-slide-in mt-5">
-          <SpotCaption current={current} user={user} region={region} />
+        <div key={spots.personal ? 'personal' : regionKey(region)} className="animate-slide-in mt-5">
+          <SpotCaption spots={spots} user={user} region={region} />
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
             {spotItems.map((s, i) => (
               <div key={s.contentId} className="animate-slide-in" style={{ animationDelay: `${i * 60}ms` }}>

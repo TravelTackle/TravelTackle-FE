@@ -45,10 +45,7 @@ export default function TravelerFeedPage() {
   const [filter, setFilter] = useState(initialFilter)
   const [region, setRegion] = useState(null)
   const feedFilterParams = useMemo(
-    () => ({
-      type: filter === 'all' ? undefined : filter.toUpperCase(),
-      region: region || undefined,
-    }),
+    () => ({ type: filter === 'all' ? undefined : filter.toUpperCase(), region: region || undefined }),
     [filter, region],
   )
   // 지역 칩을 누르면 이전 스크롤 위치가 남지 않도록 맨 위로 올린다.
