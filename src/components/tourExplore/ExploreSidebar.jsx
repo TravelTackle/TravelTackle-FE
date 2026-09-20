@@ -127,6 +127,8 @@ export default function ExploreSidebar({
   onSearchChange,
   onSearchSubmit,
   onSearchClear,
+  petOnly,
+  onPetOnlyChange,
 }) {
   const [areas, setAreas] = useState(() => sortAreasByPopularity(FALLBACK_AREAS))
   const [showMoreRegions, setShowMoreRegions] = useState(false)
@@ -185,6 +187,31 @@ export default function ExploreSidebar({
             </button>
           )}
         </div>
+
+        {/* 반려동물 동반 가능 장소만 — 한국관광공사 반려동물 동반여행 데이터(한국어만 제공).
+            테마·지역·검색어와 함께 걸린다. 축제 테마에서는 적용 대상이 아니라 숨긴다. */}
+        {onPetOnlyChange && (
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onPetOnlyChange(!petOnly)}
+            aria-pressed={petOnly}
+            className={`mb-3 flex w-full shrink-0 items-center gap-2 rounded-[10px] border px-3 py-2 text-[12px] font-bold transition-colors ${
+              petOnly
+                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                : 'border-slate-200 bg-surface text-slate-500 hover:border-emerald-300 hover:text-emerald-600'
+            }`}
+          >
+            <Icon icon="mdi:paw" width={14} className={petOnly ? 'text-emerald-600' : 'text-slate-400'} />
+            반려동물 동반
+            <span
+              aria-hidden="true"
+              className={`ml-auto flex h-4 w-7 items-center rounded-full p-0.5 transition-colors ${petOnly ? 'bg-emerald-500' : 'bg-slate-200'}`}
+            >
+              <span className={`h-3 w-3 rounded-full bg-surface transition-transform ${petOnly ? 'translate-x-3' : ''}`} />
+            </span>
+          </button>
+        )}
 
         {/* 모바일에선 기본값 자체가 "전체보기"라 굳이 버튼으로 안 둬도 되고, 테마를 고르면 그 테마만
             보이는 걸로 충분히 알 수 있어서 뺐다. 사이드바가 옆에 붙는 데스크톱(md 이상)에서는 그대로 둔다. */}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
+import { PetFriendlyMark } from './ui/PetFriendly'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { CART_CHANGED_EVENT, SPOT_DRAG_TYPE, addCartItem, getCartItems, removeCartItem } from '../api/cart'
@@ -432,7 +433,10 @@ export default function FloatingCart() {
                         <Icon icon={cartTheme(item.contentTypeId).icon} width={10} />
                         {cartTheme(item.contentTypeId).label}
                       </span>
-                      <p className="mt-0.5 truncate text-[12.5px] font-bold text-slate-800">{item.title}</p>
+                      <p className="mt-0.5 flex items-center gap-1 truncate text-[12.5px] font-bold text-slate-800">
+                        <span className="truncate">{item.title}</span>
+                        <PetFriendlyMark value={item.petFriendly} />
+                      </p>
                       <p className="text-[11px] text-slate-400">{areaName(item.areaCode)}</p>
                     </div>
                     <button

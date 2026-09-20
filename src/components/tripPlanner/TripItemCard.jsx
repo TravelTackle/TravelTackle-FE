@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
+import { PetFriendlyMark } from '../ui/PetFriendly'
 import TimeEditPopup from './TimeEditPopup'
 import { TRIP_ITEM_DRAG_TYPE } from '../../lib/dragTypes'
 
@@ -66,7 +67,10 @@ export default function TripItemCard({ item, dayId, onSaveTime, onSaveMemo, onDe
       )}
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13.5px] font-bold text-slate-900">{item.cachedTitle}</p>
+        <p className="flex items-center gap-1 truncate text-[13.5px] font-bold text-slate-900">
+          <span className="truncate">{item.cachedTitle}</span>
+          <PetFriendlyMark value={item.petFriendly} />
+        </p>
 
         <div className="relative mt-1 inline-block">
           {readOnly ? (

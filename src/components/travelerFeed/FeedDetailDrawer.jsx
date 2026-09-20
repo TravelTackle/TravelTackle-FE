@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Icon } from '@iconify/react'
 import Button from '../ui/Button'
 import { FeedUserHeader, FeedActionBar } from './FeedCardChrome'
+import PetFriendlyBadge, { PetFriendlyMark } from '../ui/PetFriendly'
 import PhotoCarousel from './PhotoCarousel'
 import { adaptPlanDetail, adaptRecordDetail } from '../../data/feedAdapter'
 import { getFeedDetail } from '../../api/feed'
@@ -297,7 +298,10 @@ function PlanDetail({ item }) {
     <>
       <FeedUserHeader item={item} showChip={false} />
       <div className="mt-3 text-[17px] font-bold text-slate-900">{item.title}</div>
-      <div className="mt-1 text-[12px] text-slate-400">{item.duration} · {item.placeCount}개의 장소</div>
+      <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-slate-400">
+        <span>{item.duration} · {item.placeCount}개의 장소</span>
+        <PetFriendlyBadge summary={item.petFriendly} />
+      </div>
 
       <div className="mt-5 flex flex-col gap-6">
         {item.days.map((day) => (
@@ -326,7 +330,9 @@ function PlanDetail({ item }) {
                     <div className="min-w-0 flex-1 pb-4">
                       <div className="text-[11px] font-semibold text-brand">{stop.time}</div>
                       <div className="mt-0.5 text-[13px] font-extrabold text-slate-900">
-                        {stop.title} <span className="ml-1 text-[10px] font-normal text-slate-400">{stop.address}</span>
+                        {stop.title}
+                        <PetFriendlyMark value={stop.petFriendly} className="ml-1 inline-block align-[-1px]" />
+                        <span className="ml-1 text-[10px] font-normal text-slate-400">{stop.address}</span>
                       </div>
                       <div className="mt-0.5 text-[11px] font-semibold text-slate-500">{stop.memo}</div>
                     </div>

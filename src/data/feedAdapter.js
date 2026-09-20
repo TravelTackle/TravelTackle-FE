@@ -15,24 +15,27 @@ function adaptDays(days) {
     id: day.id,
     day: day.dayNumber,
     date: day.date,
+    // petFriendly: true(가능) / false(불가) / null(미확인) — 백엔드가 안 주면 undefined라 아무것도 안 그린다
     stops: day.items.map((item) => ({
       time: formatTime(item.startTime),
       title: item.cachedTitle,
       address: item.address,
       memo: item.memo,
+      petFriendly: item.petFriendly ?? null,
       icon: 'mdi:map',
       iconBg: 'bg-brand',
       imageUrl: item.cachedImageUrl,
     })),
     places: day.items.map((item) => ({
       name: item.cachedTitle,
+      petFriendly: item.petFriendly ?? null,
       time: `${formatTime(item.startTime)}~${formatTime(item.endTime)}`,
       imageUrl: item.cachedImageUrl,
     })),
   }))
 }
 
-function adaptPlan({ tripId, ownerName, ownerId, ownerProfileImageUrl, region, title, comment, startDate, endDate, days, feedbackCount, saveCount, createdAt, savedTripId, thumbnailUrl }) {
+function adaptPlan({ tripId, ownerName, ownerId, ownerProfileImageUrl, region, title, comment, startDate, endDate, days, petFriendly, feedbackCount, saveCount, createdAt, savedTripId, thumbnailUrl }) {
   const adaptedDays = adaptDays(days)
   return {
     id: tripId,
@@ -56,6 +59,8 @@ function adaptPlan({ tripId, ownerName, ownerId, ownerProfileImageUrl, region, t
     // 이 트립에 공개 여행기록이 있는지 — thumbnailUrl은 기록 사진에서만 나오므로 있으면 기록이 있다는 뜻.
     // 보관함 상세에서 "이 여행의 기록 보기" 버튼을 보여줄지 판단하는 데 쓴다.
     hasRecord: !!thumbnailUrl,
+    // 계획 전체의 반려동물 동반 요약 { all, count, total } — 백엔드가 안 주면 null이라 뱃지가 안 뜬다
+    petFriendly: petFriendly ?? null,
   }
 }
 
@@ -76,6 +81,7 @@ function adaptRecord(entry) {
     saveCount: typeof entry.saveCount === 'number' ? entry.saveCount : null,
     createdAt: entry.createdAt,
     savedTripId: entry.savedTripId ?? null, // 기록이 가리키는 원본 계획(tripId) 기준 스크랩 여부
+    petFriendly: entry.petFriendly ?? null,
   }
 }
 
@@ -96,6 +102,7 @@ export function adaptPlanDetail(detail) {
     startDate: detail.startDate,
     endDate: detail.endDate,
     days: detail.days,
+    petFriendly: detail.petFriendly,
     feedbackCount: detail.feedbackCount,
     saveCount: detail.saveCount, // 백엔드 PR #32부터 상세에도 스크랩 수가 온다
     createdAt: detail.createdAt,
@@ -140,6 +147,7 @@ export function adaptSavedTrip(entry) {
       startDate: entry.startDate,
       endDate: entry.endDate,
       days: entry.days,
+      petFriendly: entry.petFriendly,
       feedbackCount: entry.feedbackCount,
       saveCount: entry.saveCount,
       createdAt: entry.savedAt,

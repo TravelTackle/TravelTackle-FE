@@ -88,7 +88,7 @@ export function FeedTypeFilter({ filter, onFilterChange, options = FILTERS }) {
 let revealedOnce = false
 const MIN_SKELETON_MS = 550
 
-export default function FeedFilterBar({ filter, onFilterChange, view, onViewChange, onUploadClick }) {
+export default function FeedFilterBar({ filter, onFilterChange, petOnly, onPetOnlyChange, view, onViewChange, onUploadClick }) {
   const [revealed, setRevealed] = useState(revealedOnce)
 
   useEffect(() => {
@@ -103,10 +103,13 @@ export default function FeedFilterBar({ filter, onFilterChange, view, onViewChan
   if (!revealed) {
     return (
       <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2.5" role="status" aria-label="피드 필터를 준비하는 중">
-        <div className="flex items-center gap-1 rounded-full bg-slate-50 p-1">
-          {[64, 64, 64].map((w, i) => (
-            <Skeleton key={i} className="h-8 rounded-full" style={{ width: w, animationDelay: `${i * 70}ms` }} />
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 rounded-full bg-slate-50 p-1">
+            {[64, 64, 64].map((w, i) => (
+              <Skeleton key={i} className="h-8 rounded-full" style={{ width: w, animationDelay: `${i * 70}ms` }} />
+            ))}
+          </div>
+          <Skeleton className="h-8 w-[108px] rounded-full" style={{ animationDelay: '210ms' }} />
         </div>
         <div className="flex items-center gap-2">
           <Skeleton className="hidden h-9 w-[76px] rounded-xl sm:block" style={{ animationDelay: '220ms' }} />
@@ -118,7 +121,24 @@ export default function FeedFilterBar({ filter, onFilterChange, view, onViewChan
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2.5">
-      <FeedTypeFilter filter={filter} onFilterChange={onFilterChange} />
+      <div className="flex flex-wrap items-center gap-2">
+        <FeedTypeFilter filter={filter} onFilterChange={onFilterChange} />
+        {/* 모든 장소가 반려동물 동반 가능한 계획만 — 기준이 "전부 가능"이라 결과가 적을 수 있다 */}
+        <button
+          type="button"
+          onClick={() => onPetOnlyChange(!petOnly)}
+          aria-pressed={petOnly}
+          className={`ai-word flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] font-bold transition-colors ${
+            petOnly
+              ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+              : 'border-slate-200 bg-surface text-slate-500 hover:border-emerald-300 hover:text-emerald-600'
+          }`}
+          style={{ animationDelay: '60ms' }}
+        >
+          <Icon icon="mdi:paw" width={14} className={petOnly ? 'text-emerald-600' : 'text-slate-400'} />
+          반려동물 동반
+        </button>
+      </div>
 
       <div className="ai-word" style={{ animationDelay: '120ms' }}>
       <div className="flex items-center gap-2">

@@ -1,5 +1,7 @@
 import client from './client'
 
+// params: keyword, areaCode, sigunguCode, contentTypeId, page, size, arrange,
+// petFriendly(true면 반려동물 동반 가능 장소만 — 한국관광공사 반려동물 동반여행 데이터, 한국어만 제공)
 export function getTourContents(params) {
   return client.get('/tour/contents', { params }).then((res) => res.data)
 }
