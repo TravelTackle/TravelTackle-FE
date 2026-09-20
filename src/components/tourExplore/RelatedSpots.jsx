@@ -62,7 +62,11 @@ export default function RelatedSpots({ detail, onSelect }) {
 
   return (
     <section ref={sectionRef} className="border-t border-slate-100 px-4 pb-6 pt-5">
-      <h3 className="text-[14px] font-bold text-slate-900">{title}</h3>
+      {state.status === 'loading' ? (
+        <div className="h-[14px] w-28 animate-pulse rounded bg-slate-100" />
+      ) : (
+        <h3 className="text-[14px] font-bold text-slate-900">{title}</h3>
+      )}
       {state.kind === 'related' && state.status === 'done' && (
         <p className="mt-0.5 text-[11px] text-slate-400">이 장소를 찾은 뒤 이어서 많이 찾은 관광지예요</p>
       )}

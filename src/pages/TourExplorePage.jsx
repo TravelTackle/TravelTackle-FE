@@ -28,6 +28,7 @@ export default function TourExplorePage() {
   const [sigungu, setSigungu] = useState(null)
   const [period, setPeriod] = useState(initialPeriod)
   const isFestival = theme?.kind === 'festival'
+  const [petOnly, setPetOnly] = useState(false) // 반려동물 동반 가능 장소만 보기
   const [searchInput, setSearchInput] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
   const [spots, setSpots] = useState([])
@@ -103,6 +104,7 @@ export default function TourExplorePage() {
           page: pageNum,
           size: PAGE_SIZE,
           arrange: 'R', // 최신 등록순 + 대표이미지 있는 콘텐츠만 (이미지 없는 관광지 제외)
+          petFriendly: petOnly || undefined,
         })
     return request
       .then((data) => {
@@ -115,7 +117,7 @@ export default function TourExplorePage() {
         if (!append) setSpots([])
       })
       .finally(() => setBusy(false))
-  }, [theme, region, sigungu, searchKeyword, isFestival, period.start, period.end])
+  }, [theme, region, sigungu, searchKeyword, isFestival, period.start, period.end, petOnly])
 
   // 홈 "여행지 탐색" 카드 등에서 ?open=<contentId>로 들어오면 상세를 바로 열고, 목록엔 없을 수도
   // 있으니(다른 지역/테마 결과라) 그 여행지 정보를 따로 받아 그리드 맨 위에도 꽂아 보여준다.
@@ -223,6 +225,8 @@ export default function TourExplorePage() {
           sigungu={sigungu}
           searchValue={searchInput}
           onSearchChange={setSearchInput}
+          petOnly={petOnly}
+          onPetOnlyChange={isFestival ? undefined : setPetOnly}
           onSearchSubmit={() => setSearchKeyword(searchInput.trim())}
           onSearchClear={() => {
             setSearchInput('')
