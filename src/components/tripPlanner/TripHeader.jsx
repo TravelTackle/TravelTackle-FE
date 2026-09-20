@@ -265,7 +265,7 @@ export default function TripHeader({
             aria-disabled={publishBlocked}
             title={
               trip.published
-                ? '눌러서 나만 보기로 전환'
+                ? '눌러서 나만 보기로 전환 (기록도 함께 비공개)'
                 : publishBlocked
                   ? `${blockedLabel}에 일정을 넣어야 전체공개할 수 있어요`
                   : '눌러서 전체공개로 전환'

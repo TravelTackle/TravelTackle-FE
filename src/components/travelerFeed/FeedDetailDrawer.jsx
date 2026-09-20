@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Icon } from '@iconify/react'
 import Button from '../ui/Button'
 import { FeedUserHeader, FeedActionBar } from './FeedCardChrome'
+import PhotoCarousel from './PhotoCarousel'
 import { adaptPlanDetail, adaptRecordDetail } from '../../data/feedAdapter'
 import { getFeedDetail } from '../../api/feed'
 import { deleteTrip } from '../../api/trip'
@@ -276,11 +277,11 @@ export default function FeedDetailDrawer({ item, items, onClose, onSavePlan, fro
 function RecordDetail({ item }) {
   return (
     <>
-      <div className="relative h-[320px] w-full overflow-hidden rounded-2xl bg-slate-200">
-        {item.imageUrl && (
-          <img src={item.imageUrl} alt={item.title} className="absolute inset-0 h-full w-full object-cover" />
-        )}
-      </div>
+      <PhotoCarousel
+        photos={item.photos ?? (item.imageUrl ? [item.imageUrl] : [])}
+        alt={item.title}
+        className="h-[320px] w-full rounded-2xl"
+      />
       <div className="mt-4">
         <FeedUserHeader item={item} showChip={false} />
         <div className="mt-3 text-[17px] font-bold text-slate-900">{item.title}</div>
