@@ -7,7 +7,7 @@ import { useLanguage } from '../i18n'
 import { useMediaQuery } from '../lib/useMediaQuery'
 import { FLOATING_PANEL_EVENT, announceFloatingPanelOpen } from '../lib/floatingPanel'
 
-const GREETING = { id: 'greeting', from: 'bot', text: '안녕하세요! 트레블봇이에요 😊 여행 계획 짜는 거 도와드릴까요?' }
+const GREETING = { id: 'greeting', from: 'bot', text: '안녕하세요! 트래블봇이에요 😊 여행 계획 짜는 거 도와드릴까요?' }
 const GREETING_DELAY_MS = 900 // 처음 열면 이만큼 "입력 중"을 보여준 뒤 인사말을 써 내려간다
 
 function createConversationId() {
@@ -64,7 +64,7 @@ function BotAvatar() {
 // 입력 중 말풍선 — 점 세 개가 파도처럼 튀고, 아래에 작은 안내가 따라온다
 function TypingBubble() {
   return (
-    <div className="chat-in-left flex flex-col items-start" role="status" aria-label="트레블봇이 답변을 작성 중">
+    <div className="chat-in-left flex flex-col items-start" role="status" aria-label="트래블봇이 답변을 작성 중">
       <div className="flex">
         <BotAvatar />
         <div className="flex h-9 items-center gap-1 rounded-2xl rounded-tl-sm border border-slate-100 bg-surface px-3.5">
@@ -77,7 +77,7 @@ function TypingBubble() {
           ))}
         </div>
       </div>
-      <span className="ml-8 mt-1 text-[10.5px] text-slate-400">트레블봇이 입력 중…</span>
+      <span className="ml-8 mt-1 text-[10.5px] text-slate-400">트래블봇이 입력 중…</span>
     </div>
   )
 }
@@ -219,7 +219,7 @@ export default function ChatbotWidget() {
       // 새 대화로 넘어가며 중단된 요청 — 새 대화 상태를 건드리지 않는다.
       if (controller.signal.aborted) return
       if (err.response?.status === 401) {
-        setError('로그인 후 트레블봇을 이용할 수 있어요.')
+        setError('로그인 후 트래블봇을 이용할 수 있어요.')
       } else if (err.response?.status === 429) {
         setError('요청이 많아요. 잠시 후 다시 시도해주세요.')
       } else {
@@ -267,7 +267,7 @@ export default function ChatbotWidget() {
               <Icon icon="solar:chat-round-dots-bold" width={16} color="white" />
             </IconBadge>
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-bold text-white leading-tight">트레블봇</div>
+              <div className="text-[13px] font-bold text-white leading-tight">트래블봇</div>
               <div className="flex items-center gap-1.5 text-[10.5px] text-white/90">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="chat-ping absolute inset-0 rounded-full bg-emerald-300" />

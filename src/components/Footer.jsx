@@ -107,7 +107,7 @@ export default function Footer() {
         {/* 모바일에서는 로고를 맨 아래로 — order로 순서만 바꾸고, sm 이상에서는 order-none으로
             원래 순서(로고가 왼쪽)로 되돌린다 */}
         <div className="order-2 sm:order-none">
-          <img src={dark ? logoHorizontalDark : logoHorizontal} alt="트레블 참견" className="h-8 w-auto" />
+          <img src={dark ? logoHorizontalDark : logoHorizontal} alt="트래블 참견" className="h-8 w-auto" />
           <p className="mt-2 text-[11.5px] text-slate-400">함께 만드는 더 좋은 여행</p>
           <p className="mt-6 text-[10.5px] text-slate-400">© 2026 Travel Tackle. All rights reserved.</p>
         </div>

@@ -361,7 +361,7 @@ function DeleteSummaryStep({ onCancel, onNext }) {
         <MascotFlyIn />
       </div>
       <h3 className="mt-3 text-center text-[16px] font-bold text-slate-900">
-        트레블 참견과 함께 {trips.length}개의 여행을 만들어왔어요
+        트래블 참견과 함께 {trips.length}개의 여행을 만들어왔어요
       </h3>
       <p className="mt-1.5 text-center text-[12.5px] leading-relaxed text-slate-500">
         탈퇴하면 아래 계획과 참견이 모두 사라져요. 정말 떠나시겠어요?
