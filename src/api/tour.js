@@ -8,6 +8,17 @@ export function getTourContentDetail(contentId) {
   return client.get(`/tour/contents/${contentId}`).then((res) => res.data)
 }
 
+// 티맵 이동 데이터 기반 연관 관광지 — 연관 순위순, TourAPI에 없는 항목은 서버가 이미 건너뛴다.
+// 음식점·숙박이거나 연관 데이터가 없으면 빈 배열.
+export function getRelatedTourContents(contentId, limit = 8) {
+  return client.get(`/tour/contents/${contentId}/related`, { params: { limit } }).then((res) => res.data)
+}
+
+// 좌표 기반 주변 관광 콘텐츠 (연관 데이터가 없을 때의 대체)
+export function getNearbyTourContents(params) {
+  return client.get('/tour/contents/nearby', { params }).then((res) => res.data)
+}
+
 export function getTourAreas(areaCode) {
   return client.get('/tour/areas', { params: { areaCode } }).then((res) => res.data)
 }
