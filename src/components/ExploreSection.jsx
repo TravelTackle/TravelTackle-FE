@@ -163,14 +163,11 @@ function SpotSkeletonGrid() {
 
 // 목록 위 캡션 — 왼쪽 타일이 목록의 기준을 말한다. 오늘의 추천은 달력 타일(월·일), 맞춤 추천은 마법봉,
 // 지역을 골랐을 땐 지도 핀. 제목 아래 한 줄로 무엇을 골랐는지 풀어 쓴다.
-function SpotCaption({ current, options, onSelectSection, user, region }) {
+function SpotCaption({ current, user, region }) {
   const today = new Date()
   const personal = current.personal
-  const pet = current.pet
   const daily = !personal && !region.areaCode
-  const tile = pet
-    ? { className: 'bg-emerald-50 text-emerald-600', body: <Icon icon="mdi:paw" width={19} /> }
-    : personal
+  const tile = personal
     ? { className: 'bg-brand-light text-brand', body: <Icon icon="solar:magic-stick-3-bold" width={19} /> }
     : daily
       ? {
@@ -183,9 +180,7 @@ function SpotCaption({ current, options, onSelectSection, user, region }) {
           ),
         }
       : { className: 'bg-slate-100 text-slate-600', body: <Icon icon="solar:map-point-bold" width={19} /> }
-  const sub = pet
-    ? '애견과 함께 갈 수 있는 곳이에요'
-    : personal
+  const sub = personal
     ? `${user?.name || '회원'}님 취향에 맞춰 골랐어요`
     : daily
       ? `지금 둘러보기 좋은 여행지 ${SPOT_COUNT}곳`
@@ -207,11 +202,7 @@ function SpotCaption({ current, options, onSelectSection, user, region }) {
           {/* ai-word는 inline-block이라 어절 사이 공백이 사라진다 — 간격은 gap으로 */}
           <h3 className="flex flex-wrap items-baseline gap-x-[0.3em] text-[15px] font-extrabold leading-tight text-slate-700">
             {words.map((w, i) => (
-              <span
-                key={w.text}
-                className={`ai-word ${w.accent ? (pet ? 'text-emerald-600' : 'text-brand') : ''}`}
-                style={{ animationDelay: `${i * 90}ms` }}
-              >
+              <span key={w.text} className={`ai-word ${w.accent ? 'text-brand' : ''}`} style={{ animationDelay: `${i * 90}ms` }}>
                 {w.text}
               </span>
             ))}
@@ -219,28 +210,6 @@ function SpotCaption({ current, options, onSelectSection, user, region }) {
           <p className="ai-word mt-0.5 truncate text-[12px] text-slate-500" style={{ animationDelay: `${words.length * 90}ms` }}>{sub}</p>
         </div>
       </div>
-      {options.length > 1 && (
-        // 맞춤 추천 · 반려동물 동반이 함께 올 때만 — 서버가 한 번에 준 섹션이라 전환해도 다시 부르지 않는다
-        <div className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 p-1" role="group" aria-label="추천 종류">
-          {options.map((o) => {
-            const active = o.key === current.key
-            return (
-              <button
-                key={o.key}
-                type="button"
-                onClick={() => onSelectSection(o.key)}
-                aria-pressed={active}
-                className={`flex items-center gap-1 rounded-full px-3 py-1 text-[11.5px] font-bold whitespace-nowrap transition-colors ${
-                  active ? 'bg-surface shadow-card ' + (o.pet ? 'text-emerald-700' : 'text-brand-dark') : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <Icon icon={o.pet ? 'mdi:paw' : 'solar:magic-stick-3-bold'} width={12} />
-                {o.pet ? '애견' : '맞춤'}
-              </button>
-            )
-          })}
-        </div>
-      )}
       {daily && user && (
         // 맞춤 추천 유도 — 위 "전체보기" 알약과 같은 문법·색(아이콘 원 + 문구, 올리면 브랜드색이 왼쪽에서 차오름)
         <Link
@@ -302,8 +271,6 @@ export default function ExploreSection({ feed }) {
   const [tab, setTab] = useState('spot')
   const [region, setRegion] = useState(REGIONS[0])
   const [spots, setSpots] = useState({ options: [], loading: true, error: false })
-  // 맞춤 추천과 반려동물 동반 섹션이 함께 오면 캡션에서 골라 본다 — 고른 값은 섹션이 바뀌면 초기화
-  const [sectionKey, setSectionKey] = useState(null)
 
   const activeTab = TABS.find((t) => t.key === tab)
   const personalized = Boolean(user) && !region.areaCode
@@ -368,8 +335,7 @@ export default function ExploreSection({ feed }) {
       .slice(0, PAGE_SIZE)
   }, [feed.items, tab, region])
 
-  const options = spots.options ?? []
-  const current = options.find((o) => o.key === sectionKey) ?? options[0] ?? { key: 'none', title: null, items: [] }
+  const current = (spots.options ?? [])[0] ?? { key: 'none', title: null, items: [] }
   const spotItems = current.items.slice(0, SPOT_COUNT)
   const loading = tab === 'spot' ? spots.loading : feed.loading
 
@@ -407,7 +373,7 @@ export default function ExploreSection({ feed }) {
       }
       return (
         <div key={current.personal ? current.key : regionKey(region)} className="animate-slide-in mt-5">
-          <SpotCaption current={current} options={options} onSelectSection={setSectionKey} user={user} region={region} />
+          <SpotCaption current={current} user={user} region={region} />
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
             {spotItems.map((s, i) => (
               <div key={s.contentId} className="animate-slide-in" style={{ animationDelay: `${i * 60}ms` }}>

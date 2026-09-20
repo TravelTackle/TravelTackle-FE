@@ -12,7 +12,6 @@ export const INTEREST_TAGS = [
   { value: 'NIGHTLIFE', label: '야경', icon: 'solar:moon-stars-linear' },
   { value: 'CAFE', label: '카페', icon: 'solar:cup-hot-linear' },
   { value: 'WELLBEING', label: '휴양/힐링', icon: 'solar:meditation-round-linear' },
-  { value: 'PET_FRIENDLY', label: '애견 동반', icon: 'mdi:paw' },
 ]
 
 export const TRAVEL_STYLES = [
